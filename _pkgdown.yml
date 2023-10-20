@@ -1,0 +1,29 @@
+url: ~
+template:
+  bootstrap: 5
+  bootswatch: yeti
+
+navbar:
+  bg: dark
+  structure:
+    left: [home, tutorial, functions]
+    right: [github]
+  components:
+    home:
+      icon: fa-home
+      href: index.html
+    tutorial:
+      icon: fa-graduation-cap
+      href: articles/CHOIR.html
+      text: Quick Tutorial
+    functions:
+      icon: fa-code
+      href: reference/index.html
+      text: Functions
+    github:
+      icon: fa-github
+      href: https://github.com/corceslab/CHOIR
+      text: CHOIR on GitHub
+
+toc:
+  depth: 4
