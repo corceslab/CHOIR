@@ -1,0 +1,40 @@
+Package: CHOIR
+Title: Clustering Hierachy Optimization by Iterative Random forests
+Version: 0.1.0
+Authors@R: 
+	person("Cathrine", "Petersen", , "cathrine.petersen@gladstone.ucsf.edu", role = c("aut", "cre"), 
+		comment = c(ORCID = "0000-0002-5821-9828"))
+Description: CHOIR is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically determine which clusters represent distinct populations.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.2.0
+Suggests: 
+    ArchR,
+    cluster,
+    clv,
+    ggnewscale,
+    knitr,
+    Polychrome,
+    rmarkdown,
+    Signac,
+    SingleCellExperiment
+VignetteBuilder: knitr
+Imports: 
+    BiocGenerics,
+    bluster,
+    dplyr,
+    ggplot2,
+    harmony,
+    magrittr,
+    Matrix,
+    methods,
+    plyr,
+    progress,
+    ranger,
+    Seurat,
+    spatstat.explore,
+    stringr,
+    tidyr
+Remotes:
+    pengminshi/mrtree
