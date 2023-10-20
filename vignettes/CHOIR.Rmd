@@ -118,7 +118,7 @@ seurat_object <- pruneTree(seurat_object,
 
 ## Plot
 
-The final clusters identified by CHOIR can be found in the `meta.data` slot of the Seurat object. Other CHOIR outputs are stored under the `misc` slot of the Seurat object.
+Labels for the final clusters identified by CHOIR can be found in the `meta.data` slot of the Seurat object. Other CHOIR outputs are stored under the `misc` slot of the Seurat object.
 
 ```{r}
 head(seurat_object@meta.data)

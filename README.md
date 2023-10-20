@@ -1,5 +1,5 @@
 <br>
-<a href ="https://www.CHOIRclustering.com"><img src="man/figures/CHOIR_logo.png" width="200px" align="right" />
+<a href ="https://www.CHOIRclustering.com"><img src="man/figures/logo.png" width="200px" align="right" /></a>
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -26,4 +26,8 @@ And access the vignette by running:
 ``` r
 vignette("CHOIR")
 ```
+<hr>
 
+<p align="left"><a href ="https://www.corceslab.com/"><img src="man/figures/CorcesLab_logo.png" alt="" width="300"></a></p>
+
+CHOIR is developed and maintained by the [Corces Lab](https://www.corceslab.com/) at the Gladstone Institutes.
