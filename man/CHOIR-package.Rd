@@ -6,7 +6,7 @@
 \alias{CHOIR-package}
 \title{CHOIR: Clustering Hierachy Optimization by Iterative Random forests}
 \description{
-CHOIR is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically determine which clusters represent distinct populations.
+CHOIR is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
 }
 \author{
 \strong{Maintainer}: Cathrine Petersen \email{cathrine.petersen@gladstone.ucsf.edu} (\href{https://orcid.org/0000-0002-5821-9828}{ORCID})

@@ -1,15 +1,12 @@
-# CHOIR
-
+<br>
 <a href ="https://www.CHOIRclustering.com"><img src="man/figures/CHOIR_logo.png" width="200px" align="right" />
 
 <!-- badges: start -->
 <!-- badges: end -->
 
-------
+**CHOIR** (**c**lustering **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
 
-CHOIR (**c**lustering **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically determine which clusters represent distinct populations.
-
-------
+<br>
 
 ## Installation
 
@@ -20,7 +17,7 @@ remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repo
 
 ## Usage
 
-Please follow the Quick Tutorial at [CHOIRclustering.com](https://www.CHOIRclustering.com). Alternately, install the package with `build_vignettes = TRUE`, as follows:
+Please follow the [vignette](https://www.choirclustering.com/articles/CHOIR.html). Alternately, install the package with `build_vignettes = TRUE`, as follows:
 ``` r
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never", build_vignettes = TRUE)
 ```
