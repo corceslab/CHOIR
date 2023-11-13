@@ -25,7 +25,7 @@ remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repo
 
 # Introduction
 
-This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell sequencing data. CHOIR is applicable to single-cell sequencing data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)).
+This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell sequencing data. CHOIR is applicable to single-cell sequencing data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). Detailed parameter definitions are available under the [Functions](https://www.choirclustering.com/reference/index.html) tab.
 
 CHOIR is based on the premise that if clusters contain biologically different cell types or states, a machine learning classifier that considers features present in cells from each cluster should be able to distinguish the clusters with a higher level of accuracy than machine learning classifiers trained on randomly permuted cluster labels. The use of permutation testing approaches allows CHOIR to introduce statistical significance thresholds into the clustering process.
 
@@ -79,7 +79,9 @@ The two steps can be run together using the function `CHOIR()` or separately usi
 
 The `CHOIR()` function will run all of the steps of the CHOIR algorithm in sequence. CHOIR is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
 
-The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as CHOIR applies filters that reduce the total number of tests performed (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)).
+The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as CHOIR applies filters that reduce the total number of tests performed (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). 
+
+We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ```{r, eval = FALSE}
 seurat_object <- CHOIR(seurat_object, 
@@ -109,7 +111,7 @@ After constructing the hierarchical clustering tree, CHOIR iterates through each
 
 In parallel, CHOIR shuffles the cluster labels and repeats the same process. Both comparisons are repeated using bootstrapped samples (default = 100 iterations), resulting in a permutation test that compares the true prediction accuracy for the clusters to the prediction accuracy for a chance division of the cells into two random groups.
 
-This permutation test yields a p-value that determines whether these clusters are slated to merge or remain separate. The significance threshold used can be adjusted using the `alpha` parameter.
+This permutation test yields a p-value that determines whether these clusters are slated to merge or remain separate. The significance threshold used can be adjusted using the `alpha` parameter. We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
 seurat_object <- pruneTree(seurat_object, 
@@ -159,11 +161,15 @@ The default dimensionality reduction method for Seurat objects is 'PCA', except 
 
 If you would like to use SCTransform normalization rather than log normalization, please provide raw counts and set the parameter `normalization_method` to 'SCTransform'. Note that SCTransform has not been thoroughly tested with CHOIR.
 
+Labels for the final clusters identified by CHOIR can be found in the `meta.data` slot of the Seurat object. Other CHOIR outputs are stored under the `misc` slot of the Seurat object.
+
 ### SingleCellExperiment
 
 For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to 'logcounts'.
 
-The default dimensionality reduction method for Seurat objects is 'PCA', except in the case of ATAC-seq data, where it is 'LSI'.
+The default dimensionality reduction method for SingleCellExperiment objects is 'PCA', except in the case of ATAC-seq data, where it is 'LSI'.
+
+Labels for the final clusters identified by CHOIR can be found in the `colData` slot of the SingleCellExperiment object. Other CHOIR outputs are stored under `metadata`.
 
 ### ArchR
 
@@ -171,17 +177,21 @@ For ArchR objects, if no input is provided for parameter `ArchR_matrix`, the "Ti
 
 The default dimensionality reduction method for ArchR objects is 'IterativeLSI'.
 
+Labels for the final clusters identified by CHOIR can be found in the `cellColData` slot of the ArchR object. Other CHOIR outputs are stored under `projectMetadata`.
+
 ## CHOIR parameters
 
 ### Batch correction
 
-For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method` to 'Harmony'. This not only generates Harmony-corrected dimnesionality reductions, but ensures that random forest classifer comparisons are batch-aware. 
+For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method` to 'Harmony'. This not only generates Harmony-corrected dimensionality reductions, but ensures that random forest classifer comparisons are batch-aware. 
 
 Use caution in applying this method if your groups of interest (e.g., disease vs. control) are batch-confounded AND you expect cell types unique to each of these groups.
 
 ### Significance level & multiple comparison correction
 
-The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as `CHOIR` applies filters that reduce the total number of tests performed (see below).
+The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as `CHOIR` applies filters that reduce the total number of tests performed (see below). 
+
+We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ### Filters
 
@@ -194,9 +204,9 @@ CHOIR uses various filters to reduce the number of necessary permutation test co
 
 ### Downsampling
 
-CHOIR uses downsampling to increase efficiency for larger datasets. Datasets above 5000 cells are automatically downsampled according to their size. Downsampling occurs at each random forest classifer comparison, using the default parameter setting `downsampling_rate = "auto"`. 
+CHOIR uses downsampling to increase efficiency for larger datasets. Using the default parameter setting of `downsampling_rate = "auto"`, downsampling occurs at each random forest classifer comparison. The downsampling rate is determined based on the overall dataset size. To disable downsampling, set `downsampling_rate = 1`.
 
-Additional downsampling can be imposed using parameter `sample_max`, indicating the maximum number of cells used per cluster to train/test each random forest classifier. The default value does not cap the number of cells used.
+Additional downsampling can be imposed using parameter `sample_max`, indicating the maximum number of cells used per cluster to train/test each random forest classifier. By default, this is not used.
 
 ## Providing pre-generated clusters
 
@@ -205,7 +215,7 @@ For users who already have a set of clusters generated by a different tool, and 
 To `pruneTree()`, provide:
 
 * `object` The input object under which the results will be stored.
-* `cluster_tree` A dataframe containing the cluster IDs of each cell across the levels of a hierarchical clustering tree. This can be generated from a single level of clusters using function `createHierachy()` (IN DEVELOPMENT).
+* `cluster_tree` A dataframe containing the cluster IDs of each cell across the levels of a hierarchical clustering tree.
 * `input_matrix` A matrix containing the feature x cell data on which to train the random forest classifiers. 
 * `nn_matrix` A matrix containing the nearest neighbor adjacency of the cells. 
 * Either reduction (a matrix of dimensionality reduction cell embeddings) if using approximate distances OR `dist_matrix` (a distance matrix of cell to cell distances)
