@@ -112,7 +112,8 @@ clustering algorithm for single-cell sequencing data. CHOIR is
 applicable to single-cell sequencing data of any modality, including
 RNA, ATAC, and proteomics. It is also applicable to multi-modal data
 (see <a href="https://www.choirclustering.com/articles/CHOIR.html#advanced-options" class="external-link">Advanced
-Options</a>).</p>
+Options</a>). Detailed parameter definitions are available under the <a href="https://www.choirclustering.com/reference/index.html" class="external-link">Functions</a>
+tab.</p>
 <p>CHOIR is based on the premise that if clusters contain biologically
 different cell types or states, a machine learning classifier that
 considers features present in cells from each cluster should be able to
@@ -193,6 +194,9 @@ comparison correction. Other correction methods may be less
 conservative, as CHOIR applies filters that reduce the total number of
 tests performed (see <a href="https://www.choirclustering.com/articles/CHOIR.html#advanced-options" class="external-link">Advanced
 Options</a>).</p>
+<p>We recommend using the default value of <span class="math inline">\(\alpha = 0.05\)</span> with Bonferroni multiple
+comparison correction. For a more conservative approach, the
+<code>alpha</code> value could be decreased to 0.01 or 0.001.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/CHOIR/man/CHOIR-package.html" class="external-link">CHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>, 
                        n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></code></pre></div>
@@ -261,28 +265,28 @@ parameter settings.</p>
 <span class="co">#&gt;  - Downsampling rate: 1</span>
 <span class="co">#&gt;  - # of cores: 2</span>
 <span class="co">#&gt;  - Random seed: 1</span>
-<span class="co">#&gt; 2023-10-20 15:01:18 : (Step 1/6) Running initial dimensionality reduction..</span>
+<span class="co">#&gt; 2023-11-13 13:52:21 : (Step 1/6) Running initial dimensionality reduction..</span>
 <span class="co">#&gt;                       Preparing matrix using 'RNA' assay and 'data' slot..</span>
 <span class="co">#&gt;                       Running PCA with 2000 variable features..</span>
-<span class="co">#&gt; 2023-10-20 15:01:19 : (Step 2/6) Generating initial nearest neighbors graph..</span>
-<span class="co">#&gt; 2023-10-20 15:01:20 : (Step 3/6) Identify starting clustering resolution..</span>
+<span class="co">#&gt; 2023-11-13 13:52:22 : (Step 2/6) Generating initial nearest neighbors graph..</span>
+<span class="co">#&gt; 2023-11-13 13:52:22 : (Step 3/6) Identify starting clustering resolution..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                       Starting resolution: 0.4</span>
-<span class="co">#&gt; 2023-10-20 15:01:20 : (Step 4/6) Building parent clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 13:52:23 : (Step 4/6) Building parent clustering tree..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                       Identified 3 clusters in parent tree.</span>
-<span class="co">#&gt; 2023-10-20 15:01:20 : (Step 5/6) Subclustering parent tree..</span>
-<span class="co">#&gt; 2023-10-20 15:01:21 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:29 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:30 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:30 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:32 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:32 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:32 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:01:37 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:23 : (Step 5/6) Subclustering parent tree..</span>
+<span class="co">#&gt; 2023-11-13 13:52:25 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:34 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:35 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:35 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:36 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:36 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:37 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:52:41 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; 2023-10-20 15:01:37 : (Step 6/6) Compiling full clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 13:52:41 : (Step 6/6) Compiling full clustering tree..</span>
 <span class="co">#&gt;                       Full tree has 6 levels and 10 clusters.</span></code></pre></div>
 </div>
 <div class="section level4">
@@ -303,12 +307,14 @@ compares the true prediction accuracy for the clusters to the prediction
 accuracy for a chance division of the cells into two random groups.</p>
 <p>This permutation test yields a p-value that determines whether these
 clusters are slated to merge or remain separate. The significance
-threshold used can be adjusted using the <code>alpha</code>
-parameter.</p>
+threshold used can be adjusted using the <code>alpha</code> parameter.
+We recommend using the default value of <span class="math inline">\(\alpha = 0.05\)</span> with Bonferroni multiple
+comparison correction. For a more conservative approach, the
+<code>alpha</code> value could be decreased to 0.01 or 0.001.</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">seurat_object</span>, 
                            n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
-<span class="co">#&gt; 2023-10-20 15:01:37 : (Step 1/2) Preparing object..</span>
+<span class="co">#&gt; 2023-11-13 13:52:41 : (Step 1/2) Preparing object..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Input data:</span>
 <span class="co">#&gt;  - Object type: Seurat</span>
@@ -336,25 +342,25 @@ parameter.</p>
 <span class="co">#&gt;  - Downsampling rate: 1</span>
 <span class="co">#&gt;  - # of cores: 2</span>
 <span class="co">#&gt;  - Random seed: 1</span>
-<span class="co">#&gt; 2023-10-20 15:01:37 : (Step 2/2) Iterating through clustering tree..</span>
-<span class="co">#&gt; 2023-10-20 15:01:41 : 11% (2/6 levels) in 0.05 min. 8 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:01:42 : 20% (2/6 levels) in 0.07 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:01:46 : 32% (3/6 levels) in 0.15 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:01:48 : 40% (3/6 levels) in 0.18 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:01:48 : 50% (4/6 levels) in 0.18 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:01:53 : 60% (5/6 levels) in 0.26 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:02:08 : 70% (5/6 levels) in 0.52 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:02:11 : 80% (6/6 levels) in 0.56 min. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:02:18 : 91% (6/6 levels) in 0.68 min. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:02:18 : Checking for underclustering in 1 clusters.</span>
-<span class="co">#&gt; 2023-10-20 15:02:21 : Additional comparisons necessary. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-10-20 15:02:21 : Completed: all clusters compared.</span>
+<span class="co">#&gt; 2023-11-13 13:52:42 : (Step 2/2) Iterating through clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 13:52:47 : 11% (2/6 levels) in 0.08 min. 8 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:52:48 : 20% (2/6 levels) in 0.1 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:52:52 : 32% (3/6 levels) in 0.18 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:52:54 : 40% (3/6 levels) in 0.2 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:52:54 : 50% (4/6 levels) in 0.2 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:52:58 : 60% (5/6 levels) in 0.27 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:53:13 : 70% (5/6 levels) in 0.51 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:53:15 : 80% (6/6 levels) in 0.56 min. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:53:23 : 91% (6/6 levels) in 0.69 min. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:53:23 : Checking for underclustering in 1 clusters.</span>
+<span class="co">#&gt; 2023-11-13 13:53:26 : Additional comparisons necessary. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 13:53:26 : Completed: all clusters compared.</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  - In 2 comparisons, clusters were split due to the minimum number of nearest neighbor connections.</span>
 <span class="co">#&gt;  - In 1 comparisons, clusters were merged after correction for multiple comparisons.</span>
 <span class="co">#&gt;  - Final adjusted significance threshold = 0.00227.</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; 2023-10-20 15:02:22 : Identified 5 clusters.</span></code></pre></div>
+<span class="co">#&gt; 2023-11-13 13:53:27 : Identified 5 clusters.</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -382,24 +388,24 @@ visualization of the clusters.</p>
 <span class="co">#&gt; Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric</span>
 <span class="co">#&gt; To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'</span>
 <span class="co">#&gt; This message will be shown once per session</span>
-<span class="co">#&gt; 15:02:22 UMAP embedding parameters a = 0.9922 b = 1.112</span>
+<span class="co">#&gt; 13:53:27 UMAP embedding parameters a = 0.9922 b = 1.112</span>
 <span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'spam'</span>
 <span class="co">#&gt; Also defined by 'BiocGenerics'</span>
-<span class="co">#&gt; 15:02:22 Read 243 rows and found 50 numeric columns</span>
-<span class="co">#&gt; 15:02:22 Using Annoy for neighbor search, n_neighbors = 30</span>
+<span class="co">#&gt; 13:53:27 Read 243 rows and found 50 numeric columns</span>
+<span class="co">#&gt; 13:53:27 Using Annoy for neighbor search, n_neighbors = 30</span>
 <span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'spam'</span>
 <span class="co">#&gt; Also defined by 'BiocGenerics'</span>
-<span class="co">#&gt; 15:02:22 Building Annoy index with metric = cosine, n_trees = 50</span>
+<span class="co">#&gt; 13:53:27 Building Annoy index with metric = cosine, n_trees = 50</span>
 <span class="co">#&gt; 0%   10   20   30   40   50   60   70   80   90   100%</span>
 <span class="co">#&gt; [----|----|----|----|----|----|----|----|----|----|</span>
 <span class="co">#&gt; **************************************************|</span>
-<span class="co">#&gt; 15:02:22 Writing NN index file to temp file /var/folders/ty/d3bmlyq53cv_6t3v60wkfr980000gq/T//RtmpMyhdKb/filea7cc4e78ee68</span>
-<span class="co">#&gt; 15:02:22 Searching Annoy index using 1 thread, search_k = 3000</span>
-<span class="co">#&gt; 15:02:22 Annoy recall = 100%</span>
-<span class="co">#&gt; 15:02:23 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30</span>
-<span class="co">#&gt; 15:02:25 Initializing from normalized Laplacian + noise (using RSpectra)</span>
-<span class="co">#&gt; 15:02:25 Commencing optimization for 500 epochs, with 9286 positive edges</span>
-<span class="co">#&gt; 15:02:26 Optimization finished</span>
+<span class="co">#&gt; 13:53:27 Writing NN index file to temp file /var/folders/ty/d3bmlyq53cv_6t3v60wkfr980000gq/T//RtmpzWGfkx/file164033a55026c</span>
+<span class="co">#&gt; 13:53:27 Searching Annoy index using 1 thread, search_k = 3000</span>
+<span class="co">#&gt; 13:53:27 Annoy recall = 100%</span>
+<span class="co">#&gt; 13:53:29 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30</span>
+<span class="co">#&gt; 13:53:30 Initializing from normalized Laplacian + noise (using RSpectra)</span>
+<span class="co">#&gt; 13:53:30 Commencing optimization for 500 epochs, with 9286 positive edges</span>
+<span class="co">#&gt; 13:53:31 Optimization finished</span>
 <span class="co">#&gt; Warning: No assay specified, setting assay as RNA by default.</span>
 <span class="co"># Plot</span>
 <span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span>
@@ -442,14 +448,21 @@ will look for the <code>scale.data</code> slot</li>
 normalization, please provide raw counts and set the parameter
 <code>normalization_method</code> to ‘SCTransform’. Note that
 SCTransform has not been thoroughly tested with CHOIR.</p>
+<p>Labels for the final clusters identified by CHOIR can be found in the
+<code>meta.data</code> slot of the Seurat object. Other CHOIR outputs
+are stored under the <code>misc</code> slot of the Seurat object.</p>
 </div>
 <div class="section level4">
 <h4 id="singlecellexperiment">SingleCellExperiment<a class="anchor" aria-label="anchor" href="#singlecellexperiment"></a>
 </h4>
 <p>For SingleCellExperiment objects, only the <code>use_assay</code>
 parameter is needed. If not provided, it is set to ‘logcounts’.</p>
-<p>The default dimensionality reduction method for Seurat objects is
-‘PCA’, except in the case of ATAC-seq data, where it is ‘LSI’.</p>
+<p>The default dimensionality reduction method for SingleCellExperiment
+objects is ‘PCA’, except in the case of ATAC-seq data, where it is
+‘LSI’.</p>
+<p>Labels for the final clusters identified by CHOIR can be found in the
+<code>colData</code> slot of the SingleCellExperiment object. Other
+CHOIR outputs are stored under <code>metadata</code>.</p>
 </div>
 <div class="section level4">
 <h4 id="archr">ArchR<a class="anchor" aria-label="anchor" href="#archr"></a>
@@ -459,6 +472,9 @@ parameter is needed. If not provided, it is set to ‘logcounts’.</p>
 parameter <code>ArchR_depthcol</code> is provided, “nFrags” is used.</p>
 <p>The default dimensionality reduction method for ArchR objects is
 ‘IterativeLSI’.</p>
+<p>Labels for the final clusters identified by CHOIR can be found in the
+<code>cellColData</code> slot of the ArchR object. Other CHOIR outputs
+are stored under <code>projectMetadata</code>.</p>
 </div>
 </div>
 <div class="section level3">
@@ -470,7 +486,7 @@ parameter <code>ArchR_depthcol</code> is provided, “nFrags” is used.</p>
 <p>For datasets with multiple batches, it is recommended to apply
 Harmony batch correction through CHOIR by setting the parameter
 <code>batch_correction_method</code> to ‘Harmony’. This not only
-generates Harmony-corrected dimnesionality reductions, but ensures that
+generates Harmony-corrected dimensionality reductions, but ensures that
 random forest classifer comparisons are batch-aware.</p>
 <p>Use caution in applying this method if your groups of interest (e.g.,
 disease vs. control) are batch-confounded AND you expect cell types
@@ -483,6 +499,9 @@ unique to each of these groups.</p>
 comparison correction. Other correction methods may be less
 conservative, as <code>CHOIR</code> applies filters that reduce the
 total number of tests performed (see below).</p>
+<p>We recommend using the default value of <span class="math inline">\(\alpha = 0.05\)</span> with Bonferroni multiple
+comparison correction. For a more conservative approach, the
+<code>alpha</code> value could be decreased to 0.01 or 0.001.</p>
 </div>
 <div class="section level4">
 <h4 id="filters">Filters<a class="anchor" aria-label="anchor" href="#filters"></a>
@@ -517,14 +536,15 @@ threshold at a 2-fold increase in distance.</li>
 <h4 id="downsampling">Downsampling<a class="anchor" aria-label="anchor" href="#downsampling"></a>
 </h4>
 <p>CHOIR uses downsampling to increase efficiency for larger datasets.
-Datasets above 5000 cells are automatically downsampled according to
-their size. Downsampling occurs at each random forest classifer
-comparison, using the default parameter setting
-<code>downsampling_rate = "auto"</code>.</p>
+Using the default parameter setting of
+<code>downsampling_rate = "auto"</code>, downsampling occurs at each
+random forest classifer comparison. The downsampling rate is determined
+based on the overall dataset size. To disable downsampling, set
+<code>downsampling_rate = 1</code>.</p>
 <p>Additional downsampling can be imposed using parameter
 <code>sample_max</code>, indicating the maximum number of cells used per
-cluster to train/test each random forest classifier. The default value
-does not cap the number of cells used.</p>
+cluster to train/test each random forest classifier. By default, this is
+not used.</p>
 </div>
 </div>
 <div class="section level3">
@@ -540,9 +560,7 @@ over-clustered, only need the <code><a href="../reference/pruneTree.html">pruneT
 stored.</li>
 <li>
 <code>cluster_tree</code> A dataframe containing the cluster IDs of
-each cell across the levels of a hierarchical clustering tree. This can
-be generated from a single level of clusters using function
-<code>createHierachy()</code> (IN DEVELOPMENT).</li>
+each cell across the levels of a hierarchical clustering tree.</li>
 <li>
 <code>input_matrix</code> A matrix containing the feature x cell
 data on which to train the random forest classifiers.</li>
