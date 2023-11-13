@@ -108,10 +108,9 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>This vignette provides a basic example of how to run CHOIR, a
-clustering algorithm for single-cell sequencing data. CHOIR is
-applicable to single-cell sequencing data of any modality, including
-RNA, ATAC, and proteomics. It is also applicable to multi-modal data
-(see <a href="https://www.choirclustering.com/articles/CHOIR.html#advanced-options" class="external-link">Advanced
+clustering algorithm for single-cell data. CHOIR is applicable to
+single-cell data of any modality, including RNA, ATAC, and proteomics.
+It is also applicable to multi-modal data (see <a href="https://www.choirclustering.com/articles/CHOIR.html#advanced-options" class="external-link">Advanced
 Options</a>). Detailed parameter definitions are available under the <a href="https://www.choirclustering.com/reference/index.html" class="external-link">Functions</a>
 tab.</p>
 <p>CHOIR is based on the premise that if clusters contain biologically
@@ -265,28 +264,28 @@ parameter settings.</p>
 <span class="co">#&gt;  - Downsampling rate: 1</span>
 <span class="co">#&gt;  - # of cores: 2</span>
 <span class="co">#&gt;  - Random seed: 1</span>
-<span class="co">#&gt; 2023-11-13 13:52:21 : (Step 1/6) Running initial dimensionality reduction..</span>
+<span class="co">#&gt; 2023-11-13 14:16:27 : (Step 1/6) Running initial dimensionality reduction..</span>
 <span class="co">#&gt;                       Preparing matrix using 'RNA' assay and 'data' slot..</span>
 <span class="co">#&gt;                       Running PCA with 2000 variable features..</span>
-<span class="co">#&gt; 2023-11-13 13:52:22 : (Step 2/6) Generating initial nearest neighbors graph..</span>
-<span class="co">#&gt; 2023-11-13 13:52:22 : (Step 3/6) Identify starting clustering resolution..</span>
+<span class="co">#&gt; 2023-11-13 14:16:28 : (Step 2/6) Generating initial nearest neighbors graph..</span>
+<span class="co">#&gt; 2023-11-13 14:16:28 : (Step 3/6) Identify starting clustering resolution..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                       Starting resolution: 0.4</span>
-<span class="co">#&gt; 2023-11-13 13:52:23 : (Step 4/6) Building parent clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 14:16:28 : (Step 4/6) Building parent clustering tree..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;                       Identified 3 clusters in parent tree.</span>
-<span class="co">#&gt; 2023-11-13 13:52:23 : (Step 5/6) Subclustering parent tree..</span>
-<span class="co">#&gt; 2023-11-13 13:52:25 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:34 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:35 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:35 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:36 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:36 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:37 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:52:41 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:29 : (Step 5/6) Subclustering parent tree..</span>
+<span class="co">#&gt; 2023-11-13 14:16:30 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:38 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:39 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:39 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:40 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:40 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:41 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:16:45 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; 2023-11-13 13:52:41 : (Step 6/6) Compiling full clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 14:16:45 : (Step 6/6) Compiling full clustering tree..</span>
 <span class="co">#&gt;                       Full tree has 6 levels and 10 clusters.</span></code></pre></div>
 </div>
 <div class="section level4">
@@ -314,7 +313,7 @@ comparison correction. For a more conservative approach, the
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">seurat_object</span>, 
                            n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span>
-<span class="co">#&gt; 2023-11-13 13:52:41 : (Step 1/2) Preparing object..</span>
+<span class="co">#&gt; 2023-11-13 14:16:45 : (Step 1/2) Preparing object..</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt; Input data:</span>
 <span class="co">#&gt;  - Object type: Seurat</span>
@@ -342,25 +341,25 @@ comparison correction. For a more conservative approach, the
 <span class="co">#&gt;  - Downsampling rate: 1</span>
 <span class="co">#&gt;  - # of cores: 2</span>
 <span class="co">#&gt;  - Random seed: 1</span>
-<span class="co">#&gt; 2023-11-13 13:52:42 : (Step 2/2) Iterating through clustering tree..</span>
-<span class="co">#&gt; 2023-11-13 13:52:47 : 11% (2/6 levels) in 0.08 min. 8 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:52:48 : 20% (2/6 levels) in 0.1 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:52:52 : 32% (3/6 levels) in 0.18 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:52:54 : 40% (3/6 levels) in 0.2 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:52:54 : 50% (4/6 levels) in 0.2 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:52:58 : 60% (5/6 levels) in 0.27 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:53:13 : 70% (5/6 levels) in 0.51 min. 6 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:53:15 : 80% (6/6 levels) in 0.56 min. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:53:23 : 91% (6/6 levels) in 0.69 min. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:53:23 : Checking for underclustering in 1 clusters.</span>
-<span class="co">#&gt; 2023-11-13 13:53:26 : Additional comparisons necessary. 5 clusters remaining.</span>
-<span class="co">#&gt; 2023-11-13 13:53:26 : Completed: all clusters compared.</span>
+<span class="co">#&gt; 2023-11-13 14:16:45 : (Step 2/2) Iterating through clustering tree..</span>
+<span class="co">#&gt; 2023-11-13 14:16:50 : 11% (2/6 levels) in 0.07 min. 8 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:16:50 : 20% (2/6 levels) in 0.09 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:16:55 : 32% (3/6 levels) in 0.16 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:16:56 : 40% (3/6 levels) in 0.18 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:16:56 : 50% (4/6 levels) in 0.18 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:00 : 60% (5/6 levels) in 0.25 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:14 : 70% (5/6 levels) in 0.49 min. 6 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:17 : 80% (6/6 levels) in 0.53 min. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:24 : 91% (6/6 levels) in 0.65 min. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:24 : Checking for underclustering in 1 clusters.</span>
+<span class="co">#&gt; 2023-11-13 14:17:27 : Additional comparisons necessary. 5 clusters remaining.</span>
+<span class="co">#&gt; 2023-11-13 14:17:27 : Completed: all clusters compared.</span>
 <span class="co">#&gt; </span>
 <span class="co">#&gt;  - In 2 comparisons, clusters were split due to the minimum number of nearest neighbor connections.</span>
 <span class="co">#&gt;  - In 1 comparisons, clusters were merged after correction for multiple comparisons.</span>
 <span class="co">#&gt;  - Final adjusted significance threshold = 0.00227.</span>
 <span class="co">#&gt; </span>
-<span class="co">#&gt; 2023-11-13 13:53:27 : Identified 5 clusters.</span></code></pre></div>
+<span class="co">#&gt; 2023-11-13 14:17:28 : Identified 5 clusters.</span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -388,24 +387,24 @@ visualization of the clusters.</p>
 <span class="co">#&gt; Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric</span>
 <span class="co">#&gt; To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'</span>
 <span class="co">#&gt; This message will be shown once per session</span>
-<span class="co">#&gt; 13:53:27 UMAP embedding parameters a = 0.9922 b = 1.112</span>
+<span class="co">#&gt; 14:17:28 UMAP embedding parameters a = 0.9922 b = 1.112</span>
 <span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'spam'</span>
 <span class="co">#&gt; Also defined by 'BiocGenerics'</span>
-<span class="co">#&gt; 13:53:27 Read 243 rows and found 50 numeric columns</span>
-<span class="co">#&gt; 13:53:27 Using Annoy for neighbor search, n_neighbors = 30</span>
+<span class="co">#&gt; 14:17:28 Read 243 rows and found 50 numeric columns</span>
+<span class="co">#&gt; 14:17:28 Using Annoy for neighbor search, n_neighbors = 30</span>
 <span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'spam'</span>
 <span class="co">#&gt; Also defined by 'BiocGenerics'</span>
-<span class="co">#&gt; 13:53:27 Building Annoy index with metric = cosine, n_trees = 50</span>
+<span class="co">#&gt; 14:17:28 Building Annoy index with metric = cosine, n_trees = 50</span>
 <span class="co">#&gt; 0%   10   20   30   40   50   60   70   80   90   100%</span>
 <span class="co">#&gt; [----|----|----|----|----|----|----|----|----|----|</span>
 <span class="co">#&gt; **************************************************|</span>
-<span class="co">#&gt; 13:53:27 Writing NN index file to temp file /var/folders/ty/d3bmlyq53cv_6t3v60wkfr980000gq/T//RtmpzWGfkx/file164033a55026c</span>
-<span class="co">#&gt; 13:53:27 Searching Annoy index using 1 thread, search_k = 3000</span>
-<span class="co">#&gt; 13:53:27 Annoy recall = 100%</span>
-<span class="co">#&gt; 13:53:29 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30</span>
-<span class="co">#&gt; 13:53:30 Initializing from normalized Laplacian + noise (using RSpectra)</span>
-<span class="co">#&gt; 13:53:30 Commencing optimization for 500 epochs, with 9286 positive edges</span>
-<span class="co">#&gt; 13:53:31 Optimization finished</span>
+<span class="co">#&gt; 14:17:28 Writing NN index file to temp file /var/folders/ty/d3bmlyq53cv_6t3v60wkfr980000gq/T//RtmpPwOIOV/file16739573a55a7</span>
+<span class="co">#&gt; 14:17:28 Searching Annoy index using 1 thread, search_k = 3000</span>
+<span class="co">#&gt; 14:17:28 Annoy recall = 100%</span>
+<span class="co">#&gt; 14:17:29 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30</span>
+<span class="co">#&gt; 14:17:31 Initializing from normalized Laplacian + noise (using RSpectra)</span>
+<span class="co">#&gt; 14:17:31 Commencing optimization for 500 epochs, with 9286 positive edges</span>
+<span class="co">#&gt; 14:17:32 Optimization finished</span>
 <span class="co">#&gt; Warning: No assay specified, setting assay as RNA by default.</span>
 <span class="co"># Plot</span>
 <span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span>
@@ -550,9 +549,10 @@ not used.</p>
 <div class="section level3">
 <h3 id="providing-pre-generated-clusters">Providing pre-generated clusters<a class="anchor" aria-label="anchor" href="#providing-pre-generated-clusters"></a>
 </h3>
-<p>For users who already have a set of clusters generated by a different
-tool, and wish to assess whether these clusters are under- or
-over-clustered, only need the <code><a href="../reference/pruneTree.html">pruneTree()</a></code> function.</p>
+<p>Users who already have a set of clusters generated by a different
+tool and wish to assess whether these clusters are under- or
+over-clustered only need to run the <code><a href="../reference/pruneTree.html">pruneTree()</a></code>
+function.</p>
 <p>To <code><a href="../reference/pruneTree.html">pruneTree()</a></code>, provide:</p>
 <ul>
 <li>
