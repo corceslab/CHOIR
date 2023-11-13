@@ -17,15 +17,8 @@ remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repo
 
 ## Usage
 
-Please follow the [vignette](https://www.choirclustering.com/articles/CHOIR.html). Alternately, install the package with `build_vignettes = TRUE`, as follows:
-``` r
-remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never", build_vignettes = TRUE)
-```
+Please follow the [vignette](https://www.choirclustering.com/articles/CHOIR.html).
 
-And access the vignette by running:
-``` r
-vignette("CHOIR")
-```
 <hr>
 
 <p align="left"><a href ="https://www.corceslab.com/"><img src="man/figures/CorcesLab_logo.png" alt="" width="300"></a></p>
