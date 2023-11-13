@@ -4,13 +4,13 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-**CHOIR** (**c**lustering **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell sequencing data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
+**CHOIR** (**c**lustering **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
 
 <br>
 
 ## Installation
 
-To install the package, please use the following:
+To install the package, please use the following which requires the [`remotes`](https://cran.r-project.org/web/packages/remotes/index.html) package to be installed:
 ``` r
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
