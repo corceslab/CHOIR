@@ -216,11 +216,8 @@
     # Feature importance
     if (collect_all_metrics == TRUE) {
       feature_importance <- do.call(rbind, rf_comparison_list)[, "feature_importance"]
-      print(feature_importance)
       feature_importance <- do.call(rbind, feature_importance)
-      print(feature_importance)
       mean_feature_importance <- apply(feature_importance, 2, function(x) mean(x, na.rm = TRUE))
-      print(mean_feature_importance)
     }
     # Permutation accuracies
     permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
