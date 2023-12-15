@@ -110,8 +110,8 @@
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
       use_matrix <- object[[use_assay]][[use_slot]]
-      if (is.null(use_matrix)) {
-        if (use_data = "RNA" & use_slot == "data") {
+      if (is.null(colnames(use_matrix))) {
+        if (use_data == "RNA" & use_slot == "data") {
           use_matrix <- object@assays$RNA$data
         } else {
           stop("Seurat storage error encountered. Could not access specified matrix layer.")
