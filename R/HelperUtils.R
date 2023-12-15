@@ -110,6 +110,15 @@
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
       use_matrix <- object[[use_assay]][[use_slot]]
+      if (is.null(use_matrix)) {
+        if (use_slot == "data") {
+          use_matrix <- object[[use_assay]]$data
+        } else if (use_slot == "counts") {
+          use_matrix <- object[[use_assay]]$counts
+        } else {
+          stop("Seurat storage error encountered. Could not access specified matrix layer.")
+        }
+      }
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
