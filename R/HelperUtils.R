@@ -186,7 +186,7 @@
   if (is.null(use_matrix)) {
     # Get assay
     if (is.null(use_assay)) {
-      assay <- "logcounts"
+      use_assay <- "logcounts"
       .validInput(use_assay, "use_assay", object)
     }
     use_matrix <- object@assays@data[[use_assay]]
