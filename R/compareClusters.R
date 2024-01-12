@@ -1,27 +1,30 @@
-#' Compare any two clusters using CHOIR's random forest classifier permutation testing approach
+#' Compare any two clusters using CHOIR's random forest classifier permutation
+#' testing approach
 #'
-#' This function will take two provided clusters and
-#' assess whether they are distinguishable by a permutation test using random
-#' forest classifier prediction accuracies.
+#' This function will take two provided clusters and assess whether they are
+#' distinguishable by a permutation test using random forest classifier
+#' prediction accuracies.
 #'
-#' @param object An object of class 'Seurat', 'SingleCellExperiment', or 'ArchRProject'.
-#' Not used if values are provided for parameters 'input_matrix' and
-#' 'nn_matrix'.
+#' @param object An object of class 'Seurat', 'SingleCellExperiment', or
+#' 'ArchRProject'. Not used if values are provided for parameters
+#' 'input_matrix' and 'nn_matrix'.
 #' @param key The name under which CHOIR-related data is retrieved from the
 #' object. Defaults to 'CHOIR'. Not used if values are provided for parameters
 #' 'input_matrix' and 'nn_matrix'.
-#' @param cluster1_cells A character vector of cell names belonging to cluster 1.
-#' @param cluster2_cells A character vector of cell names belonging to cluster 2.
+#' @param cluster1_cells A character vector of cell names belonging to cluster
+#' 1.
+#' @param cluster2_cells A character vector of cell names belonging to cluster
+#' 2.
 #' @param ident1 A string indicating the label for cluster 1.
 #' @param ident2 A string indicating the label for cluster 2.
-#' @param group_by A string indicating the column of cluster labels that 'ident1'
-#' and 'ident2' belong to.
-#' @param alpha A numerical value indicating the significance level used for
-#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
+#' @param group_by A string indicating the column of cluster labels that
+#' 'ident1' and 'ident2' belong to.
+#' @param alpha A numeric value indicating the significance level used for
+#' permutation test comparisons of cluster prediction accuracies. Defaults to
+#' 0.05.
 #' @param feature_set A string indicating whether to train random forest
-#' classifiers on 'all' features or only variable ('var') features. Defaults to 'var'.
-#' @param var_features An optional character vector of variable features to be
-#' used for random forest comparisons. Defaults to \code{NULL}.
+#' classifiers on 'all' features or only variable ('var') features. Defaults to
+#' 'var'.
 #' @param exclude_features A character vector indicating features that should be
 #' excluded from input to the random forest classifier. Default = \code{NULL}
 #' will not exclude any features.
@@ -34,51 +37,59 @@
 #' Defaults to \code{TRUE}.
 #' @param min_accuracy A numeric value indicating the minimum accuracy required
 #' of the random forest classifier, below which clusters will be automatically
-#' merged. Defaults to 0.5.
+#' merged. Defaults to 0.5 (chance).
 #' @param min_connections A numeric value indicating the minimum number of
 #' nearest neighbors between two clusters for them to be considered 'adjacent'.
-#' Non-adjacent clusters will not be merged. Defaults to 0.
+#' Non-adjacent clusters will not be merged. Defaults to 1.
 #' @param max_repeat_errors Used to account for situations in which random
 #' forest classifier errors are concentrated among a few cells that are
-#' repeatedly misassigned. Numeric value indicating the maximum number of such
+#' repeatedly misassigned. A numeric value indicating the maximum number of such
 #' 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
 #' will not be evaluated. Defaults to 20.
-#' @param collect_all_metrics A boolean value indicating whether to collect and save
-#' additional metrics from the random forest classifiers, including feature
-#' importances and tree depth. Defaults to \code{FALSE}.
+#' @param collect_all_metrics A boolean value indicating whether to collect and
+#' save additional metrics from the random forest classifier comparisons,
+#' including feature importances and tree depth. Defaults to \code{FALSE}.
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells used
-#' per cluster to train/test each random forest classifier. Default = "auto" sets
-#' the downsampling rate according to the dataset size, for efficiency.
+#' @param downsampling_rate A numeric value indicating the proportion of cells
+#' used per cluster to train/test each random forest classifier. Default =
+#' "auto" sets the downsampling rate according to the dataset size, for
+#' efficiency.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except in cases when the user wishes to use
 #' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
 #' 'SCTransform'. Defaults to 'none'.
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
+#' @param batch_labels If applying batch correction, a character string or
+#' vector indicating the name of the column containing the batch labels.
+#' Defaults to \code{NULL}.
 #' @param use_assay For Seurat or SingleCellExperiment objects, a character
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{log_counts} assay for SingleCellExperiment objects.
+#' and the \code{logcounts} assay for SingleCellExperiment objects.
 #' @param use_slot For Seurat objects, a character string or vector indicating
-#' the slot(s) (Seurat v4) or layer(s) (Seurat v5) to use in the provided object.
-#' Default = \code{NULL} will choose a slot/layer based on the selected assay.
-#' If a non-standard assay is provided, do not leave \code{use_slot} as \code{NULL}.
+#' the layers(s) — previously known as slot(s) — to use in the provided object.
+#' Default = \code{NULL} will choose a layer/slot based on the selected assay.
+#' If a non-standard assay is provided, do not leave \code{use_slot} as
+#' \code{NULL}.
 #' @param ArchR_matrix For ArchR objects, a character string or vector
 #' indicating which matri(ces) to use in the provided object. Default =
 #' \code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
 #' 'GeneExpressionMatrix' for RNA-seq data.
 #' @param atac A boolean value or vector indicating whether the provided data is
-#' ATAC-seq data. Defaults to \code{FALSE}.
+#' ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
+#' ATAC-seq data, it is important to supply this parameter as a vector
+#' corresponding to each modality in order.
 #' @param input_matrix An optional matrix containing the feature x cell data on
 #' which to train the random forest classifiers. Default = \code{NULL} will use
 #' the feature x cell matri(ces) indicated by function \code{buildTree()}.
 #' @param nn_matrix An optional matrix containing the nearest neighbor adjacency
 #' of the cells. Default = \code{NULL} will look for the adjacency matri(ces)
 #' generated by function \code{buildTree()}.
+#' @param var_features An optional character vector of variable features to be
+#' used for subsequent clustering steps. Default = \code{NULL} will use
+#' the variable features identified by function \code{buildTree()}.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
@@ -88,9 +99,12 @@
 #' cleaner output.
 #'
 #' @return Returns a list containing the following elements: \describe{
-#'   \item{comparison_result}{A string, either "merge" or "split", indicating the result of the comparison.}
-#'   \item{comparison_records}{A dataframe including the metrics recorded for the comparison}
-#'   \item{feature_importances}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each gene in the comparison}
+#'   \item{comparison_result}{A string, either "merge" or "split", indicating
+#'   the result of the comparison.}
+#'   \item{comparison_records}{A dataframe including the metrics recorded for
+#'   the comparison}
+#'   \item{feature_importances}{If 'collect_all_metrics' is true, a dataframe
+#'   containing the feature importance scores for each gene in the comparison}
 #'   }
 #'
 #' @export
@@ -104,7 +118,6 @@ compareClusters <- function(object = NULL,
                             group_by = NULL,
                             alpha = 0.05,
                             feature_set = "var",
-                            var_features = NULL,
                             exclude_features = NULL,
                             n_iterations = 100,
                             n_trees = 50,
@@ -123,6 +136,7 @@ compareClusters <- function(object = NULL,
                             atac = FALSE,
                             input_matrix = NULL,
                             nn_matrix = NULL,
+                            var_features = NULL,
                             n_cores = NULL,
                             random_seed = 1,
                             verbose = TRUE) {
