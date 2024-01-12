@@ -30,7 +30,7 @@
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
 # use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
 # use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
-# use_slot -- For Seurat objects, a character string indicating the slot to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
 # ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
