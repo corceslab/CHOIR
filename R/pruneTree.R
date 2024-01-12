@@ -1,9 +1,13 @@
 #' Prune clustering tree using random forest classifiers
 #'
-#' This function will move iteratively up the provided hierarchical clustering
-#' tree, and use permutation tests of random forest classifier prediction
-#' accuracies to identify which clusters should be merged, in order to identify
-#' robust final clusters.
+#' To identify a final set of clusters, this function will move iteratively from
+#' the bottom up to prune the provided hierarchical clustering tree using a
+#' framework of random forest classifiers and permutation tests.
+#'
+#' If \code{CHOIR::buildTree()} was run prior to this function, most parameters
+#' will be retrieved from the object. Alternately, parameter values can be
+#' supplied. For multi-modal data, optionally supply parameter inputs as
+#' vectors/lists that sequentially specify the value for each modality.
 #'
 #' @param object An object of class 'Seurat', 'SingleCellExperiment', or
 #' 'ArchRProject'.

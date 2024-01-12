@@ -2,7 +2,7 @@
 # Helper functions for clustering & random forest comparisons
 # ---------------------------------------------------------------------------
 
-# Run a random forest classifier permutation test comparison ---------------------------
+# Run a permutation test comparison ---------------------------
 #
 # This function is a wrapper around .runRF() and decides whether to split or
 # merge two clusters based on the prediction accuracies achieved by the random
@@ -38,7 +38,7 @@
 # comparison_result -- A string, either "merge" or "split", indicating the result of the comparison.
 # comparison_records -- A dataframe of all recorded comparisons
 # feature_importances -- If 'collect_all_metrics' is TRUE, a dataframe containing the feature importance scores for the comparison
-# warning -- A string indicating whether or not to report a warning.
+# max_p -- Max p-value for comparison (for filtering if adjusted alpha threshold decreases)
 .runPermutationTest <- function(cluster1_name,
                                 cluster1_cells,
                                 cluster1_cell_batches = NULL,
@@ -395,7 +395,7 @@
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
 # collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics
 # n_sampled -- A numeric indicating number of cells to sample for random forest
-# input_matrix -- A matrix of sequencing data, on which the random forest classifier will be trained/tested
+# input_matrix -- A matrix of data, on which the random forest classifier will be trained/tested
 #
 # Returns a list containing the following elements:
 # balanced_accuracy -- The prediction accuracy score for the true cluster labels
@@ -512,7 +512,8 @@
 
 # Check comparison records ---------------------------
 #
-# Check whether two clusters have already been previously compared and extract result.
+# Check whether two clusters have already been previously compared and extract
+# result.
 #
 # cluster1_name -- A string indicating the name of the first cluster
 # cluster1_cells -- A vector indicating the cells belonging to the first cluster
