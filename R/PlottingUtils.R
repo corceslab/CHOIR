@@ -77,8 +77,9 @@ CHOIRpalette <- function(n) {
 #' @export
 #'
 runCHOIRumap <- function(object,
-                          key = "CHOIR",
-                          reduction = NULL) {
+                         key = "CHOIR",
+                         reduction = NULL,
+                         verbose = TRUE) {
   # ---------------------------------------------------------------------------
   # Check parameter input validity
   # ---------------------------------------------------------------------------
@@ -102,14 +103,16 @@ runCHOIRumap <- function(object,
     reduction <- reduction[!grepl("_UMAP", reduction)]
   }
   # Progress messaging
-  if (verbose == TRUE) message("Calculating UMAP embeddings for ",
-                               length(reduction), " dimensionality reductions..")
-  # Progress bar
-  pb <- progress::progress_bar$new(format = "Calculating UMAP embeddings.. [:bar] :percent in :elapsedfull",
-                                   total = length(reduction), clear = FALSE)
-  pb$tick(0)
+  if (verbose == TRUE) {
+    message("Calculating UMAP embeddings for ",
+            length(reduction), " dimensionality reductions..")
+    # Progress bar
+    pb <- progress::progress_bar$new(format = "Calculating UMAP embeddings.. [:bar] :percent in :elapsedfull",
+                                     total = length(reduction), clear = FALSE)
+    pb$tick(0)
+  }
   for (r in 1:length(reduction)) {
-    pb$tick()
+    if (verbose == TRUE) pb$tick()
     # Retrieve reduction
     extracted_reduction <- .retrieveData(object = object,
                                          key = key,
