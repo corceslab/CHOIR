@@ -315,11 +315,10 @@
         if (!("character" %in% methods::is(metadata[,batch_labels]))) {
           metadata[,batch_labels] <- as.character(metadata[,batch_labels])
         }
-        reduction_coords <- do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
-                                                                   "meta_data" = metadata,
-                                                                   "vars_use" = batch_labels,
-                                                                   "do_pca" = FALSE),
-                                                              batch_correction_params))
+        reduction_coords <- suppressWarnings(do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
+                                                                                    "meta_data" = metadata,
+                                                                                    "vars_use" = batch_labels),
+                                                                               batch_correction_params)))
       }
     } else if (methods::is(object, "ArchRProject")) {
       # Subset object if cell names are provided
