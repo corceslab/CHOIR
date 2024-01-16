@@ -101,8 +101,11 @@ runCHOIRumap <- function(object,
     reduction <- reduction[!grepl("_dist", reduction)]
     reduction <- reduction[!grepl("_UMAP", reduction)]
   }
+  # Progress messaging
+  if (verbose == TRUE) message("Calculating UMAP embeddings for ",
+                               length(reduction), " dimensionality reductions..")
   # Progress bar
-  pb <- progress::progress_bar$new(format = "Calculating UMAP reductions.. [:bar] :percent in :elapsedfull",
+  pb <- progress::progress_bar$new(format = "Calculating UMAP embeddings.. [:bar] :percent in :elapsedfull",
                                    total = length(reduction), clear = FALSE)
   pb$tick(0)
   for (r in 1:length(reduction)) {
@@ -113,15 +116,13 @@ runCHOIRumap <- function(object,
                                          type = "reduction",
                                          name = reduction[r])
     # Run UMAP
-    CHOIR_UMAP <- Seurat::RunUMAP(extracted_reduction)
+    CHOIR_UMAP <- suppressMessages(Seurat::RunUMAP(extracted_reduction))
     # Store embeddings
     object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
     if (reduction[r] == "P0_reduction") {
       # Store full reduction
       if (methods::is(object, "ArchRProject")) {
         object@reducedDims$CHOIR_P0_reduction_UMAP <- CHOIR_UMAP
-        # Clean up
-        P0_dim_reduction[["full_reduction"]] <- NULL
       } else {
         object <- .storeData(object = object,
                              key = key,

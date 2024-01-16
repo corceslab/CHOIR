@@ -45,11 +45,11 @@ Please follow the [vignette](https://www.choirclustering.com/articles/CHOIR.html
 CHOIR is a hierarchical clustering algorithm that uses permutation testing for cluster
 identification by statistical inference. 
 
-<p align="left"><img src="man/figures/Fig1a.png" alt="" width="600"></a></p>
+<p align="left"><img src="man/figures/Fig1a.png" alt="" width="800"></a></p>
 
 CHOIR identifies clusters that should be merged by applying a permutation test approach to assess the accuracy of random forest classifiers in predicting cluster assignments from a normalized feature matrix.
 
-<p align="left"><img src="man/figures/Fig1b.png" alt="" width="600"></a></p>
+<p align="left"><img src="man/figures/Fig1b.png" alt="" width="800"></a></p>
 
 CHOIR constructs and iteratively prunes a hierarchical clustering tree using statistical inference to prevent underclustering and overclustering.
 
