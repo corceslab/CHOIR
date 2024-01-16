@@ -593,7 +593,7 @@
                            reduction,
                            distance_records) {
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
   # Default output
   distance_conflict <- FALSE

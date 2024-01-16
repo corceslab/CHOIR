@@ -11,11 +11,7 @@
 #' that proceeds from an initial partition, in which all cells are in the same
 #' cluster, to a partition in which all cells are demonstrably overclustered.
 #' Second, to identify a final set of clusters, this hierarchical clustering
-<<<<<<< HEAD
-#' tree is pruned from the bottom up using framework of random forest
-=======
 #' tree is pruned from the bottom up using a framework of random forest
->>>>>>> 656f9bd (Update color palettes and documentation)
 #' classifiers and permutation tests.
 #'
 #' For multi-modal data, optionally supply parameter inputs as vectors/lists
@@ -25,20 +21,12 @@
 #' 'ArchRProject'.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to 'CHOIR'.
-<<<<<<< HEAD
 #' @param alpha A numeric value indicating the significance level used for
 #' permutation test comparisons of cluster prediction accuracies. Defaults to
 #' 0.05.
 #' @param p_adjust A string indicating which multiple comparison adjustment to
 #' use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
 #' 'bonferroni'.
-=======
-#' @param alpha A numerical value indicating the significance level used for
-#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
-#' @param p_adjust A string indicating which multiple comparison
-#' adjustment to use. Permitted values are 'bonferroni', 'fdr', and 'none'.
-#' Defaults to 'bonferroni'.
->>>>>>> 656f9bd (Update color palettes and documentation)
 #' @param feature_set A string indicating whether to train random forest
 #' classifiers on 'all' features or only variable ('var') features. Defaults to
 #' 'var'.
@@ -66,7 +54,6 @@
 #' @param distance_approx A boolean value indicating whether or not to use
 #' approximate distance calculations. Default = \code{TRUE} will use
 #' centroid-based distances.
-<<<<<<< HEAD
 #' @param distance_awareness A numeric value representing the distance threshold
 #' above which a cluster will not merge with another cluster. Specifically,
 #' this value is multiplied by the distance between a cluster and its
@@ -76,17 +63,6 @@
 #' @param collect_all_metrics A boolean value indicating whether to collect and
 #' save additional metrics from the random forest classifier comparisons,
 #' including feature importances and tree depth. Defaults to \code{FALSE}.
-=======
-#' @param distance_awareness To omit all distance calculations, set to
-#' \code{FALSE}. Otherwise, a numeric value representing the distance threshold
-#' above which a cluster will not merge with another cluster. Specifically,
-#' this value is a multiplier applied to the distance between a cluster and its
-#' closest distinguishable neighbor, giving the threshold. Default = 2 sets
-#' this threshold at a 2-fold increase in distance.
-#' @param collect_all_metrics A boolean value indicating whether to collect and
-#' save additional metrics from the random forest classifiers, including feature
-#' importances and tree depth. Defaults to \code{FALSE}.
->>>>>>> 656f9bd (Update color palettes and documentation)
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
@@ -125,14 +101,9 @@
 #' @param batch_correction_params A list of additional parameters to be passed
 #' to the selected batch correction method for each iteration. Only applicable
 #' when \code{batch_correction_method = 'Harmony'}.
-<<<<<<< HEAD
 #' @param batch_labels If applying batch correction, a character string or
 #' vector indicating the name of the column containing the batch labels.
 #' Defaults to \code{NULL}.
-=======
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
->>>>>>> 656f9bd (Update color palettes and documentation)
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
 #' Seurat or SingleCellExperiment objects,
@@ -160,19 +131,11 @@
 #' 'Gex_nUMI' for RNA-seq data.
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
-<<<<<<< HEAD
 #' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
 #' using method specified by \code{reduction_method}.
 #' @param var_features An optional character vector of variable features to be
 #' used for subsequent clustering steps. Defaults to \code{NULL}, whereby new
 #' sets of variable features will instead be generated.
-=======
-#' \code{NULL}, whereby dimensionality reduction(s) will be calculated using
-#' method specified by \code{reduction_method}.
-#' @param var_features An optional character vector of variable features to be
-#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby new
-#' sets of variable features will be calculated.
->>>>>>> 656f9bd (Update color palettes and documentation)
 #' @param atac A boolean value or vector indicating whether the provided data is
 #' ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
 #' ATAC-seq data, it is important to supply this parameter as a vector

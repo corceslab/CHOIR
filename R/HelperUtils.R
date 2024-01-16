@@ -7,6 +7,7 @@
 # Extract cell IDs/names from provided object
 #
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_assay -- For Seurat objects, character string/vector indicating assay to use
 .getCellIDs <- function(object,
                         use_assay = NULL) {
   # By object type

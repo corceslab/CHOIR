@@ -45,7 +45,7 @@ CHOIRpalette <- function(n) {
   if (n <= 100) {
     values <- CHOIR_colors[1:n]
   } else {
-    .requirePackage("Polychrome")
+    .requirePackage("Polychrome", source = "cran")
     values <- Polychrome::createPalette(N = n,
                                         seedcolors = CHOIR_colors,
                                         range = c(50, 80))
@@ -319,7 +319,7 @@ plotCHOIR <- function(object,
           }
         }
       }
-      .requirePackage("ggnewscale")
+      .requirePackage("ggnewscale", source = "cran")
       # Add to plot
       CHOIR_plot <- CHOIR_plot +
         ggnewscale::new_scale_colour() +

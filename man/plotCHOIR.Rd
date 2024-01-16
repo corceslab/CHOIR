@@ -29,8 +29,8 @@ dimensionality reduction to plot (e.g., 'P0_reduction_UMAP',
 
 \item{cells}{Vector of cell names to plot. Default is all cells.}
 
-\item{legend}{A boolean value indicating whether to include a legend. Defaults to
-\code{TRUE}.}
+\item{legend}{A boolean value indicating whether to include a legend.
+Defaults to \code{TRUE}.}
 
 \item{accuracy_scores}{A boolean value indicating whether to overlay pairwise
 cluster comparison accuracy scores onto UMAP. Default = \code{TRUE}.}
@@ -45,5 +45,7 @@ if \code{accuracy_scores} is \code{TRUE}. Defaults to \code{TRUE}.}
 A ggplot object.
 }
 \description{
-Dimensional reduction plot with CHOIR clusters labeled
+Generate a dimensionality reduction embedding plot colored according to the
+clusters identified by CHOIR. Additionally permits plotting mean prediction
+accuracy scores for pairs of clusters as an overlay.
 }

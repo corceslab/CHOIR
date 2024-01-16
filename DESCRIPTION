@@ -8,7 +8,7 @@ Description: CHOIR is a clustering algorithm for single-cell sequencing data. CH
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.2.0
+RoxygenNote: 7.3.0
 Suggests: 
     ArchR,
     cluster,

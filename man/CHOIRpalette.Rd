@@ -15,5 +15,5 @@ Returns a vector of n hex values.
 \description{
 Generate a color palette based on input number. Hex values are standard up to
 n = 100, but for larger values of n, they are generated using
-\code{Polychrome::createPalette}.
+\code{Polychrome::createPalette()}.
 }

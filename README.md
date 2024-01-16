@@ -10,8 +10,22 @@
 
 ## Installation
 
-To install the package, please use the following which requires the [`remotes`](https://cran.r-project.org/web/packages/remotes/index.html) package to be installed:
-``` r
+CHOIR is designed to be run on Unix-based operating systems such as macOS and linux.
+
+CHOIR installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
+
+First, install remotes (for installing GitHub packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+```
+
+Then, install BiocManager (for installing bioconductor packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+```
+
+Then, install CHOIR:
+```{r, eval = FALSE}
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
 
@@ -25,6 +39,19 @@ Notes:
 ## Usage
 
 Please follow the [vignette](https://www.choirclustering.com/articles/CHOIR.html). The vignette takes less than 10 minutes to run on a standard laptop.
+
+## How CHOIR works
+
+CHOIR is a hierarchical clustering algorithm that uses permutation testing for cluster
+identification by statistical inference. 
+
+<p align="left"><img src="man/figures/Fig1a.png" alt="" width="600"></a></p>
+
+CHOIR identifies clusters that should be merged by applying a permutation test approach to assess the accuracy of random forest classifiers in predicting cluster assignments from a normalized feature matrix.
+
+<p align="left"><img src="man/figures/Fig1b.png" alt="" width="600"></a></p>
+
+CHOIR constructs and iteratively prunes a hierarchical clustering tree using statistical inference to prevent underclustering and overclustering.
 
 <hr>
 

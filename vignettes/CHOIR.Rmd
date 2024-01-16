@@ -16,7 +16,21 @@ knitr::opts_chunk$set(
 
 # Installation
 
-To install the package, please use the following:
+CHOIR is designed to be run on Unix-based operating systems such as macOS and linux.
+
+CHOIR installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
+
+First, install remotes (for installing GitHub packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+```
+
+Then, install BiocManager (for installing bioconductor packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+```
+
+Then, install CHOIR:
 ```{r, eval = FALSE}
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
@@ -33,9 +47,10 @@ CHOIR proceeds in two main steps. First, CHOIR generates a hierarchical clusteri
 
 You’ll need the following packages installed to run this tutorial:
 ```{r, message = FALSE, warning = FALSE}
-library(CHOIR)
-library(Seurat)
+if (!requireNamespace("scRNAseq", quietly = TRUE)) BiocManager::install("scRNAseq")
 library(scRNAseq)
+library(Seurat)
+library(CHOIR)
 ```
 
 ### Example data

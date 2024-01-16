@@ -212,7 +212,7 @@ buildTree <- function(object,
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
     object_type <- "ArchRProject"
-    .requirePackage("ArchR")
+    .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
   } else {
     n_modalities <- max(length(use_assay), 1)
     if (methods::is(object, "Seurat")) {
@@ -237,7 +237,7 @@ buildTree <- function(object,
       }
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
-      .requirePackage("SingleCellExperiment")
+      .requirePackage("SingleCellExperiment", source = "bioc")
     }
   }
 
