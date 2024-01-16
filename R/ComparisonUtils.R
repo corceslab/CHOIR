@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# Helper functions for clustering & random forest comparisons
+# Helper functions for permutation test comparisons
 # ---------------------------------------------------------------------------
 
 # Run a permutation test comparison ---------------------------

@@ -265,13 +265,13 @@
           if (!any(names(reduction_params) == "verbose")) {
             reduction_params$verbose <- FALSE
           }
-          .requirePackage("Signac")
+          .requirePackage("Signac", source = "cran")
           reduction_coords <- do.call(Signac::RunSVD, c(list("object" = scaled_features[var_features,]),
                                                         reduction_params))@cell.embeddings
         }
       } else if (atac == TRUE) {
         # Find "top" features instead of variable features
-        .requirePackage("Signac")
+        .requirePackage("Signac", source = "cran")
         var_features <- Signac::FindTopFeatures(feature_matrix, verbose = FALSE) %>%
           dplyr::arrange(-percentile) %>%
           utils::head(n_var_features) %>%
@@ -655,7 +655,7 @@
                           reduction = NULL,
                           distance_approx = TRUE) {
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
   n_levels <- ncol(cluster_tree)
   new_tree <- data.frame("CellID" = rownames(cluster_tree),
@@ -981,7 +981,7 @@
 
   # Check whether package cluster is imported if distance_approx == FALSE
   if (distance_approx == FALSE) {
-    .requirePackage("cluster")
+    .requirePackage("cluster", source = "cran")
   }
 
   # Initialize dataframe for multi-level clustering results across range of resolutions
@@ -1477,7 +1477,7 @@
   }
 
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
 
   # Data frame to gather comparison records
