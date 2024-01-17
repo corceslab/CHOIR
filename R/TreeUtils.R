@@ -416,6 +416,18 @@
         }
       }
     }
+    # Check whether reduction_coords have row and column names
+    if (is.null(rownames(reduction_coords))) {
+      if (!is.null(use_cells)) {
+        rownames(reduction_coords) <- use_cells
+      } else {
+        rownames(reduction_coords) <- .getCellIDs(object = object, use_assay = use_assay)
+      }
+    }
+    if (is.null(colnames(reduction_coords))) {
+      colnames(reduction_coords) <- paste0(reduction_method, "_", seq(1, ncol(reduction_coords)))
+    }
+    # Output
     reduction_output <- list("reduction_coords" = reduction_coords,
                              "var_features" = var_features,
                              "full_reduction" = full_reduction)
