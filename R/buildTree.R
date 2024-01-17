@@ -393,7 +393,8 @@ buildTree <- function(object,
                          input_data = P0_dim_reduction[["reduction_coords"]],
                          name = "CHOIR_P0_reduction",
                          reduction_method = reduction_method,
-                         use_assay = use_assay)
+                         use_assay = use_assay,
+                         atac = atac)
   }
   # Clean up
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL

@@ -119,7 +119,7 @@ runCHOIRumap <- function(object,
                                          type = "reduction",
                                          name = reduction[r])
     # Run UMAP
-    CHOIR_UMAP <- suppressMessages(Seurat::RunUMAP(extracted_reduction))
+    CHOIR_UMAP <- suppressMessages(invisible(Seurat::RunUMAP(extracted_reduction)))
     # Store embeddings
     object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
     if (reduction[r] == "P0_reduction") {

@@ -307,7 +307,8 @@
                        input_data,
                        name,
                        reduction_method = NULL,
-                       use_assay = NULL) {
+                       use_assay = NULL,
+                       atac = NULL) {
   # By object type
   if (methods::is(object, "Seurat")) {
     # By type
@@ -315,6 +316,14 @@
       if (length(use_assay) > 1) {
         for (i in 1:length(use_assay)) {
           reduction_method_i <- .matchArg(reduction_method, i)
+          atac_i <- .matchArg(atac, i)
+          if (is.null(reduction_method_i)) {
+            if (atac_i == FALSE) {
+              reduction_method <- "PCA"
+            } else {
+              reduction_method <- "LSI"
+            }
+          }
           use_assay_i <- .matchArg(use_assay, i)
           object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
                                                                                                     key = reduction_method_i,
