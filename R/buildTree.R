@@ -294,11 +294,7 @@ buildTree <- function(object,
   # Check that required packages are loaded
   # Seurat needs to be loaded to use Seurat:::FindModalityWeights() and Seurat:::MultiModalNN()
   if (n_modalities >= 2 & !methods::is(object, "ArchRProject")) {
-    if (seurat_version == "v4") {
-      .requirePackage("Seurat", source = "cran")
-    } else if (seurat_version == "v5") {
-      stop("Please load Seurat v5 package prior to running CHOIR.")
-    }
+    .requirePackage("Seurat", source = "cran")
   }
 
   # If batch_correction_method is Harmony, make sure batch IDs is a character vector
