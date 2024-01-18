@@ -312,6 +312,7 @@
           batch_correction_params$verbose <- FALSE
         }
         # Run Harmony
+        if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
         if (!("character" %in% methods::is(metadata[,batch_labels]))) {
           metadata[,batch_labels] <- as.character(metadata[,batch_labels])
         }
@@ -393,6 +394,7 @@
           if (!("character" %in% methods::is(object@cellColData[, batch_labels]))) {
             object@cellColData[, batch_labels] <- as.character(object@cellColData[, batch_labels])
           }
+          if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
           object <- do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
                                                       "reducedDims" = "CHOIR_IterativeLSI",
                                                       "name" = "CHOIR_Harmony",

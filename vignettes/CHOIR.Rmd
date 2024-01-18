@@ -198,9 +198,16 @@ Labels for the final clusters identified by CHOIR can be found in the `cellColDa
 
 ### Batch correction
 
-For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method` to 'Harmony'. This not only generates Harmony-corrected dimensionality reductions, but ensures that random forest classifer comparisons are batch-aware. 
+For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method` to 'Harmony'. This not only generates Harmony-corrected dimensionality reductions, but ensures that random forest classifer comparisons are batch-aware. Provide the name of the cell metadata column containing batch information to parameter `batch_labels`.
 
 Use caution in applying this method if your groups of interest (e.g., disease vs. control) are batch-confounded AND you expect cell types unique to each of these groups.
+
+Below is an example command to run CHOIR with batch correction:
+```{r, eval = FALSE}
+seurat_object <- CHOIR(seurat_object, 
+                       batch_correction_method = "Harmony",
+                       batch_labels = "Batch") # Change 'Batch' to corresponding cell metadata column for your data
+```
 
 ### Significance level & multiple comparison correction
 
@@ -219,7 +226,7 @@ CHOIR uses various filters to reduce the number of necessary permutation test co
 
 ### Downsampling
 
-CHOIR uses downsampling to increase efficiency for larger datasets. Using the default parameter setting of `downsampling_rate = "auto"`, downsampling occurs at each random forest classifer comparison. The downsampling rate is determined based on the overall dataset size. To disable downsampling, set `downsampling_rate = 1`.
+CHOIR uses downsampling to increase efficiency for larger datasets. Using the default parameter setting of `downsampling_rate = "auto"`, downsampling occurs at each random forest classifer comparison. The downsampling rate is determined based on the overall dataset size. To disable downsampling, set `downsampling_rate = 1`. For datasets that require batch correction across many batches, we recommend setting `downsampling_rate = 1`.
 
 Additional downsampling can be imposed using parameter `sample_max`, indicating the maximum number of cells used per cluster to train/test each random forest classifier. By default, this is not used.
 
@@ -237,7 +244,17 @@ To `pruneTree()`, provide:
 
 ## Using CHOIR with ATAC-seq data
 
-If your input data is ATAC-seq data, make sure to set input parameter `atac` to `TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data. If your data exclusively contains ATAC-seq data (no other modalities), it is recommended to set parameter `use_variance` to `FALSE`.
+If your input data is ATAC-seq data, make sure to set input parameter `atac` to `TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data. If your data exclusively contains ATAC-seq data (no other modalities), it is recommended to set parameter `use_variance` to `FALSE`. 
+
+CHOIR is compatible with both ArchR and Signac approaches to ATAC-seq analysis, but has been most thoroughly tested with ArchR objects.
+
+Below is an example command to run CHOIR with ATAC-seq data:
+```{r, eval = FALSE}
+ArchR_object <- CHOIR(ArchR_object,
+                      atac = TRUE,
+                      use_variance = FALSE)
+```
+
 
 ## Using CHOIR with multi-modal data
 
@@ -246,3 +263,11 @@ If you are providing input data which contains multiple modalities from the same
 If you want to use different methods of normalization, dimensionality reduction, number of variable features, or batch correction for each modality, input to related parameters must also be provided as vectors or lists with one value per modality.
 
 CHOIR creates a joint dimensionality reduction for the modalities and uses all provided feature matrices as joint input to train/test random forest classifiers.
+
+Below is an example command to run CHOIR with joint RNA-seq and ATAC-seq data:
+```{r, eval = FALSE}
+ArchR_object <- CHOIR(ArchR_object,
+                      ArchR_matrix = c("TileMatrix", "GeneExpressionMatrix"),
+                      ArchR_depthcol <- c("nFrags", "Gex_nUMI"),
+                      atac = c(TRUE, FALSE))
+```
