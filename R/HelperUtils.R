@@ -14,8 +14,18 @@
   if (methods::is(object, "Seurat")) {
     if (is.null(use_assay)) {
       use_assay <- Seurat::DefaultAssay(object)
+    } else if (length(use_assay) > 1) {
+      # If multiple assays, check that cell IDs are identical
+      cell_IDs <- colnames(object[[use_assay[1]]])
+      for (i in 2:length(use_assay)) {
+        cell_IDs_i <- colnames(object[[use_assay[i]]])
+        if (!identical(cell_IDs_1, cell_IDs_i)) {
+          stop("Cell IDs do not match across provided assays indicated by parameter 'use_assay'. Please supply valid input!")
+        }
+      }
+    } else {
+      cell_IDs <- colnames(object[[use_assay]])
     }
-    cell_IDs <- colnames(object[[use_assay]])
   } else if (methods::is(object, "SingleCellExperiment")) {
     cell_IDs <- rownames(object@colData)
   } else if (methods::is(object, "ArchRProject")) {

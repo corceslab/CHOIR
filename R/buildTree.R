@@ -801,7 +801,7 @@ buildTree <- function(object,
           P_i_tree <- P_i_tree_list[["cluster_tree"]]
 
           # Store records
-          tree_records <- rbind(tree_records, P_i_tree_list[["tree_records"]])
+          tree_records <- P_i_tree_list[["tree_records"]]
 
           # Clean up
           rm(P_i_tree_list)
