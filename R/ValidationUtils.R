@@ -424,7 +424,7 @@
           }
         } else {
           for (i in 1:length(input)) {
-            if ("Assay5" %in% methods::is(other[[1]][[other[[2]]]])) {
+            if ("Assay5" %in% methods::is(other[[1]][[other[[2]][i]]])) {
               if (!(input[i] %in% names(other[[1]][[other[[2]][i]]]@layers))) {
                 stop("Layer '", input[i], "' is not present in assay '", other[[2]][i], "' of provided Seurat v5 object, please supply valid input!")
               }
