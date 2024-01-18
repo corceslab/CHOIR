@@ -19,7 +19,7 @@
       cell_IDs <- colnames(object[[use_assay[1]]])
       for (i in 2:length(use_assay)) {
         cell_IDs_i <- colnames(object[[use_assay[i]]])
-        if (!identical(cell_IDs_1, cell_IDs_i)) {
+        if (!identical(cell_IDs, cell_IDs_i)) {
           stop("Cell IDs do not match across provided assays indicated by parameter 'use_assay'. Please supply valid input!")
         }
       }
