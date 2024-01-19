@@ -172,6 +172,8 @@ For Seurat objects, the default assay is used if no input is provided for parame
 *  If `use_assay` is either "RNA" or "sketch", CHOIR will look for the `data` slot
 *  If `use_assay` is either "SCT" or "integrated", CHOIR will look for the `scale.data` slot
 
+Some Seurat v5 objects have multiple layers (e.g., "data.1", "data.2", "data.2"..) with different subsets of cells stored under the same assay. Currently, CHOIR requires a single layer containing all cells in an assay. For these cases, please re-organize the Seurat object prior to running CHOIR.
+
 The default dimensionality reduction method for Seurat objects is "PCA", except in the case of ATAC-seq data, for which it is "LSI".
 
 If you would like to use SCTransform normalization rather than log normalization, please provide raw counts and set the parameter `normalization_method = "SCTransform"`. Note that SCTransform has not been thoroughly tested with CHOIR.
