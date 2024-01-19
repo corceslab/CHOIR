@@ -466,6 +466,9 @@ pruneTree <- function(object,
   # If 'Harmony' batch correction was used, extract batch labels
   if (batch_correction_method == "Harmony") {
     batches <- .retrieveData(object = object, key = key, type = "cell_metadata", name = batch_labels)
+    if ("Rle" %in% methods::is(batches)) {
+      batches <- methods::as(batches, "character")
+    }
     names(batches) <- cell_IDs
   }
 

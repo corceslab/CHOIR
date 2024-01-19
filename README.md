@@ -33,7 +33,7 @@ Notes:
 
 * Installation should complete in under 2 minutes.
 * This package is supported for macOS and Linux. 
-* CHOIR depends heavily on the Seurat package, which has been undergoing many changes in recent months. It has been tested successfully with Seurat version 4.3.0 and 5.1.0.
+* CHOIR depends heavily on the Seurat package, which has been undergoing many changes in recent months. It has been tested successfully with Seurat version 4.3.0 and 5.0.1.
 * Other package dependencies can be found in the "DESCRIPTION" file.
 
 ## Usage
