@@ -14,7 +14,8 @@
   if (methods::is(object, "Seurat")) {
     if (is.null(use_assay)) {
       use_assay <- Seurat::DefaultAssay(object)
-    } else if (length(use_assay) > 1) {
+    }
+    if (length(use_assay) > 1) {
       # If multiple assays, check that cell IDs are identical
       cell_IDs <- colnames(object[[use_assay[1]]])
       for (i in 2:length(use_assay)) {
