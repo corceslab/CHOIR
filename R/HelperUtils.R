@@ -7,6 +7,7 @@
 # Extract cell IDs/names from provided object
 #
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_assay -- For Seurat objects, character string/vector indicating assay to use
 .getCellIDs <- function(object,
                         use_assay = NULL) {
   # By object type
@@ -14,7 +15,18 @@
     if (is.null(use_assay)) {
       use_assay <- Seurat::DefaultAssay(object)
     }
-    cell_IDs <- colnames(object[[use_assay]])
+    if (length(use_assay) > 1) {
+      # If multiple assays, check that cell IDs are identical
+      cell_IDs <- colnames(object[[use_assay[1]]])
+      for (i in 2:length(use_assay)) {
+        cell_IDs_i <- colnames(object[[use_assay[i]]])
+        if (!identical(cell_IDs, cell_IDs_i)) {
+          stop("Cell IDs do not match across provided assays indicated by parameter 'use_assay'. Please supply valid input!")
+        }
+      }
+    } else {
+      cell_IDs <- colnames(object[[use_assay]])
+    }
   } else if (methods::is(object, "SingleCellExperiment")) {
     cell_IDs <- rownames(object@colData)
   } else if (methods::is(object, "ArchRProject")) {
@@ -30,7 +42,7 @@
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
 # use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
 # use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
-# use_slot -- For Seurat objects, a character string indicating the slot to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
 # ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
@@ -109,7 +121,9 @@
     # Extract matrix
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
-      use_matrix <- object[[use_assay]][[use_slot]]
+      use_matrix <- seurat_object[[use_assay]]@layers[[use_slot]]
+      colnames(use_matrix) <- colnames(seurat_object[[use_assay]])
+      rownames(use_matrix) <- rownames(seurat_object[[use_assay]])
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
@@ -186,7 +200,7 @@
   if (is.null(use_matrix)) {
     # Get assay
     if (is.null(use_assay)) {
-      assay <- "logcounts"
+      use_assay <- "logcounts"
       .validInput(use_assay, "use_assay", object)
     }
     use_matrix <- object@assays@data[[use_assay]]
@@ -304,7 +318,8 @@
                        input_data,
                        name,
                        reduction_method = NULL,
-                       use_assay = NULL) {
+                       use_assay = NULL,
+                       atac = NULL) {
   # By object type
   if (methods::is(object, "Seurat")) {
     # By type
@@ -312,6 +327,14 @@
       if (length(use_assay) > 1) {
         for (i in 1:length(use_assay)) {
           reduction_method_i <- .matchArg(reduction_method, i)
+          atac_i <- .matchArg(atac, i)
+          if (is.null(reduction_method_i)) {
+            if (atac_i == FALSE) {
+              reduction_method <- "PCA"
+            } else {
+              reduction_method <- "LSI"
+            }
+          }
           use_assay_i <- .matchArg(use_assay, i)
           object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
                                                                                                     key = reduction_method_i,

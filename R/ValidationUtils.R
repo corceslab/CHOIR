@@ -424,7 +424,7 @@
           }
         } else {
           for (i in 1:length(input)) {
-            if ("Assay5" %in% methods::is(other[[1]][[other[[2]]]])) {
+            if ("Assay5" %in% methods::is(other[[1]][[other[[2]][i]]])) {
               if (!(input[i] %in% names(other[[1]][[other[[2]][i]]]@layers))) {
                 stop("Layer '", input[i], "' is not present in assay '", other[[2]][i], "' of provided Seurat v5 object, please supply valid input!")
               }
@@ -747,8 +747,7 @@
     if (input == TRUE &
         ("Seurat" %in% methods::is(other[[2]]) | "SingleCellExperiment" %in% methods::is(other[[2]])) &
         other[[3]] > 1) {
-      stop("Distance approximation is incompatible with multi-modal data of class '", other[[2]],
-           "'. Please set '", name, "' to 'FALSE', use a single modality, or provide an object of class 'ArchRProject'.")
+      stop("Distance approximation is incompatible with multi-modal data of class 'Seurat' or 'SingleCellExperiment'. Please provide an object of class 'ArchRProject', set '", name, "' to 'FALSE', or use a single modality.")
     } else if (input == FALSE & other[[1]] >= 500) { # If FALSE and number of cells is higher than 500, issue warning
       warning("Setting parameter '", name, "' to ", input, " may slow down computation.")
     }

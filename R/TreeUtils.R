@@ -265,13 +265,13 @@
           if (!any(names(reduction_params) == "verbose")) {
             reduction_params$verbose <- FALSE
           }
-          .requirePackage("Signac")
+          .requirePackage("Signac", source = "cran")
           reduction_coords <- do.call(Signac::RunSVD, c(list("object" = scaled_features[var_features,]),
                                                         reduction_params))@cell.embeddings
         }
       } else if (atac == TRUE) {
         # Find "top" features instead of variable features
-        .requirePackage("Signac")
+        .requirePackage("Signac", source = "cran")
         var_features <- Signac::FindTopFeatures(feature_matrix, verbose = FALSE) %>%
           dplyr::arrange(-percentile) %>%
           utils::head(n_var_features) %>%
@@ -312,14 +312,14 @@
           batch_correction_params$verbose <- FALSE
         }
         # Run Harmony
+        if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
         if (!("character" %in% methods::is(metadata[,batch_labels]))) {
           metadata[,batch_labels] <- as.character(metadata[,batch_labels])
         }
-        reduction_coords <- do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
-                                                                   "meta_data" = metadata,
-                                                                   "vars_use" = batch_labels,
-                                                                   "do_pca" = FALSE),
-                                                              batch_correction_params))
+        reduction_coords <- suppressWarnings(do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
+                                                                                    "meta_data" = metadata,
+                                                                                    "vars_use" = batch_labels),
+                                                                               batch_correction_params)))
       }
     } else if (methods::is(object, "ArchRProject")) {
       # Subset object if cell names are provided
@@ -394,6 +394,7 @@
           if (!("character" %in% methods::is(object@cellColData[, batch_labels]))) {
             object@cellColData[, batch_labels] <- as.character(object@cellColData[, batch_labels])
           }
+          if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
           object <- do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
                                                       "reducedDims" = "CHOIR_IterativeLSI",
                                                       "name" = "CHOIR_Harmony",
@@ -417,6 +418,18 @@
         }
       }
     }
+    # Check whether reduction_coords have row and column names
+    if (is.null(rownames(reduction_coords))) {
+      if (!is.null(use_cells)) {
+        rownames(reduction_coords) <- use_cells
+      } else {
+        rownames(reduction_coords) <- .getCellIDs(object = object, use_assay = use_assay)
+      }
+    }
+    if (is.null(colnames(reduction_coords))) {
+      colnames(reduction_coords) <- paste0(reduction_method, "_", seq(1, ncol(reduction_coords)))
+    }
+    # Output
     reduction_output <- list("reduction_coords" = reduction_coords,
                              "var_features" = var_features,
                              "full_reduction" = full_reduction)
@@ -655,7 +668,7 @@
                           reduction = NULL,
                           distance_approx = TRUE) {
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
   n_levels <- ncol(cluster_tree)
   new_tree <- data.frame("CellID" = rownames(cluster_tree),
@@ -981,7 +994,7 @@
 
   # Check whether package cluster is imported if distance_approx == FALSE
   if (distance_approx == FALSE) {
-    .requirePackage("cluster")
+    .requirePackage("cluster", source = "cran")
   }
 
   # Initialize dataframe for multi-level clustering results across range of resolutions
@@ -1477,7 +1490,7 @@
   }
 
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
 
   # Data frame to gather comparison records
