@@ -1,6 +1,6 @@
 Package: CHOIR
 Title: CHOIR - Clustering Hierachy Optimization by Iterative Random forests
-Version: 0.1.0
+Version: 0.2.0
 Authors@R: 
 	person("Cathrine", "Petersen", , "cathrine.petersen@gladstone.ucsf.edu", role = c("aut", "cre"), 
 		comment = c(ORCID = "0000-0002-5821-9828"))
