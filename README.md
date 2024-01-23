@@ -8,6 +8,10 @@
 
 <br>
 
+## Citation
+
+**01/22/2024 Update:** bioRxiv pre-print coming out this week — stay tuned!
+
 ## Installation
 
 CHOIR is designed to be run on Unix-based operating systems such as macOS and linux.
