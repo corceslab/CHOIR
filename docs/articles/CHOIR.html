@@ -280,28 +280,28 @@ parameter settings.</p>
 <span><span class="co">#&gt;  - Downsampling rate: 1</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:20 : (Step 1/6) Running initial dimensionality reduction..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:30:58 : (Step 1/6) Running initial dimensionality reduction..</span></span>
 <span><span class="co">#&gt;                       Preparing matrix using 'RNA' assay and 'data' slot..</span></span>
 <span><span class="co">#&gt;                       Running PCA with 2000 variable features..</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:21 : (Step 2/6) Generating initial nearest neighbors graph..</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:21 : (Step 3/6) Identify starting clustering resolution..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:30:59 : (Step 2/6) Generating initial nearest neighbors graph..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:30:59 : (Step 3/6) Identify starting clustering resolution..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Starting resolution: 0.4</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:21 : (Step 4/6) Building parent clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:30:59 : (Step 4/6) Building parent clustering tree..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Identified 3 clusters in parent tree.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:21 : (Step 5/6) Subclustering parent tree..</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:22 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:25 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:26 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:26 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:26 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:26 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:27 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:28 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:30:59 : (Step 5/6) Subclustering parent tree..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:00 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:03 : 44% (Subtree 1/3, 112 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:03 : 50% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:03 : 51% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:04 : 79% (Subtree 2/3, 84 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:04 : 81% (Subtree 2/3, 84 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:05 : 83% (Subtree 3/3, 47 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:06 : 99% (Subtree 3/3, 47 cells), 13 total clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:28 : (Step 6/6) Compiling full clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:06 : (Step 6/6) Compiling full clustering tree..</span></span>
 <span><span class="co">#&gt;                       Full tree has 6 levels and 10 clusters.</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -330,7 +330,7 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
 <span>                           n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:28 : (Step 1/2) Preparing object..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:06 : (Step 1/2) Preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat</span></span>
@@ -358,25 +358,25 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <span><span class="co">#&gt;  - Downsampling rate: 1</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:28 : (Step 2/2) Iterating through clustering tree..</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:29 : 11% (2/6 levels) in 0.02 min. 8 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:30 : 20% (2/6 levels) in 0.02 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:31 : 32% (3/6 levels) in 0.05 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:32 : 40% (3/6 levels) in 0.06 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:32 : 50% (4/6 levels) in 0.06 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:34 : 60% (5/6 levels) in 0.09 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:39 : 70% (5/6 levels) in 0.19 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:41 : 80% (6/6 levels) in 0.21 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:44 : 91% (6/6 levels) in 0.25 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:44 : Checking for underclustering in 1 clusters.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:45 : Additional comparisons necessary. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:45 : Completed: all clusters compared.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:06 : (Step 2/2) Iterating through clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:07 : 11% (2/6 levels) in 0.02 min. 8 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:07 : 20% (2/6 levels) in 0.02 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:09 : 32% (3/6 levels) in 0.05 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:10 : 40% (3/6 levels) in 0.06 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:10 : 50% (4/6 levels) in 0.06 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:11 : 60% (5/6 levels) in 0.09 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:17 : 70% (5/6 levels) in 0.19 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:18 : 80% (6/6 levels) in 0.21 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:21 : 91% (6/6 levels) in 0.26 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:21 : Checking for underclustering in 1 clusters.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:23 : Additional comparisons necessary. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-01-23 11:31:23 : Completed: all clusters compared.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - In 2 comparisons, clusters were split due to the minimum number of nearest neighbor connections.</span></span>
 <span><span class="co">#&gt;  - In 1 comparisons, clusters were merged after correction for multiple comparisons.</span></span>
 <span><span class="co">#&gt;  - Final adjusted significance threshold = 0.00227.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-01-22 23:05:45 : Identified 5 clusters.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2024-01-23 11:31:23 : Identified 5 clusters.</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">

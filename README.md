@@ -10,7 +10,9 @@
 
 ## Citation
 
-**01/22/2024 Update:** bioRxiv pre-print coming out this week — stay tuned!
+CHOIR is on bioRxiv! You can find it [here](https://www.biorxiv.org/content/10.1101/2024.01.18.576317v1).
+
+Petersen et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
 
 ## Installation
 
