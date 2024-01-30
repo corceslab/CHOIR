@@ -878,7 +878,7 @@
       stop("Input value for '", name, "' must be a vector with at least 2 values, please supply valid input!")
     }
     # Must be named
-    if (is.null(names(cluster_labels))) {
+    if (is.null(names(input))) {
       stop("Input value ", input, " for '", name, "' must be named according to the cell IDs corresponding to each cluster label. Please supply valid input!")
     }
   }
