@@ -2095,7 +2095,7 @@ inferTree <- function(cluster_labels,
   }
   n_clusters <- dplyr::n_distinct(cluster_labels)
 
-  if (verbose) message("Inferring clustering tree from ", n_clusters, " provided clusters, using distances ", distance_description, "..")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Inferring clustering tree from ", n_clusters, " provided clusters, using distances ", distance_description, "..")
   # Create initial clustering tree dataframe
   initial_tree <- data.frame(L1 = 1,
                              L2 = as.numeric(as.factor(cluster_labels)))
@@ -2104,8 +2104,8 @@ inferTree <- function(cluster_labels,
                                 reduction = reduction,
                                 dist_matrix = dist_matrix,
                                 distance_approx = distance_approx)
-  if (verbose) message("Inferred clustering tree has ", n_levels, " levels.")
-  if (verbose) message("Labeling clusters according to CHOIR conventions..")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Inferred clustering tree has ", ncol(cluster_tree), " levels.")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Labeling clusters according to CHOIR conventions..")
   cluster_tree <- .checkClusterLabels(cluster_tree)
 
   return(cluster_tree)
