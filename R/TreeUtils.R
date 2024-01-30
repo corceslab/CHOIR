@@ -2097,8 +2097,8 @@ inferTree <- function(cluster_labels,
 
   if (verbose) message("Inferring clustering tree from ", n_clusters, " provided clusters, using distances ", distance_description, "..")
   # Create initial clustering tree dataframe
-  intial_tree <- data.frame(L1 = 1,
-                            L2 = as.numeric(as.factor(cluster_labels)))
+  initial_tree <- data.frame(L1 = 1,
+                             L2 = as.numeric(as.factor(cluster_labels)))
   # Create hierarchy
   cluster_tree <- .optimizeTree(cluster_tree = initial_tree,
                                 reduction = reduction,
