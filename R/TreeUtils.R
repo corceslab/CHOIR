@@ -2050,3 +2050,62 @@
   return(list("cluster_tree" = cluster_tree,
               "tree_records" = tree_records))
 }
+
+#' Infer clustering tree ---------------------------
+#'
+#' Generate clustering tree from provided, pre-generated clusters. Provide a set
+#' of cluster labels and either a dimensionality reduction or distance matrix.
+#' If a dimensionality reduction is provided, centroid distances will be
+#' calculated and used.
+#'
+#' @param cluster_labels  A named vector of cluster IDs. Names must correspond
+#' to cell IDs.
+#' @param dist_matrix An optional distance matrix of cell to cell distances
+#' (based on dimensionality reduction cell embeddings).
+#' @param reduction An optional matrix of dimensionality reduction cell
+#' embeddings to be used for distance calculations.
+#' @param verbose A boolean value indicating whether to use verbose output
+#' during the execution of this function. Can be set to \code{FALSE} for a
+#' cleaner output.
+#'
+#' @return A clustering tree as a dataframe.
+#' @export
+#'
+inferTree <- function(cluster_labels,
+                      dist_matrix = NULL,
+                      reduction = NULL,
+                      verbose = TRUE) {
+  .validInput(cluster_labels, name = "cluster_labels")
+  .validInput(dist_matrix, name = "dist_matrix", names(cluster_labels))
+  .validInput(reduction, name = "reduction", list("inferTree", names(cluster_labels)))
+  .validInput(verbose, name = "verbose")
+
+  if (is.null(reduction) & is.null(dist_matrix)) {
+    stop("Please provide input to either 'reduction' or 'dist_matrix'.")
+  } else if (!is.null(reduction) & !is.null(dist_matrix)) {
+    warning("Input provided to both 'reduction' and 'dist_matrix'. Only input to 'dist_matrix' was used.")
+    distance_description <- "from provided 'dist_matrix'"
+    distance_approx <- FALSE
+  } else if (is.null(reduction) & !is.null(dist_matrix)) {
+    distance_description <- "from provided 'dist_matrix'"
+    distance_approx <- FALSE
+  } else if (!is.null(reduction) & is.null(dist_matrix)) {
+    distance_description <- "calculated from provided 'reduction'"
+    distance_approx <- TRUE
+  }
+
+  if (verbose) message("Inferring clustering tree from ", n_clusters, " provided clusters, using distances ", distance_description, "..")
+  # Create initial clustering tree dataframe
+  intial_tree <- data.frame(L1 = 1,
+                            L2 = as.numeric(as.factor(cluster_labels)))
+  # Create hierarchy
+  cluster_tree <- .optimizeTree(cluster_tree = initial_tree,
+                                reduction = reduction,
+                                dist_matrix = dist_matrix,
+                                distance_approx = distance_approx)
+  if (verbose) message("Inferred clustering tree has ", n_levels, " levels.")
+  if (verbose) message("Labeling clusters according to CHOIR conventions..")
+  cluster_tree <- CHOIR:::.checkClusterLabels(cluster_tree)
+
+  return(cluster_tree)
+}

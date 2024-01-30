@@ -516,7 +516,7 @@
           stop("Input value '", input, "' for '", name,
                "' was not found in the provided object, please supply valid input!")
         }
-      } else {
+      } else if (other[[1]] == "inferTree") {
         # Should be of class "matrix"
         if (!methods::is(input, "matrix")) {
           stop("Input value for '", name, "' is not of class 'matrix', please supply valid input!")
@@ -525,13 +525,18 @@
         if (ncol(input) < 2) {
           stop("Input value for '", name, "' must have at least 2 columns, please supply valid input!")
         }
-        # Number of rows must equal number of cells in object
-        if (methods::is(other[[2]], "Seurat") | methods::is(other[[2]], "SingleCellExperiment")) {
-          n_cells <- ncol(other[[2]])
-          cell_ids <- colnames(other[[2]])
-        } else if (methods::is(other[[2]], "ArchRProject")) {
-          n_cells <- nrow(other[[2]]@cellColData)
-          cell_ids <- rownames(other[[2]]@cellColData)
+        # Row names must be cell IDs
+        if (!identical(rownames(input), other[[2]])) {
+          stop("Row names for input to '", name, "' must correspond to cell IDs, please supply valid input!")
+        }
+      } else {
+        # Should be of class "matrix"
+        if (!methods::is(input, "matrix")) {
+          stop("Input value for '", name, "' is not of class 'matrix', please supply valid input!")
+        }
+        # Must have at least 2 columns
+        if (ncol(input) < 2) {
+          stop("Input value for '", name, "' must have at least 2 columns, please supply valid input!")
         }
       }
     }
@@ -863,6 +868,18 @@
           stop("Input value for '", name, "' must exist in the column", other[[2]], " in the 'cellColData' of the provided object, please supply valid input!")
         }
       }
+    }
+  }
+
+  # cluster_labels
+  if (name == "cluster_labels") {
+    # Should be named vector of length >1.
+    if (length(input) <= 1) {
+      stop("Input value for '", name, "' must be a vector with at least 2 values, please supply valid input!")
+    }
+    # Must be named
+    if (is.null(names(cluster_labels))) {
+      stop("Input value ", input, " for '", name, "' must be named according to the cell IDs corresponding to each cluster label. Please supply valid input!")
     }
   }
 }
