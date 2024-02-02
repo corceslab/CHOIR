@@ -2108,5 +2108,8 @@ inferTree <- function(cluster_labels,
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Labeling clusters according to CHOIR conventions..")
   cluster_tree <- .checkClusterLabels(cluster_tree)
 
+  # Add cell IDs as rownames to cluster tree
+  rownames(cluster_tree) <- names(cluster_labels)
+
   return(cluster_tree)
 }
