@@ -633,9 +633,9 @@
   if (name == "input_matrix") {
     # If not NULL
     if (!is.null(input)) {
-      # Should be of class "mMatrix" or similar
-      if (!(methods::is(input) %in% c("mMatrix", "matrix", "dgCMatrix", "IterableMatrix"))) {
-        stop("Input value for '", name, "' is not among permitted classes: 'mMatrix', 'matrix', 'dgCMatrix', 'IterableMatrix', please supply valid input!")
+      # Should be of permitted matrix class
+      if (!(methods::is(input) %in% c("mMatrix", "matrix", "dgCMatrix", "IterableMatrix", "Matrix"))) {
+        stop("Input value for '", name, "' is not among permitted classes: 'mMatrix', 'matrix', 'dgCMatrix', 'IterableMatrix', 'Matrix', please supply valid input!")
       }
       # Must have at least 1 row
       if (nrow(input) < 1) {
@@ -652,9 +652,9 @@
   if (name == "nn_matrix") {
     # If not NULL
     if (!is.null(input)) {
-      # Should be of class "mMatrix"
-      if (!methods::is(input, "mMatrix")) {
-        stop("Input value for '", name, "' is not of class 'mMatrix', please supply valid input!")
+      # Should be of permitted matrix class
+      if (!(methods::is(input) %in% c("mMatrix", "matrix", "dgCMatrix", "IterableMatrix", "Matrix"))) {
+        stop("Input value for '", name, "' is not among permitted classes: 'mMatrix', 'matrix', 'dgCMatrix', 'IterableMatrix', 'Matrix', please supply valid input!")
       }
       # Row and column names must contain all cell IDs
       if (!all(other %in% colnames(input)) | !all(other %in% rownames(input))) {
