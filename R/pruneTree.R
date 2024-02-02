@@ -311,10 +311,28 @@ pruneTree <- function(object,
     input_matrix <- BiocGenerics::t(input_matrix)
     input_matrices <- list("P0" = input_matrix)
     n_input_matrices <- 1
+    n_modalities <- 1
     # Feature names
     features <- colnames(input_matrix)
     # Clean up
     rm(input_matrix)
+    # Number of modalities & object type
+    if (methods::is(object, "ArchRProject")) {
+      object_type <- "ArchRProject"
+      .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
+    } else {
+      if (methods::is(object, "Seurat")) {
+        object_type <- "Seurat"
+      } else {
+        object_type <- "SingleCellExperiment"
+        .requirePackage("SingleCellExperiment", source = "bioc")
+      }
+    }
+    # Need n_modalities to validate some inputs
+    .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
+    .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, "pruneTree"))
+    .validInput(batch_labels, "batch_labels", object)
+    .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object_type, n_modalities))
   } else if (!is.null(buildTree_parameters)) {
     input_matrix_provided <- FALSE
     # Parameters for extracting matrices
