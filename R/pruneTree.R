@@ -234,6 +234,17 @@ pruneTree <- function(object,
   .validInput(use_assay, "use_assay", object)
   .validInput(random_seed, "random_seed")
 
+  # Add additional parameters if not provided
+  if (!any(names(cluster_params) == "verbose")) {
+    cluster_params$verbose <- FALSE
+  }
+  if (!any(names(cluster_params) == "algorithm")) {
+    cluster_params$algorithm <- 1
+  }
+  if (!any(names(cluster_params) == "group.singletons")) {
+    cluster_params$group.singletons <- TRUE
+  }
+
   # Extract cell IDs
   cell_IDs <- .getCellIDs(object, use_assay)
 
