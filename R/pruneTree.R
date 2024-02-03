@@ -210,7 +210,7 @@ pruneTree <- function(object,
   normalization_method <- .retrieveParam(normalization_method, "normalization_method", buildTree_parameters, default_parameters)
   batch_correction_method <- .retrieveParam(batch_correction_method, "batch_correction_method", buildTree_parameters, default_parameters)
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
-  cluster_parameters <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
+  cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
   random_seed <- .retrieveParam(random_seed, "random_seed", buildTree_parameters, default_parameters)
   # Verify parameter validity
@@ -226,7 +226,7 @@ pruneTree <- function(object,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
-  .validInput(cluster_parameters, "cluster_params")
+  .validInput(cluster_params, "cluster_params")
   .validInput(use_assay, "use_assay", object)
   .validInput(random_seed, "random_seed")
 
@@ -1370,6 +1370,8 @@ pruneTree <- function(object,
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
             use_input_matrix <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
+
+            print(cluster_params)
             # Build subtree
             subtree_list <- .getTree(snn_matrix = .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs],
                                      nn_matrix = nn_matrices[[use_input_matrix]][current_cell_IDs, current_cell_IDs],
@@ -1382,7 +1384,7 @@ pruneTree <- function(object,
                                      input_matrix = input_matrices[[use_input_matrix]][current_cell_IDs, ],
                                      distance_approx = distance_approx,
                                      tree_type = "subtree",
-                                     cluster_params = cluster_parameters,
+                                     cluster_params = cluster_params,
                                      alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
                                      exclude_features = exclude_features,
                                      n_iterations = n_iterations,
