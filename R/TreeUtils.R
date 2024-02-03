@@ -921,7 +921,6 @@
                      tree_records = NULL,
                      n_cores,
                      random_seed) {
-  print(cluster_params)
   if (tree_type == "silhouette") {
     tree_output <- .getTree.silhouette(snn_matrix = snn_matrix,
                                  dist_matrix = dist_matrix,
@@ -1484,11 +1483,6 @@
   # Find number of cells
   n_cells <- ncol(snn_matrix)
   cell_IDs <- colnames(snn_matrix)
-
-  print(cluster_params)
-  print(cluster_params$algorithm)
-  print(names(cluster_params))
-  print(n_cells)
 
   # If using Leiden & data set is large, use "igraph"
   if (cluster_params$algorithm == 4 & !any(names(cluster_params) == "method") & n_cells > 30000) {

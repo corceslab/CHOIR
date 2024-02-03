@@ -648,8 +648,8 @@
     }
   }
 
-  # nn_matrix
-  if (name == "nn_matrix") {
+  # nn_matrix or snn_matrix
+  if (name %in% c("nn_matrix", "snn_matrix")) {
     # If not NULL
     if (!is.null(input)) {
       # Should be of permitted matrix class
@@ -658,7 +658,7 @@
       }
       # Row and column names must contain all cell IDs
       if (!all(other %in% colnames(input)) | !all(other %in% rownames(input))) {
-        stop("Input value for '", name, "' must be a nearest neighbor adjacency matrix in which the row and column names contain all of the cell IDs provided or present in the object.")
+        stop("Input value for '", name, "' must be an adjacency matrix in which the row and column names contain all of the cell IDs provided or present in the object.")
       }
     }
   }
