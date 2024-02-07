@@ -36,6 +36,9 @@ buildTree(
   use_slot = NULL,
   ArchR_matrix = NULL,
   ArchR_depthcol = NULL,
+  countsplit = FALSE,
+  countsplit_suffix = NULL,
+  countsplit_params = list(),
   reduction = NULL,
   var_features = NULL,
   atac = FALSE,
@@ -179,6 +182,22 @@ indicating which column to use for correlation with sequencing depth.
 Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
 'Gex_nUMI' for RNA-seq data.}
 
+\item{countsplit}{A boolean value indicating whether or not to use
+countsplit input data (see A. Neufeld \code{countsplit} package), such that
+one matrix of counts is used for clustering tree generation, and a separate
+matrix is used for all random forest classifier permutation testing. Defaults
+to \code{FALSE}.}
+
+\item{countsplit_suffix}{A character vector indicating the suffixes
+that distinguish the two countsplit matrices to be used. Suffixes are
+appended onto input string/vector for \code{use_slot} for Seurat objects,
+\code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+ArchR objects. Default = \code{NULL} uses suffixes "_1" and "_2" such as
+result from default application of function \code{runCountSplit()}.}
+
+\item{countsplit_params}{A list of additional parameters to be passed to
+countsplit::countsplit().}
+
 \item{reduction}{An optional matrix of dimensionality reduction cell
 embeddings to be used for subsequent clustering steps. Defaults to
 \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
@@ -207,7 +226,7 @@ cleaner output.}
 Returns the object with the following added data stored under the
 provided key: \describe{
 \item{cell_IDs}{Cell IDs belonging to each subtree}
-\item{clusters}{Full hierarchical cluster tree}
+\item{clusters}{Full hierarchical clustering tree}
 \item{graph}{All calculated nearest neighbor and shared nearest neighbor
 adjacency matrices}
 \item{parameters}{Record of parameter values used}
