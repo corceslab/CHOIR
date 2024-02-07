@@ -236,7 +236,7 @@ pruneTree <- function(object,
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
   countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
   countsplit_suffix <- .retrieveParam(countsplit_suffix, "countsplit_suffix", buildTree_parameters, default_parameters)
-  countsplit_text <- .retrieveParam(countsplit_text, "countsplit_text", buildTree_parameters, default_parameters)
+  countsplit_text <- .retrieveParam(NULL, "countsplit_text", buildTree_parameters, default_parameters)
   random_seed <- .retrieveParam(random_seed, "random_seed", buildTree_parameters, default_parameters)
   # Verify parameter validity
   .validInput(alpha, "alpha")

@@ -104,7 +104,7 @@
       use_assay <- Seurat::DefaultAssay(object)
     } else {
       # Check that input assay is present in object
-      .validInput(use_assay, "use_assay", object)
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     # Determine which slot to use
     if (is.null(use_slot)) {
@@ -117,7 +117,7 @@
       }
     }
     # Check that selected slot is present within selected assay in object
-    .validInput(use_slot, "use_slot", list(object, use_assay))
+    .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     # Extract matrix
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
@@ -201,7 +201,7 @@
     # Get assay
     if (is.null(use_assay)) {
       use_assay <- "logcounts"
-      .validInput(use_assay, "use_assay", object)
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     use_matrix <- object@assays@data[[use_assay]]
     if (verbose) message("                      Preparing input matrix using '", use_assay, "' assay..")
