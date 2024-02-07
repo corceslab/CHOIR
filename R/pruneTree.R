@@ -552,6 +552,9 @@ pruneTree <- function(object,
   # Set downsampling rate
   if (downsampling_rate == "auto") {
     downsampling_rate <- min(1, (1/2)^(log10(length(cell_IDs)/5000)))
+    if (batch_correction_method == "none") {
+      downsampling_rate <- downsampling_rate*0.5
+    }
   }
 
   # Report object & parameter details
