@@ -121,9 +121,9 @@
     # Extract matrix
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
-      use_matrix <- seurat_object[[use_assay]]@layers[[use_slot]]
-      colnames(use_matrix) <- colnames(seurat_object[[use_assay]])
-      rownames(use_matrix) <- rownames(seurat_object[[use_assay]])
+      use_matrix <- object[[use_assay]]@layers[[use_slot]]
+      colnames(use_matrix) <- colnames(object[[use_assay]])
+      rownames(use_matrix) <- rownames(object[[use_assay]])
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
@@ -300,6 +300,46 @@
   }
   return(use_matrix)
 }
+
+# Store matrix ---------------------------
+#
+# Store a matrix in provided object
+#
+# object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_matrix -- Matrix to be stored
+# use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
+# ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
+# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+.storeMatrix <- function(object,
+                         use_matrix,
+                         use_assay = NULL,
+                         use_slot = NULL,
+                         ArchR_matrix = NULL,
+                         verbose = TRUE) {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    object <- .storeMatrix.Seurat(object,
+                                  use_matrix,
+                                  use_assay,
+                                  use_slot,
+                                  verbose)
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    object <- .storeMatrix.SingleCellExperiment(object,
+                                                use_matrix,
+                                                use_assay,
+                                                use_slot,
+                                                verbose)
+  } else if (methods::is(object, "ArchRProject")) {
+    object <- .storeMatrix.ArchR(object,
+                                 use_matrix,
+                                 ArchR_matrix,
+                                 verbose)
+  }
+  # Return object
+  return(object)
+}
+
 
 # Store data ---------------------------
 #
