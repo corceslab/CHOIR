@@ -135,7 +135,7 @@
     if (!methods::is(input, "character")) {
       stop("Input value for '", name, "' is not of class 'character', please supply valid input!")
     }
-    # Length must be either 1 or same as length of use_assay
+    # Length must be either 1 or same as n_modalities
     if (length(input) != 1 & length(input) != other[[2]]) {
       stop("Input value(s) for '", name, "' must be either length 1 or the same length as the number of modalities provided provided for 'use_assay' or 'ArchR_matrix'.")
     }
@@ -148,7 +148,7 @@
       }
       if (methods::is(other[[1]], "Seurat") & input[i] == "SCTransform") {
         if ("Assay5" %in% methods::is(other[[1]][[other[[3]][i]]])) {
-          stop("SCTransform is not currently supported for Seurat v5 (BPCells) objects.")
+          stop("SCTransform is not currently supported for Seurat v5 objects.")
         }
       }
     }
@@ -363,27 +363,37 @@
     # If not NULL
     if (!is.null(input)) {
       # Only relevant for Seurat and SingleCellExperiment objects
-      if (is.null(other)) {
+      if (is.null(other[[1]])) {
         warning("Input value for '", name, "' is not used when 'object' is NULL.")
-      } else if (methods::is(other, "Seurat") | methods::is(other, "SingleCellExperiment")) {
+      } else if (methods::is(other[[1]], "Seurat") | methods::is(other[[1]], "SingleCellExperiment")) {
         # Should be of class 'character'
         if (!methods::is(input, "character")) {
           stop("Input value for '", name, "' is not of class 'character', please supply valid input!")
         }
         # Each value must exist in provided object
-        for (i in 1:length(input)) {
-          if (!(input[i] %in% names(other@assays))) {
-            stop("Assay '", input[i], "' provided for parameter '", name, "' is not present in provided object, please supply valid input!")
+        # Dependent on countsplitting for SingleCellExperiment objects
+        if (other[[2]] == TRUE &  methods::is(other[[1]], "SingleCellExperiment")) {
+          # Default countsplit_suffix values if NULL
+          if (is.null(other[[3]])) {
+            other[[3]] <- c("_1", "_2")
           }
-          if (grepl("SCT", input[i])) {
-            warning("Input value '", input[i], "'for '", name, "' suggests that",
+          input_to_check <- c(paste0(input, other[[3]][1]), paste0(input, other[[3]][2]))
+        } else {
+          input_to_check <- input
+        }
+        for (i in 1:length(input_to_check)) {
+          if (!(input_to_check[i] %in% names(other[[1]]@assays))) {
+            stop("Assay '", input_to_check[i], "' provided for parameter '", name, "' is not present in provided object, please supply valid input!")
+          }
+          if (grepl("SCT", input_to_check[i])) {
+            warning("Input value '", input_to_check[i], "'for '", name, "' suggests that",
                     " SCTransform may have been used to normalize the data. For",
                     " best performance of CHOIR with SCTransform normalization,",
                     " please provide the unnormalized count matrix and set the",
                     " 'normalization_method' parameter to 'SCTransform'.")
           }
         }
-      } else if (methods::is(other, "ArchRProject")) {
+      } else if (methods::is(other[[1]], "ArchRProject")) {
         warning("Input value(s) for '", name, "' are not used when provided object is of class 'ArchRProject'.")
       }
     }
@@ -408,32 +418,63 @@
           stop("Input value(s) for '", name, "' must be either length 1 or same length as the number of modalities provided for 'use_assay'.")
         }
         # Slot must be present under specified assay in provided object
+        # Dependent on countsplitting
+        if (other[[3]] == TRUE) {
+          # Default countsplit_suffix values if NULL
+          if (is.null(other[[4]])) {
+            other[[4]] <- c("_1", "_2")
+          }
+        } else {
+          other[[4]] <- c("", "")
+        }
         if (length(other[[2]]) == 1) {
           # Check if object is Seurat v5
           if ("Assay5" %in% methods::is(other[[1]][[other[[2]]]])) {
-            if (!(input %in% names(other[[1]][[other[[2]]]]@layers))) {
-              stop("Layer '", input, "' is not present in assay '", other[[2]], "' of provided Seurat v5 object, please supply valid input!")
+            if (!(paste0(input, other[[4]][1]) %in% names(other[[1]][[other[[2]]]]@layers))) {
+              stop("Layer '", paste0(input, other[[4]][1]), "' is not present in assay '", other[[2]], "' of provided Seurat v5 object, please supply valid input!")
+            }
+            if (!(paste0(input, other[[4]][2]) %in% names(other[[1]][[other[[2]]]]@layers))) {
+              stop("Layer '", paste0(input, other[[4]][2]), "' is not present in assay '", other[[2]], "' of provided Seurat v5 object, please supply valid input!")
             }
           } else {
-            try(slot_exists <- methods::validObject(methods::slot(other[[1]][[other[[2]]]], input)))
-            if (!exists("slot_exists")) {
-              stop("Slot '", input, "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
-            } else if (slot_exists == FALSE) {
-              stop("Slot '", input, "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
+            try(slot_exists_1 <- methods::validObject(methods::slot(other[[1]][[other[[2]]]], paste0(input, other[[4]][1]))))
+            if (!exists("slot_exists_1")) {
+              stop("Slot '", paste0(input, other[[4]][1]), "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
+            } else if (slot_exists_1 == FALSE) {
+              stop("Slot '", paste0(input, other[[4]][1]), "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
+            }
+            try(slot_exists_2 <- methods::validObject(methods::slot(other[[1]][[other[[2]]]], paste0(input, other[[4]][2]))))
+            if (!exists("slot_exists_2")) {
+              stop("Slot '", paste0(input, other[[4]][2]), "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
+            } else if (slot_exists_2 == FALSE) {
+              stop("Slot '", paste0(input, other[[4]][2]), "' is not present in assay '", other[[2]], "' of provided Seurat object, please supply valid input!")
             }
           }
         } else {
           for (i in 1:length(input)) {
             if ("Assay5" %in% methods::is(other[[1]][[other[[2]][i]]])) {
-              if (!(input[i] %in% names(other[[1]][[other[[2]][i]]]@layers))) {
-                stop("Layer '", input[i], "' is not present in assay '", other[[2]][i], "' of provided Seurat v5 object, please supply valid input!")
+              if (!(paste0(input[i], other[[4]][1]) %in% names(other[[1]][[other[[2]][i]]]@layers))) {
+                stop("Layer '", paste0(input[i], other[[4]][1]), "' is not present in assay '", other[[2]][i], "' of provided Seurat v5 object, please supply valid input!")
+              }
+              if (!(paste0(input[i], other[[4]][2]) %in% names(other[[1]][[other[[2]][i]]]@layers))) {
+                stop("Layer '", paste0(input[i], other[[4]][2]), "' is not present in assay '", other[[2]][i], "' of provided Seurat v5 object, please supply valid input!")
               }
             } else {
-              try(slot_exists <- methods::validObject(methods::slot(other[[1]][[other[[2]][i]]], input[i])))
+              try(slot_exists <- methods::validObject(methods::slot(other[[1]][[other[[2]][i]]], paste0(input[i], other[[4]][1]))))
               if (!exists("slot_exists")) {
-                stop("Slot '", input[i], "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
+                stop("Slot '", paste0(input[i], other[[4]][1]), "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
               } else if (slot_exists == FALSE) {
-                stop("Slot '", input[i], "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
+                stop("Slot '", paste0(input[i], other[[4]][1]), "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
+                rm(slot_exists)
+              } else {
+                rm(slot_exists)
+              }
+              try(slot_exists <- methods::validObject(methods::slot(other[[1]][[other[[2]][i]]], paste0(input[i], other[[4]][2]))))
+              if (!exists("slot_exists")) {
+                stop("Slot '", paste0(input[i], other[[4]][2]), "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
+              } else if (slot_exists == FALSE) {
+                stop("Slot '", paste0(input[i], other[[4]][2]), "' is not present in assay '", other[[2]][i], "' of provided Seurat object, please supply valid input!")
+                rm(slot_exists)
               } else {
                 rm(slot_exists)
               }
@@ -451,16 +492,26 @@
     # if not NULL
     if (!is.null(input)) {
       # Only relevant for ArchR objects
-      if (methods::is(other, "ArchRProject")) {
+      if (methods::is(other[[1]], "ArchRProject")) {
         # Should be of class 'character'
         if (!methods::is(input, "character")) {
           stop("Input value for '", name, "' is not of class 'character', please supply valid input!")
         }
         # Each value must exist in provided object
-        available_matrices <- ArchR::getAvailableMatrices(other)
-        for (i in 1:length(input)) {
-          if (!(input[i] %in% available_matrices)) {
-            stop("Matrix '", input[i], "' is not present in provided object, please supply valid input!")
+        available_matrices <- ArchR::getAvailableMatrices(other[[1]])
+        # Dependent on countsplitting
+        if (other[[2]] == TRUE) {
+          # Default countsplit_suffix values if NULL
+          if (is.null(other[[3]])) {
+            other[[3]] <- c("_1", "_2")
+          }
+          input_to_check <- c(paste0(input, other[[3]][1]), paste0(input, other[[3]][2]))
+        } else {
+          input_to_check <- input
+        }
+        for (i in 1:length(input_to_check)) {
+          if (!(input_to_check[i] %in% available_matrices)) {
+            stop("Matrix '", input_to_check[i], "' is not present in provided object, please supply valid input!")
           }
         }
       } else {
@@ -598,8 +649,8 @@
   }
 
   # Single logical value
-  # verbose, collect_all_metrics, use_variance, legend, accuracy_scores
-  if (name %in% c("verbose", "collect_all_metrics", "use_variance", "legend", "accuracy_scores")) {
+  # verbose, collect_all_metrics, use_variance, legend, accuracy_scores, countsplit
+  if (name %in% c("verbose", "collect_all_metrics", "use_variance", "legend", "accuracy_scores", "countsplit")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
@@ -880,6 +931,21 @@
     # Must be named
     if (is.null(names(input))) {
       stop("Input value ", input, " for '", name, "' must be named according to the cell IDs corresponding to each cluster label. Please supply valid input!")
+    }
+  }
+
+  # countsplit_suffix
+  if (name == "countsplit_suffix") {
+    # If not NULL
+    if (!is.null(input)) {
+      # Should be of class 'character', must be a vector with exactly 2 values
+      if (!methods::is(input, "character") | length(input) != 2) {
+        stop("Input for '", name, "' must be a vector of class 'character' with exactly 2 values. Please supply valid input!")
+      }
+      # Warn if 'countsplit' is FALSE
+      if (other == FALSE) {
+        warning("Input for '", name, "' is not used when parameter 'countsplit' is set to FALSE.")
+      }
     }
   }
 }

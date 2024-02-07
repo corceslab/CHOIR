@@ -81,6 +81,17 @@
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
 #' and the \code{logcounts} assay for SingleCellExperiment objects.
+#' @param countsplit A boolean value indicating whether or not to use
+#' countsplit input data (see A. Neufeld \code{countsplit} package), such that
+#' one matrix of counts is used for clustering tree generation, and a separate
+#' matrix is used for all random forest classifier permutation testing. Defaults
+#' to \code{FALSE}.
+#' @param countsplit_suffix A character vector indicating the suffixes
+#' that distinguish the two countsplit matrices to be used. Suffixes are
+#' appended onto input string/vector for \code{use_slot} for Seurat objects,
+#' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+#' ArchR objects. Default = \code{NULL} uses suffixes "_1" and "_2" such as
+#' result from default application of function \code{runCountSplit()}.
 #' @param cluster_tree An optional dataframe containing the cluster IDs of each
 #' cell across the levels of a hierarchical clustering tree. Default = \code{NULL}
 #' will use the hierarchical clustering tree generation by function
@@ -141,6 +152,8 @@ pruneTree <- function(object,
                       batch_labels = NULL,
                       cluster_params = NULL,
                       use_assay = NULL,
+                      countsplit = NULL,
+                      countsplit_suffix = NULL,
                       cluster_tree = NULL,
                       input_matrix = NULL,
                       nn_matrix = NULL,
@@ -154,6 +167,8 @@ pruneTree <- function(object,
   # ---------------------------------------------------------------------------
   # Retrieve/check parameter input validity
   # ---------------------------------------------------------------------------
+
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/2) Checking inputs and preparing object..")
 
   .validInput(object, "object", "pruneTree")
   .validInput(key, "key", list("pruneTree", object))
@@ -195,6 +210,9 @@ pruneTree <- function(object,
                              "cluster_params" = list(algorithm = 1,
                                                      group.singletons = TRUE),
                              "use_assay"  = NULL,
+                             "countsplit" = FALSE,
+                             "countsplit_suffix" = NULL,
+                             "countsplit_text" = "",
                              "random_seed" = 1)
 
   # For any parameters set to NULL, use parameters from buildTree or defaults
@@ -216,6 +234,9 @@ pruneTree <- function(object,
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
   cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
+  countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
+  countsplit_suffix <- .retrieveParam(countsplit_suffix, "countsplit_suffix", buildTree_parameters, default_parameters)
+  countsplit_text <- .retrieveParam(countsplit_text, "countsplit_text", buildTree_parameters, default_parameters)
   random_seed <- .retrieveParam(random_seed, "random_seed", buildTree_parameters, default_parameters)
   # Verify parameter validity
   .validInput(alpha, "alpha")
@@ -232,6 +253,8 @@ pruneTree <- function(object,
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(cluster_params, "cluster_params")
   .validInput(use_assay, "use_assay", object)
+  .validInput(countsplit, "countsplit")
+  .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(random_seed, "random_seed")
 
   # Add additional parameters if not provided
@@ -259,18 +282,24 @@ pruneTree <- function(object,
   if (methods::is(distance_awareness, "numeric") & distance_approx == FALSE) {
     if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix))) &
         !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix)))) {
-      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'dist_matrix', it should be provided for all four.")
+      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'dist_matrix', it should be provided for all five.")
     }
   } else if (methods::is(distance_awareness, "numeric") & distance_approx == TRUE) {
     if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction))) &
         !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction)))) {
-      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'reduction', it should be provided for all four.")
+      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'reduction', it should be provided for all five.")
     }
   } else {
     if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix))) &
         !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix)))) {
       warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', or 'snn_matrix', it should be provided for all four.")
     }
+  }
+  # User supplied data cannot be used with countsplitting
+  if (!is.null(input_matrix) & countsplit == TRUE) {
+    warning("Countsplitting is not currently compatible with user-supplied data for 'input_matrix'. Parameter 'count_split' set to FALSE.")
+    countsplit <- FALSE
+    countsplit_suffix <- NULL
   }
 
   # Retrieve subtree data
@@ -295,7 +324,6 @@ pruneTree <- function(object,
   # ---------------------------------------------------------------------------
   # Prepare object
   # ---------------------------------------------------------------------------
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/2) Preparing object..")
 
   # Extract cluster tree
   if (is.null(cluster_tree)) {
@@ -355,6 +383,12 @@ pruneTree <- function(object,
     use_assay <- buildTree_parameters[["use_assay"]]
     use_slot <- buildTree_parameters[["use_slot"]]
     ArchR_matrix <- buildTree_parameters[["ArchR_matrix"]]
+    use_assay_build <- buildTree_parameters[["use_assay_build"]]
+    use_assay_prune <- buildTree_parameters[["use_assay_prune"]]
+    use_slot_build <- buildTree_parameters[["use_slot_build"]]
+    use_slot_prune <- buildTree_parameters[["use_slot_prune"]]
+    ArchR_matrix_build <- buildTree_parameters[["ArchR_matrix_build"]]
+    ArchR_matrix_prune <- buildTree_parameters[["ArchR_matrix_prune"]]
     # Number of modalities & object type
     if (methods::is(object, "ArchRProject")) {
       n_modalities <- max(length(ArchR_matrix), 1)
@@ -401,9 +435,9 @@ pruneTree <- function(object,
         input_matrix_list <- vector("list", n_modalities)
         for (m in 1:n_modalities) {
           # Match input arguments
-          use_assay_m <- .matchArg(use_assay, m)
-          use_slot_m <- .matchArg(use_slot, m)
-          ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
+          use_assay_prune_m <- .matchArg(use_assay_prune, m)
+          use_slot_prune_m <- .matchArg(use_slot_prune, m)
+          ArchR_matrix_prune_m <- .matchArg(ArchR_matrix_prune, m)
           normalization_method_m <- .matchArg(normalization_method, m)
           # Features
           if (length(use_features_subtree) > 1) {
@@ -412,9 +446,9 @@ pruneTree <- function(object,
             use_features_subtree_m <- use_features_subtree
           }
           input_matrix_list[[m]] <- .getMatrix(object = object,
-                                               use_assay = use_assay_m,
-                                               use_slot = use_slot_m,
-                                               ArchR_matrix = ArchR_matrix_m,
+                                               use_assay = use_assay_prune_m,
+                                               use_slot = use_slot_prune_m,
+                                               ArchR_matrix = ArchR_matrix_prune_m,
                                                use_features = use_features_subtree_m,
                                                exclude_features = exclude_features,
                                                use_cells = use_cells_subtree,
@@ -433,9 +467,9 @@ pruneTree <- function(object,
         rm(use_cells_subtree_m)
       } else {
         input_matrix <- .getMatrix(object = object,
-                                   use_assay = use_assay,
-                                   use_slot = use_slot,
-                                   ArchR_matrix = ArchR_matrix,
+                                   use_assay = use_assay_prune,
+                                   use_slot = use_slot_prune,
+                                   ArchR_matrix = ArchR_matrix_prune,
                                    use_features = use_features_subtree,
                                    exclude_features = exclude_features,
                                    use_cells = use_cells_subtree,
@@ -527,7 +561,9 @@ pruneTree <- function(object,
                        "\n - # of modalities: ", n_modalities,
                        "\n - # of subtrees: ", n_subtrees,
                        "\n - # of levels: ", n_levels,
-                       "\n - # of starting clusters: ", n_starting_clusters)
+                       "\n - # of starting clusters: ", n_starting_clusters,
+                       "\n - Countsplitting: ", countsplit,
+                       countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Alpha: ", alpha,

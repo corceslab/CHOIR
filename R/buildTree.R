@@ -121,10 +121,9 @@
 #' that distinguish the two countsplit matrices to be used. Suffixes are
 #' appended onto input string/vector for \code{use_slot} for Seurat objects,
 #' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
-#' ArchR objects. Default = \code{NULL} uses suffixes "_1" and "_2" such as
-#' result from default application of function \code{runCountSplit()}.
-#' @param countsplit_params A list of additional parameters to be passed to
-#' countsplit::countsplit().
+#' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+#' suffixes "_1" and "_2" such as result from default application of CHOIR
+#' function \code{runCountSplit()}.
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
 #' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
@@ -195,7 +194,6 @@ buildTree <- function(object,
                       ArchR_depthcol = NULL,
                       countsplit = FALSE,
                       countsplit_suffix = NULL,
-                      countsplit_params = list(),
                       reduction = NULL,
                       var_features = NULL,
                       atac = FALSE,
@@ -229,9 +227,11 @@ buildTree <- function(object,
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(min_cluster_depth, "min_cluster_depth")
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
-  .validInput(ArchR_matrix, "ArchR_matrix", object)
+  .validInput(countsplit, "countsplit")
+  .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
+  .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
+  .validInput(use_slot, "use_slot", list(object, use_assay, countsplit, countsplit_suffix))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, countsplit, countsplit_suffix))
 
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
@@ -413,7 +413,7 @@ buildTree <- function(object,
       use_slot_prune <- NULL
       ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
       ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
-      countsplit_text <- paste0("")
+      countsplit_text <- ""
     }
   } else {
     # No countsplitting, use same matrix to build & prune tree
@@ -476,8 +476,8 @@ buildTree <- function(object,
 
   # Run dimensionality reduction if not supplied by user
   if (is.null(reduction)) {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Running initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Running initial dimensionality reduction..")
+    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/7) Running initial dimensionality reduction..")
+    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/5) Running initial dimensionality reduction..")
     P0_dim_reduction <- .runDimReduction(object = object,
                                          normalization_method = normalization_method,
                                          reduction_method = reduction_method,
@@ -496,8 +496,8 @@ buildTree <- function(object,
                                          random_seed = random_seed,
                                          verbose = verbose)
   } else {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Setting initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Setting initial dimensionality reduction..")
+    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/7) Setting initial dimensionality reduction..")
+    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/5) Setting initial dimensionality reduction..")
     P0_dim_reduction <- list("reduction_coords" = reduction,
                              "var_features" = var_features)
   }
@@ -526,8 +526,8 @@ buildTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 2: Find nearest neighbors & calculate distance matrix for dimensionality reduction
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/6) Generating initial nearest neighbors graph..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
+  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/7) Generating initial nearest neighbors graph..")
+  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/5) Generating initial nearest neighbors graph..")
 
   # 1 vs. multiple dimensionality reductions
   if (n_modalities < 2 | methods::is(object, "ArchRProject")) {
@@ -583,8 +583,8 @@ buildTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 3: Identify starting clustering resolution
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/6) Identify starting clustering resolution..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
+  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/7) Identify starting clustering resolution..")
+  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/5) Identify starting clustering resolution..")
 
   P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
                                                    cluster_params = cluster_params,
@@ -611,7 +611,7 @@ buildTree <- function(object,
                              stop_branching_reason = NULL)
 
   if (max_clusters == "auto") {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/6) Building parent clustering tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/7) Building parent clustering tree..")
     P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                              dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
                              reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
@@ -651,7 +651,7 @@ buildTree <- function(object,
       P0_tree[,col] <- paste0("P0_", colnames(P0_tree)[col], "_", P0_tree[,col])
     }
   } else {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/4) Building clustering tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/5) Building clustering tree..")
     full_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                                tree_type = "full",
                                max_clusters = max_clusters,
@@ -705,7 +705,7 @@ buildTree <- function(object,
     P0_clusters_n <- length(P0_clusters)
 
     if (verbose) message("                      Identified ", P0_clusters_n, " clusters in parent tree.")
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/6) Subclustering parent tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/7) Subclustering parent tree..")
 
     # Initiate list of subtrees
     subtree_list <- vector("list", P0_clusters_n)
@@ -1080,7 +1080,7 @@ buildTree <- function(object,
     # ---------------------------------------------------------------------------
     # Step 6: Stitch trees together
     # ---------------------------------------------------------------------------
-    if (verbose) message("\n", format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/6) Compiling full clustering tree..")
+    if (verbose) message("\n", format(Sys.time(), "%Y-%m-%d %X"), " : (Step 7/7) Compiling full clustering tree..")
 
     # Create shell dataframe for subtree clusters
     subtrees <- data.frame(matrix(rep(NA, max_columns + 1), nrow = 1, ncol = max_columns + 1))
@@ -1176,13 +1176,13 @@ buildTree <- function(object,
                          "ArchR_depthcol" = ArchR_depthcol,
                          "countsplit" = countsplit,
                          "countsplit_suffix" = countsplit_suffix,
-                         "countsplit_params" = countsplit_params,
                          "use_assay_build" = use_assay_build,
                          "use_assay_prune" = use_assay_prune,
                          "use_slot_build" = use_slot_build,
                          "use_slot_prune" = use_slot_prune,
                          "ArchR_matrix_build" = ArchR_matrix_build,
                          "ArchR_matrix_prune" = ArchR_matrix_prune,
+                         "countsplit_text" = countsplit_text,
                          "reduction_provided" = !is.null(reduction),
                          "atac" = atac,
                          "random_seed" = random_seed)
