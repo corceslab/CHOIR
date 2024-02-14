@@ -121,9 +121,9 @@
     # Extract matrix
     if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
-      use_matrix <- seurat_object[[use_assay]]@layers[[use_slot]]
-      colnames(use_matrix) <- colnames(seurat_object[[use_assay]])
-      rownames(use_matrix) <- rownames(seurat_object[[use_assay]])
+      use_matrix <- object[[use_assay]]@layers[[use_slot]]
+      colnames(use_matrix) <- colnames(object[[use_assay]])
+      rownames(use_matrix) <- rownames(object[[use_assay]])
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
