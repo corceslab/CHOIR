@@ -80,7 +80,6 @@ runCountSplit <- function(object,
     n_modalities <- max(length(use_assay), 1)
     if (methods::is(object, "Seurat")) {
       object_type <- "Seurat"
-
       if (is.null(use_assay)) {
         if ("Assay5" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
           seurat_version <- "v5"
@@ -97,6 +96,10 @@ runCountSplit <- function(object,
         } else {
           stop("Assay '", use_assay[1], "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
         }
+      }
+      if (is.null(use_slot)) {
+        use_slot <- "counts"
+        .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
       }
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
@@ -146,15 +149,15 @@ runCountSplit <- function(object,
                          " : Storing countsplit matrices..")
     object <- .storeMatrix(object = object,
                            use_matrix = matrix_m_split[[1]],
-                           use_assay = ifelse(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[1]), use_assay_m),
-                           use_slot = ifelse(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[1]), use_slot_m),
-                           ArchR_matrix = ifelse(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[1]), ArchR_matrix_m),
+                           use_assay = `if`(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[1]), use_assay_m),
+                           use_slot = `if`(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[1]), use_slot_m),
+                           ArchR_matrix = `if`(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[1]), ArchR_matrix_m),
                            verbose = TRUE)
     object <- .storeMatrix(object = object,
                            use_matrix = matrix_m_split[[2]],
-                           use_assay = ifelse(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[2]), use_assay_m),
-                           use_slot = ifelse(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[2]), use_slot_m),
-                           ArchR_matrix = ifelse(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[2]), ArchR_matrix_m),
+                           use_assay = `if`(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[2]), use_assay_m),
+                           use_slot = `if`(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[2]), use_slot_m),
+                           ArchR_matrix = `if`(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[2]), ArchR_matrix_m),
                            verbose = TRUE)
     # Normalize matrices
     if (normalization_method_m != "none") {
@@ -175,25 +178,25 @@ runCountSplit <- function(object,
                            " : Storing normalized countsplit matrices..")
       object <- .storeMatrix(object = object,
                              use_matrix = matrix_m_1_norm,
-                             use_assay = ifelse(object_type == "SingleCellExperiment",
+                             use_assay = `if`(object_type == "SingleCellExperiment",
                                                 paste0(use_assay_m, "_", normalization_method_m, countsplit_suffix[1]),
                                                 use_assay_m),
-                             use_slot = ifelse(object_type == "Seurat",
+                             use_slot = `if`(object_type == "Seurat",
                                                paste0(use_slot_m, "_", normalization_method_m, countsplit_suffix[1]),
                                                use_slot_m),
-                             ArchR_matrix = ifelse(object_type == "ArchRProject",
+                             ArchR_matrix = `if`(object_type == "ArchRProject",
                                                    paste0(ArchR_matrix_m, "_", normalization_method_m, countsplit_suffix[1]),
                                                    ArchR_matrix_m),
                              verbose = TRUE)
       object <- .storeMatrix(object = object,
                              use_matrix = matrix_m_2_norm,
-                             use_assay = ifelse(object_type == "SingleCellExperiment",
+                             use_assay = `if`(object_type == "SingleCellExperiment",
                                                 paste0(use_assay_m, "_", normalization_method_m, countsplit_suffix[2]),
                                                 use_assay_m),
-                             use_slot = ifelse(object_type == "Seurat",
+                             use_slot = `if`(object_type == "Seurat",
                                                paste0(use_slot_m, "_", normalization_method_m, countsplit_suffix[2]),
                                                use_slot_m),
-                             ArchR_matrix = ifelse(object_type == "ArchRProject",
+                             ArchR_matrix = `if`(object_type == "ArchRProject",
                                                    paste0(ArchR_matrix_m, "_", normalization_method_m, countsplit_suffix[2]),
                                                    ArchR_matrix_m),
                              verbose = TRUE)
