@@ -122,8 +122,7 @@
 #' appended onto input string/vector for \code{use_slot} for Seurat objects,
 #' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
 #' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
-#' suffixes "_1" and "_2" such as result from default application of CHOIR
-#' function \code{runCountSplit()}.
+#' suffixes "_1" and "_2".
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
 #' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
@@ -342,10 +341,8 @@ buildTree <- function(object,
   # Set values for countsplitting (if enabled)
   # ---------------------------------------------------------------------------
 
-  # If countsplitting, establish which matrix is used for building tree vs. pruning
   if (countsplit == TRUE) {
     if (is.null(countsplit_suffix)) {
-      # Set suffix values
       countsplit_suffix <- c("_1", "_2")
     }
     # Set new values
@@ -426,14 +423,7 @@ buildTree <- function(object,
     use_slot_prune <- use_slot
     ArchR_matrix_build <- ArchR_matrix
     ArchR_matrix_prune <- ArchR_matrix
-    countsplit_text <- paste0("\n - ArchR matri",
-                              ifelse(n_modalities == 1, "x ", "ces "),
-                              "used to build tree: ",
-                              paste(ArchR_matrix_build, collapse = " "),
-                              "\n - ArchR matri",
-                              ifelse(n_modalities == 1, "x ", "ces "),
-                              "used to prune tree: ",
-                              paste(ArchR_matrix_prune, collapse = " "))
+    countsplit_text <- ""
   }
 
   # ---------------------------------------------------------------------------

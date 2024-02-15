@@ -192,8 +192,7 @@ that distinguish the two countsplit matrices to be used. Suffixes are
 appended onto input string/vector for \code{use_slot} for Seurat objects,
 \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
 ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
-suffixes "_1" and "_2" such as result from default application of CHOIR
-function \code{runCountSplit()}.}
+suffixes "_1" and "_2".}
 
 \item{reduction}{An optional matrix of dimensionality reduction cell
 embeddings to be used for subsequent clustering steps. Defaults to

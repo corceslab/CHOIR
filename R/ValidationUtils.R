@@ -948,4 +948,12 @@
       }
     }
   }
+
+  # countsplit_params
+  if (name == "countsplit_params") {
+    # Check that it is a list
+    if (!methods::is(input, "list")) {
+      stop("Input value for '", name, "' is not of class 'list', please supply valid input!")
+    }
+  }
 }

@@ -145,8 +145,8 @@ to \code{FALSE}.}
 that distinguish the two countsplit matrices to be used. Suffixes are
 appended onto input string/vector for \code{use_slot} for Seurat objects,
 \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
-ArchR objects. Default = \code{NULL} uses suffixes "_1" and "_2" such as
-result from default application of function \code{runCountSplit()}.}
+ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+suffixes "_1" and "_2".}
 
 \item{cluster_tree}{An optional dataframe containing the cluster IDs of each
 cell across the levels of a hierarchical clustering tree. Default = \code{NULL}

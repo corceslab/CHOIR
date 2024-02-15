@@ -328,14 +328,73 @@
     object <- .storeMatrix.SingleCellExperiment(object,
                                                 use_matrix,
                                                 use_assay,
-                                                use_slot,
                                                 verbose)
   } else if (methods::is(object, "ArchRProject")) {
-    object <- .storeMatrix.ArchR(object,
-                                 use_matrix,
-                                 ArchR_matrix,
-                                 verbose)
+    # object <- .storeMatrix.ArchR(object,
+    #                              use_matrix,
+    #                              ArchR_matrix,
+    #                              verbose)
+    stop("Function '.storeMatrix' does not yet support ArchR objects.")
   }
+  # Return object
+  return(object)
+}
+
+.storeMatrix.Seurat <- function(object,
+                                use_matrix,
+                                use_assay,
+                                use_slot,
+                                verbose) {
+  # Get assay
+  if (is.null(use_assay)) {
+    use_assay <- Seurat::DefaultAssay(object)
+  } else {
+    # Check that input assay is present in object
+    .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+  }
+  # Determine which slot to use
+  if (is.null(use_slot)) {
+    stop("For Seurat objects, .storeMatrix requires input for parameter 'use_slot', please supply a valid input for the slot parameter.")
+  }
+  if (!methods::is(use_slot, "character") | length(use_slot) != 1) {
+    stop("Input value for 'use_slot' is not a single value of of class 'character', please supply valid input!")
+  }
+  # Check that selected slot is NOT already present within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (use_slot %in% names(object[[use_assay]]@layers)) {
+      stop("Layer '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat v5 object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)))
+    if (exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message("Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
+  object[[use_assay]][use_slot] <- use_matrix
+
+  # Return object
+  return(object)
+}
+
+.storeMatrix.SingleCellExperiment <- function(object,
+                                              use_matrix,
+                                              use_assay,
+                                              verbose) {
+  # Check assay
+  if (is.null(use_assay)) {
+    stop("For SingleCellExperiment objects, .storeMatrix requires input for parameter 'use_assay', please supply a valid input for the slot parameter.")
+  } else {
+    # Check that input assay is NOT already present in object
+    if (use_assay %in% names(object@assays)) {
+      stop("Assay '", use_assay, "' provided for parameter '", name, "' is already present in provided SingleCellExperiment object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message("Storing assay '", use_assay, "' in SingleCellExperiment object.")
+  object@assays@data[[use_assay]] <- use_matrix
+
   # Return object
   return(object)
 }
@@ -482,7 +541,12 @@
 # name -- Name of parameter
 # parameter_list -- List of stored parameter values
 # default_list -- List of default parameter values
-.retrieveParam <- function(input, name, parameter_list, default_list) {
+# function_name -- Name of function for which parameter values were stored
+.retrieveParam <- function(input,
+                           name,
+                           parameter_list,
+                           default_list,
+                           function_name = "buildTree") {
   # If supplied parameter list contains name
   if (name %in% names(parameter_list)) {
     # For any parameters set to NULL, use values from parameter_list
@@ -490,7 +554,7 @@
       input <- parameter_list[[name]]
     } else if (input != parameter_list[[name]]) {
       # For any parameters not set to NULL, warn if value does not match parameter_list
-      warning("Supplied value for parameter '", name, "' does not match the value used for function 'buildTree'.")
+      warning("Supplied value for parameter '", name, "' does not match the value used for function '", function_name, "'.")
     }
   }
   # Set features that are still NULL to defaults
