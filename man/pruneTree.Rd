@@ -27,6 +27,8 @@ pruneTree(
   batch_labels = NULL,
   cluster_params = NULL,
   use_assay = NULL,
+  countsplit = NULL,
+  countsplit_suffix = NULL,
   cluster_tree = NULL,
   input_matrix = NULL,
   nn_matrix = NULL,
@@ -132,6 +134,19 @@ clusters such that each singleton constitutes its own cluster.}
 string or vector indicating the assay(s) to use in the provided object.
 Default = \code{NULL} will choose the current active assay for Seurat objects
 and the \code{logcounts} assay for SingleCellExperiment objects.}
+
+\item{countsplit}{A boolean value indicating whether or not to use
+countsplit input data (see A. Neufeld \code{countsplit} package), such that
+one matrix of counts is used for clustering tree generation, and a separate
+matrix is used for all random forest classifier permutation testing. Defaults
+to \code{FALSE}.}
+
+\item{countsplit_suffix}{A character vector indicating the suffixes
+that distinguish the two countsplit matrices to be used. Suffixes are
+appended onto input string/vector for \code{use_slot} for Seurat objects,
+\code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+suffixes "_1" and "_2".}
 
 \item{cluster_tree}{An optional dataframe containing the cluster IDs of each
 cell across the levels of a hierarchical clustering tree. Default = \code{NULL}

@@ -129,6 +129,17 @@
 #' indicating which column to use for correlation with sequencing depth.
 #' Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
 #' 'Gex_nUMI' for RNA-seq data.
+#' @param countsplit A boolean value indicating whether or not to use
+#' countsplit input data (see A. Neufeld \code{countsplit} package), such that
+#' one matrix of counts is used for clustering tree generation, and a separate
+#' matrix is used for all random forest classifier permutation testing. Defaults
+#' to \code{FALSE}.
+#' @param countsplit_suffix A character vector indicating the suffixes
+#' that distinguish the two countsplit matrices to be used. Suffixes are
+#' appended onto input string/vector for \code{use_slot} for Seurat objects,
+#' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+#' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+#' suffixes "_1" and "_2".
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
 #' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
@@ -201,6 +212,8 @@ CHOIR <- function(object,
                   use_slot = NULL,
                   ArchR_matrix = NULL,
                   ArchR_depthcol = NULL,
+                  countsplit = FALSE,
+                  countsplit_suffix = NULL,
                   reduction = NULL,
                   var_features = NULL,
                   atac = FALSE,
@@ -254,6 +267,8 @@ CHOIR <- function(object,
                       use_slot = use_slot,
                       ArchR_matrix = ArchR_matrix,
                       ArchR_depthcol = ArchR_depthcol,
+                      countsplit = countsplit,
+                      countsplit_suffix = countsplit_suffix,
                       reduction = reduction,
                       var_features = var_features,
                       atac = atac,

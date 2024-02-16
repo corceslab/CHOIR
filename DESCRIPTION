@@ -13,6 +13,7 @@ Suggests:
     ArchR,
     cluster,
     clv,
+    countsplit,
     ggnewscale,
     knitr,
     Polychrome,

@@ -122,21 +122,26 @@ runCHOIRumap <- function(object,
                                          type = "reduction",
                                          name = reduction[r])
     # Run UMAP
-    CHOIR_UMAP <- suppressMessages(invisible(Seurat::RunUMAP(extracted_reduction)))
-    # Store embeddings
-    object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
-    if (reduction[r] == "P0_reduction") {
-      # Store full reduction
-      if (methods::is(object, "ArchRProject")) {
-        object@reducedDims$CHOIR_P0_reduction_UMAP <- CHOIR_UMAP
-      } else {
-        object <- .storeData(object = object,
-                             key = key,
-                             type = "full_reduction",
-                             input_data = CHOIR_UMAP@cell.embeddings,
-                             name = "CHOIR_P0_reduction_UMAP",
-                             reduction_method = "UMAP")
+    try(CHOIR_UMAP <- suppressMessages(invisible(Seurat::RunUMAP(extracted_reduction))))
+    if (exists("CHOIR_UMAP")) {
+      # Store embeddings
+      object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
+      if (reduction[r] == "P0_reduction") {
+        # Store full reduction
+        if (methods::is(object, "ArchRProject")) {
+          object@reducedDims$CHOIR_P0_reduction_UMAP <- CHOIR_UMAP
+        } else {
+          object <- .storeData(object = object,
+                               key = key,
+                               type = "full_reduction",
+                               input_data = CHOIR_UMAP@cell.embeddings,
+                               name = "CHOIR_P0_reduction_UMAP",
+                               reduction_method = "UMAP")
+        }
       }
+      rm(CHOIR_UMAP)
+    } else {
+      warning("A UMAP could not be calculated for reduction ", reduction[r], ".")
     }
   }
   # Return object with new UMAP reductions

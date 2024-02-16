@@ -166,9 +166,9 @@ compareClusters <- function(object = NULL,
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(batch_labels, "batch_labels", object)
   .validInput(collect_all_metrics, "collect_all_metrics")
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
-  .validInput(ArchR_matrix, "ArchR_matrix", object)
+  .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+  .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, FALSE, NULL))
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
