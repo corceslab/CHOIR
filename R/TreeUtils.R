@@ -302,28 +302,30 @@
       }
 
       # Harmony batch correction
-      # Check number of batches
-      n_batches <- dplyr::n_distinct(metadata[,batch_labels])
-      if (batch_correction_method == "Harmony" & n_batches > 1) {
-        # Check provided parameters
-        if (any(names(batch_correction_params) %in% c("data_mat", "meta_data", "vars_use", "do_pca"))) {
-          stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
+      if (batch_correction_method == "Harmony") {
+        # Check number of batches
+        n_batches <- dplyr::n_distinct(metadata[,batch_labels])
+        if (n_batches > 1) {
+          # Check provided parameters
+          if (any(names(batch_correction_params) %in% c("data_mat", "meta_data", "vars_use", "do_pca"))) {
+            stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
+          }
+          # If provided parameters need to be supplemented, do so
+          if (!any(names(batch_correction_params) == "verbose")) {
+            batch_correction_params$verbose <- FALSE
+          }
+          # Run Harmony
+          if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
+          if (!("character" %in% methods::is(metadata[,batch_labels]))) {
+            metadata[,batch_labels] <- as.character(metadata[,batch_labels])
+          }
+          reduction_coords <- suppressWarnings(do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
+                                                                                      "meta_data" = metadata,
+                                                                                      "vars_use" = batch_labels),
+                                                                                 batch_correction_params)))
+        } else {
+          message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
         }
-        # If provided parameters need to be supplemented, do so
-        if (!any(names(batch_correction_params) == "verbose")) {
-          batch_correction_params$verbose <- FALSE
-        }
-        # Run Harmony
-        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
-        if (!("character" %in% methods::is(metadata[,batch_labels]))) {
-          metadata[,batch_labels] <- as.character(metadata[,batch_labels])
-        }
-        reduction_coords <- suppressWarnings(do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
-                                                                                    "meta_data" = metadata,
-                                                                                    "vars_use" = batch_labels),
-                                                                               batch_correction_params)))
-      } else if (batch_correction_method == "Harmony") {
-        message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
       }
     } else if (methods::is(object, "ArchRProject")) {
       # Subset object if cell names are provided
@@ -387,7 +389,11 @@
 
         # Harmony batch correction
         # Check number of batches
-        n_batches <- dplyr::n_distinct(object@cellColData[, batch_labels])
+        if (batch_correction_method == "Harmony") {
+          n_batches <- dplyr::n_distinct(object@cellColData[, batch_labels])
+        } else {
+          n_batches <- 1
+        }
         if (batch_correction_method == "Harmony" & n_batches > 1) {
           # Check provided parameters
           if (any(names(batch_correction_params) %in% c("ArchRProj", "reducedDims", "name", "groupBy", "force"))) {
@@ -1492,7 +1498,7 @@
                              batch_correction_method,
                              batches,
                              tree_records,
-                             tree_name,
+                             tree_id,
                              n_cores,
                              random_seed) {
   # Find number of cells
@@ -1535,7 +1541,7 @@
   rownames(multi_level_clusters) <- colnames(snn_matrix)
 
   if (nrow(tree_records) > 0) {
-    current_tree_name <- paste0(tree_id, "_", as.numeric(sub("P", "", tree_records[nrow(tree_records), "tree_name"])) + 1)
+    current_tree_name <- paste0(tree_id, "_", as.numeric(gsub(".*?(\\d+)$", "\\1", tree_records[nrow(tree_records), "tree_name"])) + 1)
   } else {
     current_tree_name <- tree_id
   }
