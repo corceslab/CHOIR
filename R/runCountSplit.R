@@ -104,6 +104,10 @@ runCountSplit <- function(object,
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
       .requirePackage("SingleCellExperiment", source = "bioc")
+      if (is.null(use_assay)) {
+        use_assay <- "counts"
+        .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+      }
     }
   }
 
@@ -129,7 +133,7 @@ runCountSplit <- function(object,
     # Warn if not integer values
     # Check up to 100 random cells
     sampled_cells <- sample(colnames(matrix_m), min(100, ncol(matrix_m)))
-    sample_matrix <- as(matrix_m[,sampled_cells], "dgCMatrix")
+    sample_matrix <- methods::as(matrix_m[,sampled_cells], "dgCMatrix")
     if (!all(sample_matrix == floor(sample_matrix))) {
       warning("Countsplitting is not intended for non-integer matrices, counts will be rounded.")
     }
