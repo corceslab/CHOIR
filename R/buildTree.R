@@ -2,7 +2,7 @@
 #'
 #' This function performs the first step of the CHOIR algorithm. It constructs
 #' a hierarchical clustering tree starting from a single cluster encompassing
-#' all cells. First, a parent tree is constructed, from which subtrees are
+#' all cells. First, a root tree is constructed, from which subtrees are
 #' subsequently generated. Each branch is subdivided until all cells are
 #' demonstrably overclustered.
 #'
@@ -585,7 +585,7 @@ buildTree <- function(object,
                                                    verbose = verbose)
 
   # ---------------------------------------------------------------------------
-  # Step 4: Build parent tree
+  # Step 4: Build root tree
   # ---------------------------------------------------------------------------
 
   # Create dataframe to store tree generation records
@@ -604,7 +604,7 @@ buildTree <- function(object,
                              stop_branching_reason = NULL)
 
   if (max_clusters == "auto") {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/7) Building parent clustering tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/7) Building root clustering tree..")
     P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                              dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
                              reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
@@ -697,8 +697,8 @@ buildTree <- function(object,
     P0_clusters <- unique(P0_tree[, ncol(P0_tree)])
     P0_clusters_n <- length(P0_clusters)
 
-    if (verbose) message("                      Identified ", P0_clusters_n, " clusters in parent tree.")
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/7) Subclustering parent tree..")
+    if (verbose) message("                      Identified ", P0_clusters_n, " clusters in root tree.")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/7) Subclustering root tree..")
 
     # Initiate list of subtrees
     subtree_list <- vector("list", P0_clusters_n)
@@ -913,6 +913,7 @@ buildTree <- function(object,
                                     res0_clusters = P_i_starting_resolution[["res0_clusters"]],
                                     decimal_places = P_i_starting_resolution[["decimal_places"]],
                                     tree_records = tree_records,
+                                    tree_id = paste0("P", i),
                                     n_cores = n_cores,
                                     random_seed = random_seed)
           P_i_tree <- P_i_tree_list[["cluster_tree"]]
@@ -991,6 +992,7 @@ buildTree <- function(object,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
                                       tree_records = tree_records,
+                                      tree_id = paste0("P", i, "_", j),
                                       n_cores = n_cores,
                                       random_seed = random_seed)
             P_j_tree <- P_j_tree_list[["cluster_tree"]]

@@ -119,7 +119,7 @@
     # Check that selected slot is present within selected assay in object
     .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     # Extract matrix
-    if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
       use_matrix <- object[[use_assay]]@layers[[use_slot]]
       colnames(use_matrix) <- colnames(object[[use_assay]])
@@ -204,7 +204,7 @@
       .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     use_matrix <- object@assays@data[[use_assay]]
-    if (verbose) message("                      Preparing input matrix using '", use_assay, "' assay..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing input matrix using '", use_assay, "' assay..")
   } else {
     # If assay is not NULL
     if (!is.null(use_assay)) {
@@ -371,7 +371,7 @@
     }
   }
   # Proceed to store matrix
-  if (verbose) message("Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
   object[[use_assay]][use_slot] <- use_matrix
 
   # Return object
@@ -392,7 +392,7 @@
     }
   }
   # Proceed to store matrix
-  if (verbose) message("Storing assay '", use_assay, "' in SingleCellExperiment object.")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing assay '", use_assay, "' in SingleCellExperiment object.")
   object@assays@data[[use_assay]] <- use_matrix
 
   # Return object

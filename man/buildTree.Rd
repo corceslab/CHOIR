@@ -237,7 +237,7 @@ reductions}
 \description{
 This function performs the first step of the CHOIR algorithm. It constructs
 a hierarchical clustering tree starting from a single cluster encompassing
-all cells. First, a parent tree is constructed, from which subtrees are
+all cells. First, a root tree is constructed, from which subtrees are
 subsequently generated. Each branch is subdivided until all cells are
 demonstrably overclustered.
 }

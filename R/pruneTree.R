@@ -464,7 +464,6 @@ pruneTree <- function(object,
         input_matrix <- BiocGenerics::t(input_matrix)
         # Clean up
         rm(use_features_subtree_m)
-        rm(use_cells_subtree_m)
       } else {
         input_matrix <- .getMatrix(object = object,
                                    use_assay = use_assay_prune,
@@ -491,7 +490,6 @@ pruneTree <- function(object,
     names(input_matrices) <- subtree_names_filtered
     # Clean up
     rm(use_features_subtree)
-    rm(use_cells_subtree)
     rm(input_matrix)
   } else {
     stop("No 'input_matrix' supplied. Please supply valid input!")

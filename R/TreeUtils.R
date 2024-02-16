@@ -221,7 +221,7 @@
           }
         }
         # By method
-        if (verbose) message("                      Running ", reduction_method, " with ", n_var_features, " variable features..")
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " with ", n_var_features, " variable features..")
         if (reduction_method == "PCA") {
 
           if (normalization_method == "SCTransform" | (!is.null(use_assay) && use_assay == "SCT")) {
@@ -286,7 +286,7 @@
           }
         }
         # By method
-        if (verbose) message("                      Running ", reduction_method, " for ATAC-seq data with ", n_var_features, " variable features..")
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " for ATAC-seq data with ", n_var_features, " variable features..")
         if (reduction_method == "LSI") {
           # If parameters are provided, check 'em
           if (any(names(reduction_params) %in% c("object", "assay", "features"))) {
@@ -302,7 +302,9 @@
       }
 
       # Harmony batch correction
-      if (batch_correction_method == "Harmony") {
+      # Check number of batches
+      n_batches <- dplyr::n_distinct(metadata[,batch_labels])
+      if (batch_correction_method == "Harmony" & n_batches > 1) {
         # Check provided parameters
         if (any(names(batch_correction_params) %in% c("data_mat", "meta_data", "vars_use", "do_pca"))) {
           stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
@@ -312,7 +314,7 @@
           batch_correction_params$verbose <- FALSE
         }
         # Run Harmony
-        if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
         if (!("character" %in% methods::is(metadata[,batch_labels]))) {
           metadata[,batch_labels] <- as.character(metadata[,batch_labels])
         }
@@ -320,6 +322,8 @@
                                                                                     "meta_data" = metadata,
                                                                                     "vars_use" = batch_labels),
                                                                                batch_correction_params)))
+      } else if (batch_correction_method == "Harmony") {
+        message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
       }
     } else if (methods::is(object, "ArchRProject")) {
       # Subset object if cell names are provided
@@ -354,7 +358,7 @@
         }
       }
       # By method
-      if (verbose) message("                      Running ", reduction_method, " with ", n_var_features, " variable features..")
+      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " with ", n_var_features, " variable features..")
       if (reduction_method == "IterativeLSI") {
         # Check provided parameters
         if (any(names(reduction_params) %in% c("ArchRProj", "name", "varFeatures", "saveIterations", "useMatrix", "depthCol", "force", "threads", "seed"))) {
@@ -382,7 +386,9 @@
         var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
 
         # Harmony batch correction
-        if (batch_correction_method == "Harmony") {
+        # Check number of batches
+        n_batches <- dplyr::n_distinct(object@cellColData[, batch_labels])
+        if (batch_correction_method == "Harmony" & n_batches > 1) {
           # Check provided parameters
           if (any(names(batch_correction_params) %in% c("ArchRProj", "reducedDims", "name", "groupBy", "force"))) {
             stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
@@ -394,7 +400,7 @@
           if (!("character" %in% methods::is(object@cellColData[, batch_labels]))) {
             object@cellColData[, batch_labels] <- as.character(object@cellColData[, batch_labels])
           }
-          if (verbose) message("                      Running Harmony batch correction using column '", batch_labels, "'..")
+          if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
           object <- do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
                                                       "reducedDims" = "CHOIR_IterativeLSI",
                                                       "name" = "CHOIR_Harmony",
@@ -409,6 +415,9 @@
             full_reduction <- object@reducedDims$CHOIR_Harmony
           }
         } else {
+          if (batch_correction_method == "Harmony") {
+            message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
+          }
           # Extract dimensionality reduction coordinates
           reduction_coords <- object@reducedDims$CHOIR_IterativeLSI$matSVD
           # If part of multiple modalities, also extract full ArchR reduction
@@ -586,7 +595,7 @@
         }
       }
       starting_res <- res
-      if (verbose) message("\n                      Starting resolution: ", starting_res)
+      if (verbose) message("                      Starting resolution: ", starting_res)
     } else if (n_clust_res1 > n_clust_res0) {
       # From 1 to 0.1, -0.3 until there is the same # of clusters as res=0
       # From 0.1 on, go down by a power of 10 until there is the same # of clusters as res=0
@@ -624,7 +633,7 @@
         starting_res <- res*10
         decimal_places <- decimal_places - 1
       }
-      if (verbose) message("\n                      Starting resolution: ", starting_res)
+      if (verbose) message("                      Starting resolution: ", starting_res)
     }
   }
   decimal_places <- decimal_places + 1
@@ -858,7 +867,7 @@
       }
       # Change cluster labels, first to just numerical
       cluster_tree[, i] <- as.numeric(as.factor(cluster_tree[, i]))
-      # Now add labels for parent tree ("P0") and level
+      # Now add labels for root tree ("P0") and level
       cluster_tree[, i] <- paste0("P0_L", i, "_", cluster_tree[, i])
     }
   }
@@ -891,6 +900,7 @@
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
 # tree_records -- A dataframe comprising records from tree generation
+# tree_id -- Name of tree
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
 .getTree <- function(snn_matrix,
@@ -919,6 +929,7 @@
                      batch_correction_method = NULL,
                      batches = NULL,
                      tree_records = NULL,
+                     tree_id = "P0",
                      n_cores,
                      random_seed) {
   if (tree_type == "silhouette") {
@@ -931,6 +942,7 @@
                                  res0_clusters = res0_clusters,
                                  decimal_places = decimal_places,
                                  tree_records = tree_records,
+                                 tree_id = tree_id,
                                  n_cores = n_cores,
                                  random_seed = random_seed)
   } else if (tree_type == "full") {
@@ -965,6 +977,7 @@
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
                                     tree_records = tree_records,
+                                    tree_id = tree_id,
                                     n_cores = n_cores,
                                     random_seed = random_seed)
   }
@@ -982,6 +995,7 @@
                           res0_clusters,
                           decimal_places,
                           tree_records,
+                          tree_id = "P0",
                           n_cores,
                           random_seed) {
   # Find number of cells
@@ -1021,7 +1035,7 @@
 
   # Add to records
   tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                 tree_name = "P0",
+                                                 tree_name = tree_id,
                                                  num_cells = n_cells,
                                                  resolution = 0,
                                                  num_clusters = n_clust,
@@ -1059,7 +1073,7 @@
       stop <- TRUE
       # Add to records
       tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                     tree_name = "P0",
+                                                     tree_name = tree_id,
                                                      num_cells = n_cells,
                                                      resolution = res,
                                                      num_clusters = n_clust,
@@ -1087,7 +1101,7 @@
         stop_reason <- paste0("Cannot subdivide further.")
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1105,7 +1119,7 @@
         stop_reason <- paste0("Number of clusters is decreasing.")
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1148,7 +1162,7 @@
 
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1217,7 +1231,7 @@
     cluster_tree <- data.frame(mrtree_output$labelmat.mrtree)
     # Add to records
     tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                   tree_name = "P0",
+                                                   tree_name = tree_id,
                                                    num_cells = n_cells,
                                                    resolution = NA,
                                                    num_clusters = dplyr::n_distinct(cluster_tree[,ncol(cluster_tree)]),
@@ -1478,6 +1492,7 @@
                              batch_correction_method,
                              batches,
                              tree_records,
+                             tree_name,
                              n_cores,
                              random_seed) {
   # Find number of cells
@@ -1520,9 +1535,9 @@
   rownames(multi_level_clusters) <- colnames(snn_matrix)
 
   if (nrow(tree_records) > 0) {
-    current_tree_name <- paste0("P", as.numeric(sub("P", "", tree_records[nrow(tree_records), "tree_name"])) + 1)
+    current_tree_name <- paste0(tree_id, "_", as.numeric(sub("P", "", tree_records[nrow(tree_records), "tree_name"])) + 1)
   } else {
-    current_tree_name <- "P"
+    current_tree_name <- tree_id
   }
 
   unresolved_cells <- colnames(snn_matrix)
