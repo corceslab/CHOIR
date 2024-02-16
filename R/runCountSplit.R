@@ -125,7 +125,7 @@ runCountSplit <- function(object,
                            use_assay = use_assay_m,
                            use_slot = use_slot_m,
                            ArchR_matrix = ArchR_matrix_m,
-                           verbose = FALSE)
+                           verbose = TRUE)
     # Warn if not integer values
     # Check up to 100 random cells
     sampled_cells <- sample(colnames(matrix_m), min(100, ncol(matrix_m)))
@@ -148,13 +148,13 @@ runCountSplit <- function(object,
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
                          " : Storing countsplit matrices..")
     object <- .storeMatrix(object = object,
-                           use_matrix = matrix_m_split[[1]],
+                           use_matrix = matrix_m_1,
                            use_assay = `if`(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[1]), use_assay_m),
                            use_slot = `if`(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[1]), use_slot_m),
                            ArchR_matrix = `if`(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[1]), ArchR_matrix_m),
                            verbose = TRUE)
     object <- .storeMatrix(object = object,
-                           use_matrix = matrix_m_split[[2]],
+                           use_matrix = matrix_m_2,
                            use_assay = `if`(object_type == "SingleCellExperiment", paste0(use_assay_m, countsplit_suffix[2]), use_assay_m),
                            use_slot = `if`(object_type == "Seurat", paste0(use_slot_m, countsplit_suffix[2]), use_slot_m),
                            ArchR_matrix = `if`(object_type == "ArchRProject", paste0(ArchR_matrix_m, countsplit_suffix[2]), ArchR_matrix_m),

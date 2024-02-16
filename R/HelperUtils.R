@@ -365,14 +365,27 @@
       stop("Layer '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat v5 object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
     }
   } else {
-    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)))
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
     if (exists("slot_exists_1")) {
       stop("Slot '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
     }
   }
   # Proceed to store matrix
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
-  object[[use_assay]][use_slot] <- use_matrix
+  try(object[[use_assay]][use_slot] <- use_matrix)
+  # Check that selected slot does now exist within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (!(use_slot %in% names(object[[use_assay]]@layers))) {
+      stop("Layer '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat v5 object.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
+    if (!exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    } else if (slot_exists_1 == FALSE) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    }
+  }
 
   # Return object
   return(object)
