@@ -448,14 +448,20 @@
             }
           }
           use_assay_i <- .matchArg(use_assay, i)
-          object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
+          try(object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
                                                                                                     key = reduction_method_i,
-                                                                                                    assay = use_assay_i))
+                                                                                                    assay = use_assay_i)), silent = TRUE)
+          if (!(paste0(name, "_", use_assay_i) %in% names(object@reductions))) {
+            warning("Reduction ", paste0(name, "_", use_assay_i), " is stored only in 'misc' slot under provided CHOIR 'key'.")
+          }
         }
       } else {
-        object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
+        try(object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
                                                                         key = reduction_method,
-                                                                        assay = use_assay))
+                                                                        assay = use_assay)), silent = TRUE)
+        if (!(name %in% names(object@reductions))) {
+          warning("Reduction ", name, " is stored only in 'misc' slot under provided CHOIR 'key'.")
+        }
       }
     } else if (type == "final_clusters") {
       object@meta.data[, name] <- input_data
