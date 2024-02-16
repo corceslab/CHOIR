@@ -129,7 +129,8 @@ runCountSplit <- function(object,
     # Warn if not integer values
     # Check up to 100 random cells
     sampled_cells <- sample(colnames(matrix_m), min(100, ncol(matrix_m)))
-    if (!all(matrix_m[,sampled_cells] == floor(matrix_m[,sampled_cells]))) {
+    sample_matrix <- as(matrix_m[,sampled_cells], "dgCMatrix")
+    if (!all(sample_matrix == floor(sample_matrix))) {
       warning("Countsplitting is not intended for non-integer matrices, counts will be rounded.")
     }
     # Generate countsplit matrices
