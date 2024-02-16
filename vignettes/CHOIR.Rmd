@@ -39,7 +39,7 @@ remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repo
 
 # Introduction
 
-This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell data. CHOIR is applicable to single-cell data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). Detailed parameter definitions are available under the [Functions](https://www.choirclustering.com/reference/index.html) tab.
+This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell data. CHOIR is applicable to single-cell data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#using-choir-with-multi-modal-data)). Detailed parameter definitions are available under the [Functions](https://www.choirclustering.com/reference/index.html) tab.
 
 CHOIR is based on the premise that if clusters contain biologically different cell types or states, a machine learning classifier that considers features present in cells from each cluster should be able to distinguish the clusters with a higher level of accuracy than machine learning classifiers trained on randomly permuted cluster labels. The use of permutation testing approaches allows CHOIR to introduce statistical significance thresholds into the clustering process.
 
@@ -64,9 +64,9 @@ colnames(data_matrix) <- seq(1:ncol(data_matrix))
 
 ### Pre-processing
 
-CHOIR takes as input a Seurat, SingleCellExperiment, or ArchR object containing one or more feature matrices. Input data should already have undergone appropriate quality control and normalization steps (unless you are using SCTransform, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). Note that the exact pre-processing steps used are up to the user.
+CHOIR takes as input a Seurat, SingleCellExperiment, or ArchR object containing one or more feature matrices. Input data should already have undergone appropriate quality control and normalization steps (unless you are using SCTransform, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#input-object-types)). Note that the exact pre-processing steps used are up to the user.
 
-This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options). First, we will create a Seurat object using the read count matrix. For simplicity, here we'll just exclude cells with fewer than 100 reads and genes present in less than 5 cells.
+This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#input-object-types). First, we will create a Seurat object using the read count matrix. For simplicity, here we'll just exclude cells with fewer than 100 reads and genes present in less than 5 cells.
 
 ```{r, message = FALSE, warning = FALSE, results = FALSE}
 seurat_object <- CreateSeuratObject(data_matrix, 
@@ -99,6 +99,8 @@ The default significance level used by CHOIR is `alpha = 0.05` with Bonferroni m
 We recommend using the default value of `alpha = 0.05` with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 If your data has multiple batches, we highly recommend using CHOIR's built-in batch correction, using the `batch_correction_method` and `batch_labels` parameters (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#choir-parameters)).
+
+To use separate "count split" input matrices for building vs. pruning the clustering tree, set `countsplit = TRUE` and provide matrix suffixes to `countsplit_suffix` (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#count-splitting) for details).
 
 ```{r, eval = FALSE}
 seurat_object <- CHOIR(seurat_object, 
@@ -275,3 +277,24 @@ ArchR_object <- CHOIR(ArchR_object,
                       ArchR_depthcol <- c("nFrags", "Gex_nUMI"),
                       atac = c(TRUE, FALSE))
 ```
+
+## Count splitting
+
+Count splitting is a method developed by Neufeld et al. ([paper](https://doi.org/10.1093/biostatistics/kxac047)) to split a count matrix into two matrices with the same dimensions, to avoid "double dipping" in cross validation of clusters. When parameter `countsplit = TRUE`, CHOIR accepts count split input matrices. One matrix will be used to calculate highly variable features, dimensionality reductions, nearest neighbor adjacency matrices, and the initial clustering tree. The other matrix will be exclusively used as input to the random forest classifiers, in order to decide when clusters should or should not be merged.
+
+We can take our Seurat object and run count splitting using the following code, which will extract our existing count matrix, run function `countsplit::countsplit`, and store the resulting matrices back in our object with added suffixes (default is "_1" and "_2"). Use parameter `normalization_method` to apply normalization and store the normalized count split matrices.
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+seurat_object <- runCountSplit(seurat_object)
+```
+
+CHOIR can then be run using the resulting matrices.
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+seurat_object <- CHOIR(seurat_object, 
+                       use_slot = "counts_log", 
+                       countsplit = TRUE, 
+                       n_cores = 2)
+```
+
+Alternately, users can provide their own count split matrices. They must share a prefix, which is provided to `use_slot` for Seurat objects or `use_assay` for SingleCellExperiment objects. The unique suffixes should be provided to `countsplit_suffix` as a character vector.

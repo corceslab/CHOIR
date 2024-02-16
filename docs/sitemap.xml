@@ -43,6 +43,9 @@
     <loc>/reference/index.html</loc>
   </url>
   <url>
+    <loc>/reference/inferTree.html</loc>
+  </url>
+  <url>
     <loc>/reference/pipe.html</loc>
   </url>
   <url>
@@ -53,5 +56,8 @@
   </url>
   <url>
     <loc>/reference/runCHOIRumap.html</loc>
+  </url>
+  <url>
+    <loc>/reference/runCountSplit.html</loc>
   </url>
 </urlset>

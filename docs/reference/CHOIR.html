@@ -115,6 +115,8 @@ classifiers trained on randomly permuted cluster labels.</p>
 <span>  use_slot <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ArchR_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ArchR_depthcol <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  countsplit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  countsplit_suffix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  var_features <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  atac <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -335,6 +337,23 @@ indicating which matri(ces) to use in the provided object. Default =
 indicating which column to use for correlation with sequencing depth.
 Default = <code>NULL</code> will use the 'nFrags' column for ATAC-seq data or the
 'Gex_nUMI' for RNA-seq data.</p></dd>
+
+
+<dt>countsplit</dt>
+<dd><p>A boolean value indicating whether or not to use
+countsplit input data (see A. Neufeld <code>countsplit</code> package), such that
+one matrix of counts is used for clustering tree generation, and a separate
+matrix is used for all random forest classifier permutation testing. Defaults
+to <code>FALSE</code>.</p></dd>
+
+
+<dt>countsplit_suffix</dt>
+<dd><p>A character vector indicating the suffixes
+that distinguish the two countsplit matrices to be used. Suffixes are
+appended onto input string/vector for <code>use_slot</code> for Seurat objects,
+<code>use_assay</code> for SingleCellExperiment objects, or <code>ArchR_matrix</code> for
+ArchR objects. When countsplitting is enabled, default = <code>NULL</code> uses
+suffixes "_1" and "_2".</p></dd>
 
 
 <dt>reduction</dt>
