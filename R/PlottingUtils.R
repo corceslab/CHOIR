@@ -266,41 +266,40 @@ plotCHOIR <- function(object,
   group_names <- unique(tmp_seurat@meta.data$groups)
   n_groups <- length(group_names)
 
-  # Deal with extra Seurat::DimPlot parameters
-  # Colors
-  if (exists("cols")) {
-    if (length(cols) <= n_groups) {
-      use_colors <- cols
-    } else {
-      warning(length(cols), " colors provided. ", n_groups, " colors required. Proceeding with default CHOIR color palette.")
-      use_colors <- CHOIRpalette(n_groups)
-    }
-  } else {
-    use_colors <- CHOIRpalette(n_groups)
-  }
-
   # ---------------------------------------------------------------------------
   # Plot
   # ---------------------------------------------------------------------------
-  CHOIR_plot <- Seurat::DimPlot(tmp_seurat,
-                                reduction = "dim_reduction",
-                                group.by = "groups",
-                                label = FALSE,
-                                ...) +
-    ggplot2::scale_color_manual(values = use_colors) +
-    ggplot2::labs(color = color_label) +
-    ggplot2::xlab("Dim 1") +
-    ggplot2::ylab("Dim 2") +
-    ggplot2::ggtitle(title)
 
-  # Add highlighted cells
+  # With or without highlighting cells
   if (!is.null(highlight_cells)) {
-  CHOIR_plot <- CHOIR_plot +
-    geom_point(data = CHOIR_plot[[1]]$data[highlight_cells,],
-               aes(x = dimreduction_1,
-                   y = dimreduction_2,
-                   color = groups),
-               alpha = 1)
+    CHOIR_plot <- Seurat::DimPlot(tmp_seurat,
+                                  reduction = "dim_reduction",
+                                  group.by = "groups",
+                                  label = FALSE,
+                                  alpha = 0.1,
+                                  ...) +
+      ggplot2::scale_color_manual(values = CHOIRpalette(n_groups)) +
+      ggplot2::labs(color = color_label) +
+      ggplot2::xlab("Dim 1") +
+      ggplot2::ylab("Dim 2") +
+      ggplot2::ggtitle(title)
+    CHOIR_plot <- CHOIR_plot +
+      geom_point(data = CHOIR_plot[[1]]$data[highlight_cells,],
+                 aes(x = dimreduction_1,
+                     y = dimreduction_2,
+                     color = groups),
+                 alpha = 1)
+  } else {
+    CHOIR_plot <- Seurat::DimPlot(tmp_seurat,
+                                  reduction = "dim_reduction",
+                                  group.by = "groups",
+                                  label = FALSE,
+                                  ...) +
+      ggplot2::scale_color_manual(values = CHOIRpalette(n_groups)) +
+      ggplot2::labs(color = color_label) +
+      ggplot2::xlab("Dim 1") +
+      ggplot2::ylab("Dim 2") +
+      ggplot2::ggtitle(title)
   }
 
   # Calculate centroids
