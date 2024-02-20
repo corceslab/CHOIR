@@ -242,7 +242,7 @@ plotCHOIR <- function(object,
   if (methods::is(object, "Seurat")) {
     tmp_seurat@meta.data <- object@meta.data[cells, ]
   } else if (methods::is(object, "SingleCellExperiment")) {
-    tmp_seurat@meta.data <- object@colData[cells, ]
+    tmp_seurat@meta.data <- data.frame(object@colData[cells, ])
   } else if (methods::is(object, "ArchRProject")) {
     tmp_seurat@meta.data <- object@cellColData[cells, ]
   }
