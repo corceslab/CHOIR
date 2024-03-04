@@ -897,6 +897,7 @@
 # starting_resolution -- A numeric value indicating the resolution at which to begin clustering from getStartingResolution()
 # res0_clusters -- A vector of cluster IDs at resolution = 0 from getStartingResolution()
 # decimal_places -- A numeric value indicating the number of decimal places for rounding the resolution
+# min_cluster_depth -- A numeric value indicating maximum cluster size at the bottom of the tree
 # alpha -- A numerical value indicating the significance level used for the permutation test comparisons
 # exclude_features -- A character vector indicating features that should be excluded from the input matrix
 # n_iterations -- A numeric value indicating the number of iterations run for each random forest classifier comparison
@@ -905,6 +906,11 @@
 # min_accuracy -- A numeric value indicating the minimum accuracy below which clusters will be automatically merged
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
+# sample_max -- A numeric value indicating maximum number of cells used per cluster to train/test random forest classifier
+# downsampling_rate -- A numeric value indicating the proportion of cells used per cluster to train/test random forest classifier
+# batch_correction_method -- Character string or vector indicating which batch correction method to use
+# batches -- Character vector of batch labels for each cell
+# batch_LOO -- A boolean indicating whether to use a leave-one-out approach for batches
 # tree_records -- A dataframe comprising records from tree generation
 # tree_id -- Name of tree
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
@@ -921,7 +927,7 @@
                      starting_resolution = NULL,
                      res0_clusters = NULL,
                      decimal_places = NULL,
-                     min_cluster_depth = 3000,
+                     min_cluster_depth = 2000,
                      alpha = 0.05,
                      exclude_features = NULL,
                      n_iterations = 100,
@@ -934,6 +940,7 @@
                      downsampling_rate = NULL,
                      batch_correction_method = NULL,
                      batches = NULL,
+                     batch_LOO = NULL,
                      tree_records = NULL,
                      tree_id = "P0",
                      n_cores,
@@ -982,6 +989,7 @@
                                     downsampling_rate = downsampling_rate,
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
+                                    batch_LOO = batch_LOO,
                                     tree_records = tree_records,
                                     tree_id = tree_id,
                                     n_cores = n_cores,
@@ -1497,6 +1505,7 @@
                              downsampling_rate,
                              batch_correction_method,
                              batches,
+                             batch_LOO,
                              tree_records,
                              tree_id,
                              n_cores,
@@ -1523,15 +1532,19 @@
                    'mean_repeat_errors1', 'mean_repeat_errors2',
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
-                   'batches_used', 'batch_mean_accuracies',
-                   'connectivity', 'root_distance', 'subtree_distance', 'time',
+                   'batches_used', 'batch_mean_accuracies', 'batch_mean_variances',
+                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
+                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
+                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
+                   'connectivity', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
-                                    `if`(max_repeat_errors > 0, 12:15, NULL),
+                                    `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(batch_correction_method == "Harmony", 20:21, NULL),
-                                    `if`(min_connections > 0, 22, NULL),
-                                    23:24)]
+                                    `if`(!is.null(batch_labels), 20:22, NULL),
+                                    `if`(batch_LOO == TRUE, 23:29, NULL),
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
+                                    31:32)]
 
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
@@ -1731,6 +1744,7 @@
                                                 collect_all_metrics = FALSE,
                                                 sample_max = sample_max,
                                                 downsampling_rate = downsampling_rate,
+                                                batch_LOO = batch_LOO,
                                                 input_matrix = input_matrix[current_cells, ],
                                                 nn_matrix = nn_matrix[current_cells, current_cells],
                                                 comparison_records = comparison_records,
@@ -1863,6 +1877,7 @@
                                               collect_all_metrics = FALSE,
                                               sample_max = sample_max,
                                               downsampling_rate = downsampling_rate,
+                                              batch_LOO = batch_LOO,
                                               input_matrix = input_matrix[current_cells,],
                                               nn_matrix = nn_matrix[current_cells, current_cells],
                                               comparison_records = comparison_records,
@@ -1949,6 +1964,7 @@
                                                     collect_all_metrics = FALSE,
                                                     sample_max = sample_max,
                                                     downsampling_rate = downsampling_rate,
+                                                    batch_LOO = batch_LOO,
                                                     input_matrix = input_matrix[current_cells, ],
                                                     nn_matrix = nn_matrix[current_cells, current_cells],
                                                     comparison_records = comparison_records,

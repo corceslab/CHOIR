@@ -87,6 +87,11 @@
 #' @param batch_labels If applying batch correction, a character string or
 #' vector indicating the name of the column containing the batch labels.
 #' Defaults to \code{NULL}.
+#' @param batch_LOO A boolean value indicating whether to check for instances
+#' in which a single batch obscures the distinction between two clusters. When
+#' set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
+#' test comparisons using 3 or more batches, and the lowest resulting p-value
+#' is used. Defaults to \code{FALSE}.
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
 #' Seurat or SingleCellExperiment objects,
@@ -184,6 +189,7 @@ buildTree <- function(object,
                       batch_correction_method = "none",
                       batch_correction_params = list(),
                       batch_labels = NULL,
+                      batch_LOO = FALSE,
                       neighbor_params = list(),
                       cluster_params = list(algorithm = 1,
                                             group.singletons = TRUE),
@@ -282,6 +288,7 @@ buildTree <- function(object,
   .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, reduction_method))
   .validInput(batch_correction_params, "batch_correction_params", list(object, ArchR_matrix, use_assay, batch_correction_method))
   .validInput(batch_labels, "batch_labels", object)
+  .validInput(batch_LOO, "batch_LOO")
   .validInput(neighbor_params, "neighbor_params", list(object, n_modalities))
   .validInput(cluster_params, "cluster_params")
   .validInput(n_cores, "n_cores")
@@ -459,6 +466,7 @@ buildTree <- function(object,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Batch leave-one-out adjustment: ", batch_LOO,
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
@@ -991,6 +999,7 @@ buildTree <- function(object,
                                       downsampling_rate = downsampling_rate,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
+                                      batch_LOO = batch_LOO,
                                       tree_records = tree_records,
                                       tree_id = paste0("P", i, "_", j),
                                       n_cores = n_cores,
@@ -1163,6 +1172,7 @@ buildTree <- function(object,
                          "batch_correction_method" = batch_correction_method,
                          "batch_correction_params" = batch_correction_params,
                          "batch_labels" = batch_labels,
+                         "batch_LOO" = batch_LOO,
                          "neighbor_params" = neighbor_params,
                          "cluster_params" = cluster_params,
                          "use_assay" = use_assay,

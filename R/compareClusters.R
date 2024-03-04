@@ -64,6 +64,11 @@
 #' @param batch_labels If applying batch correction, a character string or
 #' vector indicating the name of the column containing the batch labels.
 #' Defaults to \code{NULL}.
+#' @param batch_LOO A boolean value indicating whether to check for instances
+#' in which a single batch obscures the distinction between two clusters. When
+#' set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
+#' test comparisons using 3 or more batches, and the lowest resulting p-value
+#' is used. Defaults to \code{FALSE}.
 #' @param use_assay For Seurat or SingleCellExperiment objects, a character
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
@@ -130,6 +135,7 @@ compareClusters <- function(object = NULL,
                             downsampling_rate = "auto",
                             normalization_method = "none",
                             batch_labels = NULL,
+                            batch_LOO = FALSE,
                             use_assay = NULL,
                             use_slot = NULL,
                             ArchR_matrix = NULL,
@@ -165,6 +171,7 @@ compareClusters <- function(object = NULL,
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(batch_labels, "batch_labels", object)
+  .validInput(batch_LOO, "batch_LOO")
   .validInput(collect_all_metrics, "collect_all_metrics")
   .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
   .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
@@ -378,15 +385,19 @@ compareClusters <- function(object = NULL,
                    'mean_repeat_errors1', 'mean_repeat_errors2',
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
-                   'batches_used', 'batch_mean_accuracies',
+                   'batches_used', 'batch_mean_accuracies', 'batch_mean_variances',
+                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
+                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
+                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
                    'connectivity', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(!is.null(batch_labels), 20:21, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 22, NULL),
-                                    23:24)]
+                                    `if`(!is.null(batch_labels), 20:22, NULL),
+                                    `if`(batch_LOO == TRUE, 23:29, NULL),
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
+                                    31:32)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 
@@ -424,6 +435,7 @@ compareClusters <- function(object = NULL,
                                            collect_all_metrics = collect_all_metrics,
                                            sample_max = sample_max,
                                            downsampling_rate = downsampling_rate,
+                                           batch_LOO = batch_LOO,
                                            input_matrix = input_matrix,
                                            nn_matrix = nn_matrix,
                                            comparison_records = comparison_records,
