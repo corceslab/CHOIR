@@ -598,16 +598,16 @@ pruneTree <- function(object,
                    'mean_repeat_errors1', 'mean_repeat_errors2',
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
-                   'batches_used', 'batch_mean_accuracies',
+                   'batches_used', 'batch_mean_accuracies', 'batch_var_accuracies',
                    'connectivity', 'root_distance', 'subtree_distance', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(batch_correction_method == "Harmony", 20:21, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 22, NULL),
-                                    `if`(methods::is(distance_awareness, "numeric"), 23:24, NULL),
-                                    25:26)]
+                                    `if`(batch_correction_method == "Harmony", 20:22, NULL),
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 23, NULL),
+                                    `if`(methods::is(distance_awareness, "numeric"), 24:25, NULL),
+                                    26:27)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 
