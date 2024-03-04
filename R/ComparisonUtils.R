@@ -174,12 +174,20 @@
     mean_err <- (1 - mean_acc)*n_sampled
     # Get batch accuracies
     batch_acc <- c()
+    print(accuracies)
+    print(use_batch)
+    print(batches)
+    print(batch_acc)
     if (!is.null(use_batch)) {
       for (b in 1:length(batches)) {
+        print(batches[b])
         batch_inds <- which(use_batch == batches[b])
+        print(batch_inds)
         batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
+        print(batch_acc)
       }
     }
+    print(batch_acc)
     # Repeated errors
     if (max_repeat_errors > 0 | collect_all_metrics == TRUE) {
       # Cluster 1
@@ -278,6 +286,7 @@
                                             percentile_modified_variance = percentile_modified_var)
       }
     }
+    print(paste(round(batch_acc, 3), collapse = "; "))
     if (!is.null(use_batch)) {
       current_comparison <- dplyr::mutate(current_comparison,
                                           batches_used = paste(batches, collapse = "; "),
