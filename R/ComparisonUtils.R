@@ -370,7 +370,7 @@
         if (eval == 1) {
           reason <- "split"
         } else {
-          reason <- paste0("split: batch ", batches[eval - 1], "left out")
+          reason <- paste0("split: batch ", batches[eval - 1], " left out")
         }
         if (use_variance == FALSE) {
           max_p <- eval_percentile_acc[eval]
