@@ -1536,14 +1536,14 @@
                    'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
                    'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
                    'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
-                   'connectivity', 'time',
+                   'connectivity', 'root_distance', 'subtree_distance', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
-                                    `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
+                                    `if`(max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(!is.null(batch_labels), 20:22, NULL),
+                                    `if`(batch_correction_method == "Harmony", 20:22, NULL),
                                     `if`(batch_LOO == TRUE, 23:29, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
+                                    `if`(min_connections > 0, 30, NULL),
                                     31:32)]
 
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))

@@ -27,6 +27,7 @@ compareClusters(
   downsampling_rate = "auto",
   normalization_method = "none",
   batch_labels = NULL,
+  batch_LOO = FALSE,
   use_assay = NULL,
   use_slot = NULL,
   ArchR_matrix = NULL,
@@ -119,6 +120,12 @@ CHOIR after normalization, except in cases when the user wishes to use
 \item{batch_labels}{If applying batch correction, a character string or
 vector indicating the name of the column containing the batch labels.
 Defaults to \code{NULL}.}
+
+\item{batch_LOO}{A boolean value indicating whether to check for instances
+in which a single batch obscures the distinction between two clusters. When
+set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
+test comparisons using 3 or more batches, and the lowest resulting p-value
+is used. Defaults to \code{FALSE}.}
 
 \item{use_assay}{For Seurat or SingleCellExperiment objects, a character
 string or vector indicating the assay(s) to use in the provided object.
