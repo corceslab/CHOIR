@@ -290,7 +290,7 @@
     if (!is.null(use_batch)) {
       current_comparison <- dplyr::mutate(current_comparison,
                                           batches_used = paste(batches, collapse = "; "),
-                                          batch_accuracies = paste(round(batch_acc, 3), collapse = "; "))
+                                          batch_mean_accuracies = paste(round(batch_acc, 3), collapse = "; "))
     }
     if (min_connections > 0 | collect_all_metrics == TRUE) {
       current_comparison <- dplyr::mutate(current_comparison,
