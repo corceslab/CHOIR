@@ -244,25 +244,35 @@
         batch_inds <- which(use_batch == batches[b])
         batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
         batch_var <- c(batch_var, stats::var(accuracies[batch_inds]))
-        if (batch_LOO == TRUE & length(batches) > 2) {
-          # Repeat all assessments without iterations that use batch b
-          # Balanced accuracy
-          batch_LOO_mean_acc <- c(batch_LOO_mean_acc, mean(accuracies[-batch_inds]))
-          batch_LOO_var_acc <- c(batch_LOO_var_acc, stats::var(accuracies[-batch_inds]))
-          batch_LOO_mean_err <- c(batch_LOO_mean_err, batch_LOO_mean_acc[b])
-          # Permutation accuracies
-          batch_LOO_mean_permutation_acc <- c(batch_LOO_mean_permutation_acc, mean(permutation_accuracies[-batch_inds]))
-          batch_LOO_var_permutation_acc = c(batch_LOO_var_permutation_acc, stats::var(permutation_accuracies[-batch_inds]))
-          # Percentile of permuted mean via kernel density estimator
-          batch_LOO_percentile_acc <- c(batch_LOO_percentile_acc, (1 - spatstat.explore::CDF(stats::density(permutation_accuracies[-batch_inds]))(batch_LOO_mean_acc[b])))
-          # Percentile of permuted variance via bootstrap
-          boot_permutation_var <- apply(matrix(seq(1:length(permutation_accuracies[-batch_inds])), 1,
-                                               length(permutation_accuracies[-batch_inds])), 2,
-                                        function(x) stats::var(sample(permutation_accuracies[-batch_inds],
-                                                                      length(permutation_accuracies[-batch_inds]),
-                                                                      replace = TRUE)))
-          batch_LOO_percentile_var <- c(batch_LOO_percentile_var,
-                                        spatstat.explore::CDF(stats::density(boot_permutation_var))(batch_LOO_var_acc[b]))
+        if (batch_LOO == TRUE) {
+          if (length(batches) > 2) {
+            # Repeat all assessments without iterations that use batch b
+            # Balanced accuracy
+            batch_LOO_mean_acc <- c(batch_LOO_mean_acc, mean(accuracies[-batch_inds]))
+            batch_LOO_var_acc <- c(batch_LOO_var_acc, stats::var(accuracies[-batch_inds]))
+            batch_LOO_mean_err <- c(batch_LOO_mean_err, batch_LOO_mean_acc[b])
+            # Permutation accuracies
+            batch_LOO_mean_permutation_acc <- c(batch_LOO_mean_permutation_acc, mean(permutation_accuracies[-batch_inds]))
+            batch_LOO_var_permutation_acc <- c(batch_LOO_var_permutation_acc, stats::var(permutation_accuracies[-batch_inds]))
+            # Percentile of permuted mean via kernel density estimator
+            batch_LOO_percentile_acc <- c(batch_LOO_percentile_acc, (1 - spatstat.explore::CDF(stats::density(permutation_accuracies[-batch_inds]))(batch_LOO_mean_acc[b])))
+            # Percentile of permuted variance via bootstrap
+            boot_permutation_var <- apply(matrix(seq(1:length(permutation_accuracies[-batch_inds])), 1,
+                                                 length(permutation_accuracies[-batch_inds])), 2,
+                                          function(x) stats::var(sample(permutation_accuracies[-batch_inds],
+                                                                        length(permutation_accuracies[-batch_inds]),
+                                                                        replace = TRUE)))
+            batch_LOO_percentile_var <- c(batch_LOO_percentile_var,
+                                          spatstat.explore::CDF(stats::density(boot_permutation_var))(batch_LOO_var_acc[b]))
+          } else {
+            batch_LOO_mean_acc <- ""
+            batch_LOO_var_acc <- ""
+            batch_LOO_mean_err <- ""
+            batch_LOO_mean_permutation_acc <- ""
+            batch_LOO_var_permutation_acc <- ""
+            batch_LOO_percentile_acc <- ""
+            batch_LOO_percentile_var <- ""
+          }
         }
       }
     }
@@ -356,9 +366,15 @@
     # When batch_LOO is TRUE, will evaluate all iterations, as well as
     # when leaving out iterations using each batch in turn
     # Will stop if split is achieved
-    eval_mean_acc <- c(mean_acc, batch_LOO_mean_acc)
-    eval_percentile_acc <- c(percentile_acc, batch_LOO_percentile_acc)
-    eval_percentile_var <- c(percentile_var, batch_LOO_percentile_var)
+    if (batch_LOO == TRUE & length(batches) > 2) {
+      eval_mean_acc <- c(mean_acc, batch_LOO_mean_acc)
+      eval_percentile_acc <- c(percentile_acc, batch_LOO_percentile_acc)
+      eval_percentile_var <- c(percentile_var, batch_LOO_percentile_var)
+    } else {
+      eval_mean_acc <- mean_acc
+      eval_percentile_acc <- percentile_acc
+      eval_percentile_var <- percentile_var
+    }
     stop <- FALSE
     eval <- 1
     while (eval <= length(eval_mean_acc) & stop == FALSE) {
