@@ -328,14 +328,25 @@
                                           batch_var_accuracies = paste(round(batch_var, 5), collapse = "; "))
     }
     if (batch_LOO == TRUE) {
-      current_comparison <- dplyr::mutate(current_comparison,
-                                          batch_LOO_mean_accuracies = paste(round(batch_LOO_mean_acc, 5), collapse = "; "),
-                                          batch_LOO_var_accuracies = paste(round(batch_LOO_var_acc, 5), collapse = "; "),
-                                          batch_LOO_mean_errors = paste(round(batch_LOO_mean_err, 5), collapse = "; "),
-                                          batch_LOO_mean_permuted_accuracies = paste(round(batch_LOO_mean_permutation_acc, 5), collapse = "; "),
-                                          batch_LOO_var_permuted_accuracies = paste(round(batch_LOO_var_permutation_acc, 5), collapse = "; "),
-                                          batch_LOO_percentile_accuracies = paste(round(batch_LOO_percentile_acc, 5), collapse = "; "),
-                                          batch_LOO_percentile_variances = paste(round(batch_LOO_percentile_var, 5), collapse = "; "))
+      if (length(batches) > 2) {
+        current_comparison <- dplyr::mutate(current_comparison,
+                                            batch_LOO_mean_accuracies = paste(round(batch_LOO_mean_acc, 5), collapse = "; "),
+                                            batch_LOO_var_accuracies = paste(round(batch_LOO_var_acc, 5), collapse = "; "),
+                                            batch_LOO_mean_errors = paste(round(batch_LOO_mean_err, 5), collapse = "; "),
+                                            batch_LOO_mean_permuted_accuracies = paste(round(batch_LOO_mean_permutation_acc, 5), collapse = "; "),
+                                            batch_LOO_var_permuted_accuracies = paste(round(batch_LOO_var_permutation_acc, 5), collapse = "; "),
+                                            batch_LOO_percentile_accuracies = paste(round(batch_LOO_percentile_acc, 5), collapse = "; "),
+                                            batch_LOO_percentile_variances = paste(round(batch_LOO_percentile_var, 5), collapse = "; "))
+      } else {
+        current_comparison <- dplyr::mutate(current_comparison,
+                                            batch_LOO_mean_accuracies = NA,
+                                            batch_LOO_var_accuracies = NA,
+                                            batch_LOO_mean_errors = NA,
+                                            batch_LOO_mean_permuted_accuracies = NA,
+                                            batch_LOO_var_permuted_accuracies = NA,
+                                            batch_LOO_percentile_accuracies = NA,
+                                            batch_LOO_percentile_variances = NA)
+      }
     }
 
     if (min_connections > 0 | collect_all_metrics == TRUE) {
