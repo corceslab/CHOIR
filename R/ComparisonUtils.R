@@ -244,7 +244,7 @@
         batch_inds <- which(use_batch == batches[b])
         batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
         batch_var <- c(batch_var, stats::var(accuracies[batch_inds]))
-        if (batch_LOO == TRUE & length(batches > 2)) {
+        if (batch_LOO == TRUE & length(batches) > 2) {
           # Repeat all assessments without iterations that use batch b
           # Balanced accuracy
           batch_LOO_mean_acc <- c(batch_LOO_mean_acc, mean(accuracies[-batch_inds]))

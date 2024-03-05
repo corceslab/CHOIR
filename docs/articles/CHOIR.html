@@ -263,7 +263,7 @@ parameter settings.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildTree.html">buildTree</a></span><span class="op">(</span><span class="va">seurat_object</span>,</span>
 <span>                           n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:17 : (Step 1/7) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : (Step 1/7) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat (v5)</span></span>
@@ -293,29 +293,30 @@ parameter settings.</p>
 <span><span class="co">#&gt;  - Maximum repeated errors: 20</span></span>
 <span><span class="co">#&gt;  - Maximum cells sampled: Inf</span></span>
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
+<span><span class="co">#&gt;  - Batch leave-one-out adjustment: FALSE</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:17 : (Step 2/7) Running initial dimensionality reduction..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:17 : Preparing matrix using 'RNA' assay and 'data' slot..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:17 : Running PCA with 2000 variable features..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:18 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:18 : (Step 4/7) Identify starting clustering resolution..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : (Step 2/7) Running initial dimensionality reduction..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : Preparing matrix using 'RNA' assay and 'data' slot..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : Running PCA with 2000 variable features..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:56 : (Step 4/7) Identify starting clustering resolution..</span></span>
 <span><span class="co">#&gt;                       Starting resolution: 0.4</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:18 : (Step 5/7) Building root clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:57 : (Step 5/7) Building root clustering tree..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Identified 3 clusters in root tree.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:18 : (Step 6/7) Subclustering root tree..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:18 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:19 : 44% (Subtree 1/3, 112 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:20 : 50% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:20 : 51% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:20 : 79% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:20 : 81% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:20 : 83% (Subtree 3/3, 47 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : 99% (Subtree 3/3, 47 cells), 11 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:57 : (Step 6/7) Subclustering root tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:57 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:58 : 44% (Subtree 1/3, 112 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:58 : 50% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:59 : 51% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:59 : 79% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:59 : 81% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:54:59 : 83% (Subtree 3/3, 47 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:00 : 99% (Subtree 3/3, 47 cells), 11 total clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : (Step 7/7) Compiling full clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:00 : (Step 7/7) Compiling full clustering tree..</span></span>
 <span><span class="co">#&gt;                       Full tree has 6 levels and 8 clusters.</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -344,7 +345,7 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
 <span>                           n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : (Step 1/2) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:01 : (Step 1/2) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat</span></span>
@@ -371,22 +372,23 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <span><span class="co">#&gt;  - Distance approximation: TRUE</span></span>
 <span><span class="co">#&gt;  - Maximum cells sampled: Inf</span></span>
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
+<span><span class="co">#&gt;  - Batch leave-one-out adjustment: FALSE</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : (Step 2/2) Iterating through clustering tree..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : 10% (1/6 levels) in 0 min. 8 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : 20% (2/6 levels) in 0 min. 7 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:22 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:23 : 40% (3/6 levels) in 0.02 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:24 : 52% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:24 : 61% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:26 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:26 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:26 : 92% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:26 : Completed: all clusters compared.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:01 : (Step 2/2) Iterating through clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:01 : 10% (1/6 levels) in 0 min. 8 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:01 : 20% (2/6 levels) in 0 min. 7 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:01 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:02 : 40% (3/6 levels) in 0.02 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:02 : 52% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:02 : 61% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:05 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:05 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:05 : 92% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:05 : Completed: all clusters compared.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:26 : Identified 4 clusters.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2024-03-04 13:55:05 : Identified 4 clusters.</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -665,18 +667,18 @@ matrices back in our object with added suffixes (default is “_1” and
 normalization and store the normalized count split matrices.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCountSplit.html">runCountSplit</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Checking inputs and preparing object..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Fetching matrix 1 of 1..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Preparing matrix using 'RNA' assay and 'counts' slot..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Countsplitting matrix..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:07 : Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:07 : Fetching matrix 1 of 1..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:07 : Preparing matrix using 'RNA' assay and 'counts' slot..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:07 : Countsplitting matrix..</span></span>
 <span><span class="co">#&gt; As no overdispersion parameters were provided, Poisson count splitting will be performed.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing layer 'counts_1' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing layer 'counts_2' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Running log normalization on countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing normalized countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing layer 'counts_log_1' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Storing layer 'counts_log_2' under assay 'RNA' in Seurat object.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing layer 'counts_1' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing layer 'counts_2' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Running log normalization on countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing normalized countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing layer 'counts_log_1' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Storing layer 'counts_log_2' under assay 'RNA' in Seurat object.</span></span></code></pre></div>
 <p>CHOIR can then be run using the resulting matrices.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
@@ -686,7 +688,7 @@ normalization and store the normalized count split matrices.</p>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
 <span><span class="co">#&gt; - CHOIR - Part 1: Build clustering tree</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : (Step 1/7) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : (Step 1/7) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat (v5)</span></span>
@@ -719,35 +721,36 @@ normalization and store the normalized count split matrices.</p>
 <span><span class="co">#&gt;  - Maximum repeated errors: 20</span></span>
 <span><span class="co">#&gt;  - Maximum cells sampled: Inf</span></span>
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
+<span><span class="co">#&gt;  - Batch leave-one-out adjustment: FALSE</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : (Step 2/7) Running initial dimensionality reduction..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:29 : Preparing matrix using 'RNA' assay and 'counts_log_1' slot..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:30 : Running PCA with 2000 variable features..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:30 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:30 : (Step 4/7) Identify starting clustering resolution..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : (Step 2/7) Running initial dimensionality reduction..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:08 : Preparing matrix using 'RNA' assay and 'counts_log_1' slot..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : Running PCA with 2000 variable features..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : (Step 4/7) Identify starting clustering resolution..</span></span>
 <span><span class="co">#&gt;                       Starting resolution: 0.4</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:30 : (Step 5/7) Building root clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : (Step 5/7) Building root clustering tree..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Identified 3 clusters in root tree.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:30 : (Step 6/7) Subclustering root tree..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:31 : 6% (Subtree 1/3, 136 cells), 3 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:31 : 11% (Subtree 1/3, 136 cells), 4 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:32 : 53% (Subtree 1/3, 136 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : 59% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : 61% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : 88% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : 90% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : 91% (Subtree 3/3, 24 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : (Step 6/7) Subclustering root tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : 6% (Subtree 1/3, 136 cells), 3 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:09 : 11% (Subtree 1/3, 136 cells), 4 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:13 : 53% (Subtree 1/3, 136 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:13 : 59% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:13 : 61% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : 88% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : 90% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : 91% (Subtree 3/3, 24 cells), 9 total clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : (Step 7/7) Compiling full clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : (Step 7/7) Compiling full clustering tree..</span></span>
 <span><span class="co">#&gt;                       Full tree has 6 levels and 7 clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
 <span><span class="co">#&gt; - CHOIR - Part 2: Prune clustering tree</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : (Step 1/2) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : (Step 1/2) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat</span></span>
@@ -777,25 +780,26 @@ normalization and store the normalized count split matrices.</p>
 <span><span class="co">#&gt;  - Distance approximation: TRUE</span></span>
 <span><span class="co">#&gt;  - Maximum cells sampled: Inf</span></span>
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
+<span><span class="co">#&gt;  - Batch leave-one-out adjustment: FALSE</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:33 : (Step 2/2) Iterating through clustering tree..</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:34 : 12% (1/6 levels) in 0 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:34 : 21% (2/6 levels) in 0 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:34 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:35 : 40% (3/6 levels) in 0.03 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:36 : 51% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:36 : 61% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:37 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : 92% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : Checking for underclustering in 2 clusters.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : Additional comparisons necessary. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : Completed: all clusters compared.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : (Step 2/2) Iterating through clustering tree..</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : 12% (1/6 levels) in 0 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:14 : 21% (2/6 levels) in 0 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:15 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:16 : 40% (3/6 levels) in 0.03 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:16 : 51% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:16 : 61% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:18 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:18 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:18 : 92% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:18 : Checking for underclustering in 2 clusters.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:19 : Additional comparisons necessary. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2024-03-04 13:55:19 : Completed: all clusters compared.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - In 1 comparisons, clusters were split due to the minimum number of nearest neighbor connections.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-02-16 14:36:38 : Identified 4 clusters.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2024-03-04 13:55:19 : Identified 4 clusters.</span></span></code></pre></div>
 <p>Alternately, users can provide their own count split matrices. They
 must share a prefix, which is provided to <code>use_slot</code> for
 Seurat objects or <code>use_assay</code> for SingleCellExperiment
