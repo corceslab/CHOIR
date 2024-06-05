@@ -240,6 +240,7 @@ compareClusters <- function(object = NULL,
   # Extract batch labels
   if (!is.null(batch_labels)) {
     batches <- .retrieveData(object = object, key = key, type = "cell_metadata", name = batch_labels)
+    batches <- as.character(batches)
     names(batches) <- cell_IDs
   }
 
