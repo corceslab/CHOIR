@@ -471,7 +471,7 @@ compareClusters <- function(object = NULL,
   if (collect_all_metrics == TRUE) {
     output_list <- list("comparison_result" = comparison_output[["result"]],
                         "comparison_records" = comparison_output[["comparison_records"]],
-                        "feature_importances" = comparison_output[["feature_importances"]])
+                        "feature_importances" = comparison_output[["feature_importance_records"]])
   } else {
     output_list <- list("comparison_result" = comparison_output[["result"]],
                         "comparison_records" = comparison_output[["comparison_records"]])
