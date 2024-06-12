@@ -167,7 +167,6 @@ buildParentTree <- function(object,
   .validInput(var_features, "var_features", reduction)
   .validInput(atac, "atac", n_modalities)
   .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
-  .validInput(feature_set, "feature_set", list("buildTree", normalization_method, atac))
   .validInput(subtree_reductions, "subtree_reductions", list(reduction, max_clusters))
   .validInput(reduction_method, "reduction_method", list(object, n_modalities))
   .validInput(reduction_params, "reduction_params", list(object, ArchR_matrix, use_assay, reduction_method))
