@@ -248,8 +248,7 @@ buildParentTree <- function(object,
 
   # Run dimensionality reduction if not supplied by user
   if (is.null(reduction)) {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Running initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Running initial dimensionality reduction..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Running initial dimensionality reduction..")
     P0_dim_reduction <- .runDimReduction(object = object,
                                          normalization_method = normalization_method,
                                          reduction_method = reduction_method,
@@ -268,8 +267,7 @@ buildParentTree <- function(object,
                                          random_seed = random_seed,
                                          verbose = verbose)
   } else {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Setting initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Setting initial dimensionality reduction..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Setting initial dimensionality reduction..")
     P0_dim_reduction <- list("reduction_coords" = reduction,
                              "var_features" = var_features)
   }
@@ -297,9 +295,7 @@ buildParentTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 2: Find nearest neighbors & calculate distance matrix for dimensionality reduction
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/6) Generating initial nearest neighbors graph..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
-
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
   # 1 vs. multiple dimensionality reductions
   if (n_modalities < 2 | methods::is(object, "ArchRProject")) {
     # Number & names of cells
@@ -354,9 +350,7 @@ buildParentTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 3: Identify starting clustering resolution
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/6) Identify starting clustering resolution..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
-
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
   P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
                                                    cluster_params = cluster_params,
                                                    random_seed = random_seed,
@@ -381,7 +375,7 @@ buildParentTree <- function(object,
                              neighbors_decision = NULL,
                              stop_branching_reason = NULL)
 
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/6) Building parent clustering tree..")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/4) Building parent clustering tree..")
   P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                            dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
                            reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
