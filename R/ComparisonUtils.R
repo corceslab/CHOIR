@@ -24,6 +24,7 @@
 # collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics from the random forest classifiers
 # sample_max -- A numeric indicating max cells to sample for random forest
 # downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
+# min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # input_matrix -- A matrix of sequencing data, on which the random forest classifier will be trained/tested
 # nn_matrix -- A nearest neighbors adjacency matrix
 # comparison_records -- A dataframe containing the comparison records output of the previous runs of this function
@@ -55,6 +56,7 @@
                                 collect_all_metrics,
                                 sample_max,
                                 downsampling_rate,
+                                min_reads,
                                 input_matrix,
                                 nn_matrix,
                                 comparison_records = NULL,
@@ -144,12 +146,46 @@
                      max(1, floor(downsampling_rate*(min(length(cluster1_cells), length(cluster2_cells))/2))))
   }
 
-  # Go ahead with comparison
+  # Filter input matrix
   if (proceed == TRUE) {
     # Prepare input matrix
     comparison_input <- input_matrix[c(cluster1_cells, cluster2_cells),]
     comparison_input <- methods::as(comparison_input, "dgCMatrix")
-    comparison_input <- comparison_input[, Matrix::colSums(comparison_input) > 0]
+    # Filter to minimum reads per feature
+    if (is.null(min_reads)) {
+      comparison_input <- comparison_input[, Matrix::colSums(comparison_input) > 0]
+    } else {
+      feature_sums_cluster1 <- Matrix::colSums(comparison_input[cluster1_cells,])
+      feature_sums_cluster2 <- Matrix::colSums(comparison_input[cluster2_cells,])
+      min_reads_cluster1 <- length(cluster1_cells)/min_reads
+      min_reads_cluster2 <- length(cluster2_cells)/min_reads
+      keep_features <- (feature_sums_cluster1 > min_reads_cluster1) | (feature_sums_cluster2 > min_reads_cluster2)
+      if (sum(keep_features) == 0) {
+        comparison_result <- "merge"
+        proceed <- FALSE
+        # Add to comparison records
+        if (!is.null(comparison_records)) {
+          current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
+          colnames(current_comparison) <- colnames(comparison_records)
+          current_comparison <- data.frame(current_comparison)
+          current_comparison$comparison <- paste0(cluster1_name, " vs. ", cluster2_name)
+          current_comparison$cluster1_size <- length(cluster1_cells)
+          current_comparison$cluster2_size <- length(cluster2_cells)
+          current_comparison$connectivity <- adjacent
+          current_comparison$decision <- "merge: minimum reads"
+          if ("root_distance" %in% colnames(comparison_records)) {
+            current_comparison$root_distance <- P0_distance
+            current_comparison$subtree_distance <- P_i_distance
+          }
+        }
+      } else {
+        comparison_input <- comparison_input[, keep_features]
+      }
+    }
+  }
+
+  # Go ahead with comparison
+  if (proceed == TRUE) {
     # Run random forest classifiers
     rf_comparison_list <- parallel::mclapply(seq_len(round(n_iterations/2)), FUN = function(i) {
       .runRF(i = i,

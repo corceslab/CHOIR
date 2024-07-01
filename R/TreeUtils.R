@@ -877,6 +877,9 @@
 # min_accuracy -- A numeric value indicating the minimum accuracy below which clusters will be automatically merged
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
+# sample_max -- A numeric indicating max cells to sample for random forest
+# downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
+# min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # tree_records -- A dataframe comprising records from tree generation
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
@@ -903,6 +906,7 @@
                      max_repeat_errors = 20,
                      sample_max = Inf,
                      downsampling_rate = NULL,
+                     min_reads = NULL,
                      batch_correction_method = NULL,
                      batches = NULL,
                      tree_records = NULL,
@@ -949,6 +953,7 @@
                                     max_repeat_errors = max_repeat_errors,
                                     sample_max = sample_max,
                                     downsampling_rate = downsampling_rate,
+                                    min_reads = min_reads,
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
                                     tree_records = tree_records,
@@ -1462,6 +1467,7 @@
                              max_repeat_errors,
                              sample_max,
                              downsampling_rate,
+                             min_reads,
                              batch_correction_method,
                              batches,
                              tree_records,
@@ -1697,6 +1703,7 @@
                                                 collect_all_metrics = FALSE,
                                                 sample_max = sample_max,
                                                 downsampling_rate = downsampling_rate,
+                                                min_reads = min_reads,
                                                 input_matrix = input_matrix[current_cells, ],
                                                 nn_matrix = nn_matrix[current_cells, current_cells],
                                                 comparison_records = comparison_records,
@@ -1829,6 +1836,7 @@
                                               collect_all_metrics = FALSE,
                                               sample_max = sample_max,
                                               downsampling_rate = downsampling_rate,
+                                              min_reads = min_reads,
                                               input_matrix = input_matrix[current_cells,],
                                               nn_matrix = nn_matrix[current_cells, current_cells],
                                               comparison_records = comparison_records,
@@ -1915,6 +1923,7 @@
                                                     collect_all_metrics = FALSE,
                                                     sample_max = sample_max,
                                                     downsampling_rate = downsampling_rate,
+                                                    min_reads = min_reads,
                                                     input_matrix = input_matrix[current_cells, ],
                                                     nn_matrix = nn_matrix[current_cells, current_cells],
                                                     comparison_records = comparison_records,

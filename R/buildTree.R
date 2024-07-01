@@ -50,6 +50,12 @@
 #' @param downsampling_rate A numeric value indicating the proportion of cells used
 #' per cluster to train/test each random forest classifier. Default = "auto" sets
 #' the downsampling rate according to the dataset size, for efficiency.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. Default = \code{NULL} will filter out
+#' features with 0 counts for the current clusters being compared. Numeric input
+#' values should be used only with count input matrices, e.g., ATAC tile
+#' matrices, whereby at least 1 read will be required for the provided number
+#' of cells.
 #' @param max_clusters Indicates the extent to which the hierarchical clustering
 #' tree will be expanded. Default = 'auto' will expand the tree until cases of
 #' underclustering have been eliminated in all branches. Alternately, supply a
@@ -153,6 +159,7 @@ buildTree <- function(object,
                       distance_approx = TRUE,
                       sample_max = Inf,
                       downsampling_rate = "auto",
+                      min_reads = NULL,
                       max_clusters = "auto",
                       min_cluster_depth = 2000,
                       normalization_method = "none",
@@ -193,6 +200,7 @@ buildTree <- function(object,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(min_reads, "min_reads")
   .validInput(max_clusters, "max_clusters")
   .validInput(min_cluster_depth, "min_cluster_depth")
   .validInput(use_assay, "use_assay", object)
@@ -336,6 +344,8 @@ buildTree <- function(object,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
@@ -860,6 +870,7 @@ buildTree <- function(object,
                                       max_repeat_errors = max_repeat_errors,
                                       sample_max = sample_max,
                                       downsampling_rate = downsampling_rate,
+                                      min_reads = min_reads,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
                                       tree_records = tree_records,
@@ -1023,6 +1034,7 @@ buildTree <- function(object,
                          "distance_approx"  = distance_approx,
                          "sample_max" = sample_max,
                          "downsampling_rate" = downsampling_rate,
+                         "min_reads" = min_reads,
                          "max_clusters" = max_clusters,
                          "min_cluster_depth" = min_cluster_depth,
                          "normalization_method" = normalization_method,
