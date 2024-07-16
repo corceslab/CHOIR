@@ -251,7 +251,9 @@
     }
     # Feature importance
     if (collect_all_metrics == TRUE) {
-      feature_importance <- unlist(do.call(rbind, rf_comparison_list)[, "feature_importance"])
+      feature_importance <- do.call(rbind, rf_comparison_list)[, "feature_importance"]
+      feature_importance <- do.call(rbind, feature_importance)
+      mean_feature_importance <- apply(feature_importance, 2, function(x) mean(x, na.rm = TRUE))
     }
     # Permutation accuracies
     permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
@@ -329,13 +331,13 @@
 
     if (collect_all_metrics == TRUE) {
       # Add to feature importance dataframe
-      mean_feature_importance <- data.frame(matrix(data = feature_importance,
+      mean_feature_importance <- data.frame(matrix(data = mean_feature_importance,
                                                    nrow = 1,
-                                                   ncol = length(feature_importance)))
-      mean_feature_importance <- cbind(data.frame("Cluster1" = cluster1_name,
-                                                  "Cluster2" = cluster2_name),
+                                                   ncol = length(mean_feature_importance)))
+      mean_feature_importance <- cbind(data.frame("cluster1" = cluster1_name,
+                                                  "cluster2" = cluster2_name),
                                        mean_feature_importance)
-      colnames(mean_feature_importance) <- c("Cluster1", "Cluster2",
+      colnames(mean_feature_importance) <- c("cluster1", "cluster2",
                                              colnames(comparison_input))
       feature_importance_records <- plyr::rbind.fill(list(feature_importance_records,
                                                           mean_feature_importance))
