@@ -329,9 +329,9 @@
 
     if (collect_all_metrics == TRUE) {
       # Add to feature importance dataframe
-      mean_feature_importance <- data.frame(matrix(data = mean_feature_importance,
+      mean_feature_importance <- data.frame(matrix(data = feature_importance,
                                                    nrow = 1,
-                                                   ncol = length(mean_feature_importance)))
+                                                   ncol = length(feature_importance)))
       mean_feature_importance <- cbind(data.frame("Cluster1" = cluster1_name,
                                                   "Cluster2" = cluster2_name),
                                        mean_feature_importance)
