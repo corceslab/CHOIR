@@ -682,6 +682,48 @@ buildTree <- function(object,
                                                                              return.only.var.genes = FALSE,
                                                                              seed.use = random_seed,
                                                                              verbose = FALSE)@assays$SCT@scale.data)
+            } else if (normalization_method_m == "TFIDF") {
+              # TF-IDF adapted from Stuart et al.
+              row_sums <- rowSums(input_matrix_list[[m]])
+              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+            } else if (normalization_method_m == "BinaryTFIDF") {
+              # Binarize matrix
+              input_matrix_list[[m]] <- input_matrix_list[[m]][input_matrix_list[[m]] > 0] <- 1
+              # TF-IDF adapted from Stuart et al.
+              row_sums <- rowSums(input_matrix_list[[m]])
+              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+            } else if (normalization_method_m == "ReadsInTSS") {
+              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+              # Fetch ReadsInTSS
+              reads_in_TSS <- .retrieveData(object,
+                                            key = "CHOIR",
+                                            type = "cell_metadata",
+                                            name = "ReadsInTSS")
+              names(reads_in_TSS) <- cell_IDs
+              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+              # Divide each cell's values by cell's ReadsInTSS
+              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+              # Multiply by scale factor 10000
+              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+            } else if (normalization_method_m == "LogReadsInTSS") {
+              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+              # Fetch ReadsInTSS
+              reads_in_TSS <- .retrieveData(object,
+                                            key = "CHOIR",
+                                            type = "cell_metadata",
+                                            name = "ReadsInTSS")
+              names(reads_in_TSS) <- cell_IDs
+              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+              # Divide each cell's values by cell's ReadsInTSS
+              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+              # Multiply by scale factor 10000
+              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+              # Log transform
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]])
             }
           }
           input_matrix <- do.call(rbind, input_matrix_list)
@@ -700,6 +742,48 @@ buildTree <- function(object,
                                                                  return.only.var.genes = FALSE,
                                                                  seed.use = random_seed,
                                                                  verbose = FALSE)@assays$SCT@scale.data)
+          } else if (normalization_method_m == "TFIDF") {
+            # TF-IDF adapted from Stuart et al.
+            row_sums <- rowSums(input_matrix)
+            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+            input_matrix <- log1p(input_matrix*10000)
+          } else if (normalization_method_m == "BinaryTFIDF") {
+            # Binarize matrix
+            input_matrix <- input_matrix[input_matrix > 0] <- 1
+            # TF-IDF adapted from Stuart et al.
+            row_sums <- rowSums(input_matrix)
+            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+            input_matrix <- log1p(input_matrix*10000)
+          } else if (normalization_method_m == "ReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix <- input_matrix*10000
+          } else if (normalization_method_m == "LogReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix <- input_matrix*10000
+            # Log transform
+            input_matrix <- log1p(input_matrix)
           }
         }
         # Progress
