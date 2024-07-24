@@ -742,13 +742,13 @@ buildTree <- function(object,
                                                                  return.only.var.genes = FALSE,
                                                                  seed.use = random_seed,
                                                                  verbose = FALSE)@assays$SCT@scale.data)
-          } else if (normalization_method_m == "TFIDF") {
+          } else if (normalization_method == "TFIDF") {
             # TF-IDF adapted from Stuart et al.
             row_sums <- rowSums(input_matrix)
             idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
             input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
             input_matrix <- log1p(input_matrix*10000)
-          } else if (normalization_method_m == "BinaryTFIDF") {
+          } else if (normalization_method == "BinaryTFIDF") {
             # Binarize matrix
             input_matrix <- input_matrix[input_matrix > 0] <- 1
             # TF-IDF adapted from Stuart et al.
@@ -756,7 +756,7 @@ buildTree <- function(object,
             idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
             input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
             input_matrix <- log1p(input_matrix*10000)
-          } else if (normalization_method_m == "ReadsInTSS") {
+          } else if (normalization_method == "ReadsInTSS") {
             ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
             # Fetch ReadsInTSS
             reads_in_TSS <- .retrieveData(object,
@@ -769,7 +769,7 @@ buildTree <- function(object,
             input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
             # Multiply by scale factor 10000
             input_matrix <- input_matrix*10000
-          } else if (normalization_method_m == "LogReadsInTSS") {
+          } else if (normalization_method == "LogReadsInTSS") {
             ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
             # Fetch ReadsInTSS
             reads_in_TSS <- .retrieveData(object,
