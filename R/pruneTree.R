@@ -415,7 +415,7 @@ pruneTree <- function(object,
                                           type = "cell_metadata",
                                           name = "ReadsInTSS")
             names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
             # Divide each cell's values by cell's ReadsInTSS
             input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
             # Multiply by scale factor 10000
@@ -428,7 +428,7 @@ pruneTree <- function(object,
                                           type = "cell_metadata",
                                           name = "ReadsInTSS")
             names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
             # Divide each cell's values by cell's ReadsInTSS
             input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
             # Multiply by scale factor 10000
@@ -478,7 +478,7 @@ pruneTree <- function(object,
                                         type = "cell_metadata",
                                         name = "ReadsInTSS")
           names(reads_in_TSS) <- cell_IDs
-          reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
           # Divide each cell's values by cell's ReadsInTSS
           input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
           # Multiply by scale factor 10000
@@ -491,7 +491,7 @@ pruneTree <- function(object,
                                         type = "cell_metadata",
                                         name = "ReadsInTSS")
           names(reads_in_TSS) <- cell_IDs
-          reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
           # Divide each cell's values by cell's ReadsInTSS
           input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
           # Multiply by scale factor 10000
