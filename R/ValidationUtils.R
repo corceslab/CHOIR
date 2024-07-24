@@ -129,30 +129,30 @@
     }
   }
 
-  # normalization_method
-  if (name == "normalization_method") {
-    # Must be of class 'character'
-    if (!methods::is(input, "character")) {
-      stop("Input value for '", name, "' is not of class 'character', please supply valid input!")
-    }
-    # Length must be either 1 or same as length of use_assay
-    if (length(input) != 1 & length(input) != other[[2]]) {
-      stop("Input value(s) for '", name, "' must be either length 1 or the same length as the number of modalities provided provided for 'use_assay' or 'ArchR_matrix'.")
-    }
-    # Each value must be among the permitted values for the provided object type
-    for (i in 1:length(input)) {
-      if (methods::is(other[[1]], "ArchRProject") & !(input[i] == "none")) {
-        stop("Input value '", input[i], "' for '", name, "' is not among the permitted values for ArchR objects: 'none'. Please supply valid input!")
-      } else if (!(methods::is(other[[1]], "ArchRProject")) & !(input[i] %in% c("none", "SCTransform"))) {
-        stop("Input value '", input[i], "' for '", name, "' is not among the permitted values for Seurat & SingleCellExperiment objects: 'none' and 'SCTransform'. Please supply valid input!")
-      }
-      if (methods::is(other[[1]], "Seurat") & input[i] == "SCTransform") {
-        if ("Assay5" %in% methods::is(other[[1]][[other[[3]][i]]])) {
-          stop("SCTransform is not currently supported for Seurat v5 (BPCells) objects.")
-        }
-      }
-    }
-  }
+  # normalization_method ### UPDATE ###
+  # if (name == "normalization_method") {
+  #   # Must be of class 'character'
+  #   if (!methods::is(input, "character")) {
+  #     stop("Input value for '", name, "' is not of class 'character', please supply valid input!")
+  #   }
+  #   # Length must be either 1 or same as length of use_assay
+  #   if (length(input) != 1 & length(input) != other[[2]]) {
+  #     stop("Input value(s) for '", name, "' must be either length 1 or the same length as the number of modalities provided provided for 'use_assay' or 'ArchR_matrix'.")
+  #   }
+  #   # Each value must be among the permitted values for the provided object type
+  #   for (i in 1:length(input)) {
+  #     if (methods::is(other[[1]], "ArchRProject") & !(input[i] == "none")) {
+  #       stop("Input value '", input[i], "' for '", name, "' is not among the permitted values for ArchR objects: 'none'. Please supply valid input!")
+  #     } else if (!(methods::is(other[[1]], "ArchRProject")) & !(input[i] %in% c("none", "SCTransform"))) {
+  #       stop("Input value '", input[i], "' for '", name, "' is not among the permitted values for Seurat & SingleCellExperiment objects: 'none' and 'SCTransform'. Please supply valid input!")
+  #     }
+  #     if (methods::is(other[[1]], "Seurat") & input[i] == "SCTransform") {
+  #       if ("Assay5" %in% methods::is(other[[1]][[other[[3]][i]]])) {
+  #         stop("SCTransform is not currently supported for Seurat v5 (BPCells) objects.")
+  #       }
+  #     }
+  #   }
+  # }
 
   # subtree_reductions
   if (name == "subtree_reductions") {
