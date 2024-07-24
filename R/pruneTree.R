@@ -458,7 +458,8 @@ pruneTree <- function(object,
                                                                verbose = FALSE)@assays$SCT@scale.data)
         } else if (normalization_method == "TFIDF") {
           # TF-IDF adapted from Stuart et al.
-          row_sums <- rowSums(input_matrix)
+          input_matrix <- as(input_matrix, "dgCMatrix")
+          row_sums <-  Matrix::rowSums(input_matrix)
           idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
           input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
           input_matrix <- log1p(input_matrix*10000)
@@ -466,7 +467,8 @@ pruneTree <- function(object,
           # Binarize matrix
           input_matrix <- input_matrix[input_matrix > 0] <- 1
           # TF-IDF adapted from Stuart et al.
-          row_sums <- rowSums(input_matrix)
+          input_matrix <- as(input_matrix, "dgCMatrix")
+          row_sums <-  Matrix::rowSums(input_matrix)
           idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
           input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
           input_matrix <- log1p(input_matrix*10000)
