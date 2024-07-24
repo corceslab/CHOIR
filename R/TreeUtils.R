@@ -372,14 +372,35 @@
                                                          "name" = "CHOIR_IterativeLSI",
                                                          "varFeatures" = n_var_features,
                                                          "saveIterations" = FALSE,
-                                                         "useMatrix" = ArchR_matrix,
+                                                         "useMatrix" = "TileMatrix",
                                                          "depthCol" = ArchR_depthcol,
                                                          "force" = TRUE,
                                                          "seed" = random_seed,
                                                          "threads" = n_cores),
                                                     reduction_params))
         # Extract variable features (dataframe)
-        var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
+        if (ArchR_matrix == "TileMatrix") {
+          var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
+        } else {
+          # Extract GeneScoreMatrix ### FIX LATER ###
+          feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+          rownames(feature_matrix) <- mt_test@elementMetadata$name
+          # Subset to current cells
+          feature_matrix <- feature_matrix[,use_cells]
+          # Find variable features
+          var_features <- Seurat::FindVariableFeatures(feature_matrix, verbose = FALSE)
+          if ("vst.variance.standardized" %in% colnames(var_features)) {
+            var_features <- var_features %>%
+              dplyr::arrange(-vst.variance.standardized) %>%
+              utils::head(n_var_features) %>%
+              rownames()
+          } else {
+            var_features <- var_features %>%
+              dplyr::arrange(-variance.standardized) %>%
+              utils::head(n_var_features) %>%
+              rownames()
+          }
+        }
 
         # Harmony batch correction
         if (batch_correction_method == "Harmony") {
