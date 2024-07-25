@@ -384,10 +384,11 @@
         } else {
           # Extract GeneScoreMatrix ### FIX LATER ###
           feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+          feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
           rownames(feature_matrix) <- feature_matrix@elementMetadata$name
+          feature_matrix <- as(feature_matrix, "dgCMatrix")
           # Subset to current cells
           feature_matrix <- feature_matrix[,use_cells]
-          feature_matrix <- as(feature_matrix, "dgCMatrix")
           # Find variable features
           var_features <- Seurat::FindVariableFeatures(feature_matrix, verbose = FALSE)
           if ("vst.variance.standardized" %in% colnames(var_features)) {
