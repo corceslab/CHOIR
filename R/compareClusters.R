@@ -387,7 +387,7 @@ compareClusters <- function(object = NULL,
   # Initialize feature importance records
   if (collect_all_metrics == TRUE) {
     feature_importance_records <- data.frame(matrix(ncol = (ncol(input_matrix)+2), nrow = 0))
-    colnames(feature_importance_records) <- c('Cluster1', 'Cluster2', colnames(input_matrix))
+    colnames(feature_importance_records) <- c('cluster1', 'cluster2', colnames(input_matrix))
   } else {
     feature_importance_records <- NULL
   }

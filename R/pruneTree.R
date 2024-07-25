@@ -110,7 +110,7 @@
 #'   \item{stepwise_clusters}{A dataframe of clustering results for each progressive step through the
 #'   clustering tree at each provided threshold value}
 #'   \item{comparison_records}{A dataframe of all recorded comparisons}
-#'   \item{feature_importances}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each feature across all comparisons}
+#'   \item{feature_importance_records}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each feature across all comparisons}
 #'   }
 #'
 #' @export

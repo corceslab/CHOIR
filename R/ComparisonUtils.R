@@ -412,7 +412,7 @@
   }
   output_list <- list("result" = comparison_result,
                       "comparison_records" = comparison_records,
-                      "feature_importances" = feature_importance_records,
+                      "feature_importance_records" = feature_importance_records,
                       "max_p" = max_p)
   return(output_list)
 }
