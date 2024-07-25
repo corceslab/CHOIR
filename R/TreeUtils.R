@@ -392,7 +392,11 @@
           rownames(feature_matrix) <- feature_names
           print("check4")
           # Subset to current cells
-          feature_matrix <- feature_matrix[,use_cells]
+          if (!is.null(use_cells)) {
+            print(use_cells)[1:5]
+            print(colnames(feature_matrix)[1:5])
+            feature_matrix <- feature_matrix[,use_cells]
+          }
           print("check5")
           feature_matrix <- as.matrix(feature_matrix)
           print(feature_matrix[1:5,1:5])
