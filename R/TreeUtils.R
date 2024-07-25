@@ -395,9 +395,10 @@
           feature_matrix <- feature_matrix[,use_cells]
           print("check5")
           feature_matrix <- as.matrix(feature_matrix)
+          print(feature_matrix[1:5,1:5])
           print("check6")
           # Find variable features
-          var_features <- Seurat::FindVariableFeatures(feature_matrix, verbose = FALSE)
+          var_features <-  Seurat:::FindVariableFeatures.V3Matrix(feature_matrix, verbose = TRUE)
           print("check7")
           print(head(var_features))
           var_features <- data.frame(var_features)
