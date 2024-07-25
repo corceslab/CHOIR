@@ -387,9 +387,9 @@
           feature_names <- feature_matrix@elementMetadata$name
           feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
           rownames(feature_matrix) <- feature_names
-          feature_matrix <- as(feature_matrix, "dgCMatrix")
           # Subset to current cells
           feature_matrix <- feature_matrix[,use_cells]
+          feature_matrix <- as.matrix(feature_matrix)
           # Find variable features
           var_features <- Seurat::FindVariableFeatures(feature_matrix, verbose = FALSE)
           if ("vst.variance.standardized" %in% colnames(var_features)) {
