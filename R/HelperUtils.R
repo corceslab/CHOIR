@@ -267,24 +267,39 @@
     if (is.null(ArchR_matrix)) {
       ArchR_matrix <- "TileMatrix"
     }
-    # Cells to use
-    if (is.null(use_cells)) {
-      use_cells <- rownames(object@cellColData)
+    if (ArchR_matrix == "GeneScoreMatrix") {
+      gene_score_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+      feature_names <- gene_score_matrix@elementMetadata$name
+      use_matrix <- gene_score_matrix@assays@data$GeneScoreMatrix
+      rownames(use_matrix) <- feature_names
+      # Subset to current cells
+      if (!is.null(use_cells)) {
+        use_matrix <- use_matrix[,use_cells]
+      }
+      # Subset to current features
+      if (!is.null(use_features)) {
+        use_matrix <- use_matrix[use_features,]
+      }
+    } else {
+      # Cells to use
+      if (is.null(use_cells)) {
+        use_cells <- rownames(object@cellColData)
+      }
+      # Features to use
+      if (is.null(use_features)) {
+        stop("Please supply input to 'use_features' when extracting ArchR matrix.")
+      }
+      if (!is.null(exclude_features)) {
+        use_features <- dplyr::anti_join(data.frame(use_features), data.frame(exclude_features))
+      }
+      # Extract matrix & subset
+      use_matrix <- suppressMessages(ArchR:::.getPartialMatrix(ArrowFiles = object@sampleColData$ArrowFiles,
+                                                               featureDF = use_features,
+                                                               cellNames = use_cells,
+                                                               useMatrix = ArchR_matrix))
+      # Set feature names to chromosome + start
+      rownames(use_matrix) <- paste(use_features$seqnames, use_features$start, "_")
     }
-    # Features to use
-    if (is.null(use_features)) {
-      stop("Please supply input to 'use_features' when extracting ArchR matrix.")
-    }
-    if (!is.null(exclude_features)) {
-      use_features <- dplyr::anti_join(data.frame(use_features), data.frame(exclude_features))
-    }
-    # Extract matrix & subset
-    use_matrix <- suppressMessages(ArchR:::.getPartialMatrix(ArrowFiles = object@sampleColData$ArrowFiles,
-                                                             featureDF = use_features,
-                                                             cellNames = use_cells,
-                                                             useMatrix = ArchR_matrix))
-    # Set feature names to chromosome + start
-    rownames(use_matrix) <- paste(use_features$seqnames, use_features$start, "_")
   }
   return(use_matrix)
 }
