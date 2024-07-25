@@ -370,7 +370,7 @@
         # Run iterative LSI
         object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
                                                          "name" = "CHOIR_IterativeLSI",
-                                                         "varFeatures" = n_var_features,
+                                                         "varFeatures" = 25000,
                                                          "saveIterations" = FALSE,
                                                          "useMatrix" = "TileMatrix",
                                                          "depthCol" = ArchR_depthcol,
@@ -387,6 +387,7 @@
           rownames(feature_matrix) <- feature_matrix@elementMetadata$name
           # Subset to current cells
           feature_matrix <- feature_matrix[,use_cells]
+          feature_matrix <- as(feature_matrix, "dgCMatrix")
           # Find variable features
           var_features <- Seurat::FindVariableFeatures(feature_matrix, verbose = FALSE)
           if ("vst.variance.standardized" %in% colnames(var_features)) {
