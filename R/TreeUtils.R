@@ -384,7 +384,7 @@
         } else {
           # Extract GeneScoreMatrix ### FIX LATER ###
           feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
-          rownames(feature_matrix) <- mt_test@elementMetadata$name
+          rownames(feature_matrix) <- feature_matrix@elementMetadata$name
           # Subset to current cells
           feature_matrix <- feature_matrix[,use_cells]
           # Find variable features
