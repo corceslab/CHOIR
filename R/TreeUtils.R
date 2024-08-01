@@ -368,18 +368,24 @@
           reduction_params$dimsToUse <- 1:min(30, n_cells - 1)
         }
         # Run iterative LSI
+        if (ArchR_matrix == "GeneScoreMatrix") {
+          iterativeLSI_matrix <- "TileMatrix"
+        } else {
+          iterativeLSI_matrix <- ArchR_matrix
+        }
+
         object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
                                                          "name" = "CHOIR_IterativeLSI",
                                                          "varFeatures" = 25000,
                                                          "saveIterations" = FALSE,
-                                                         "useMatrix" = "TileMatrix",
+                                                         "useMatrix" = iterativeLSI_matrix,
                                                          "depthCol" = ArchR_depthcol,
                                                          "force" = TRUE,
                                                          "seed" = random_seed,
                                                          "threads" = n_cores),
                                                     reduction_params))
         # Extract variable features (dataframe)
-        if (ArchR_matrix == "TileMatrix") {
+        if (ArchR_matrix != "GeneScoreMatrix") {
           var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
         } else {
           # Extract GeneScoreMatrix ### FIX LATER ###
