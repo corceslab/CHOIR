@@ -1342,6 +1342,12 @@ pruneTree <- function(object,
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
             use_input_matrix <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
+            if ("subtree_reductions" %in% names(buildTree_parameters)) {
+              subtree_reductions <- buildTree_parameters[["subtree_reductions"]]
+              if (subtree_reductions == FALSE) {
+                use_input_matrix <- "P0"
+              }
+            }
             # Build subtree
             subtree_list <- .getTree(snn_matrix = .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs],
                                      nn_matrix = nn_matrices[[use_input_matrix]][current_cell_IDs, current_cell_IDs],
