@@ -224,11 +224,11 @@
     mean_permutation_acc <- mean(permutation_accuracies)
     var_permutation_acc = stats::var(permutation_accuracies)
     # Percentile of permuted mean via kernel density estimator
-    percentile_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_acc)
+    percentile_acc <- 1 - spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_acc)
     # Percentile of permuted variance via bootstrap
     boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
                                   function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
-    percentile_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_acc)
+    percentile_var <- spatstat.univar::CDF(stats::density(boot_permutation_var))(var_acc)
     if (max_repeat_errors > 0) {
       percentile_modified_acc <- 1 - spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
       percentile_modified_var <- spatstat.univar::CDF(stats::density(boot_permutation_var))(var_modified_acc)
