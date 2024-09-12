@@ -230,8 +230,8 @@
                                   function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
     percentile_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_acc)
     if (max_repeat_errors > 0) {
-      percentile_modified_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
-      percentile_modified_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_modified_acc)
+      percentile_modified_acc <- 1 - spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
+      percentile_modified_var <- spatstat.univar::CDF(stats::density(boot_permutation_var))(var_modified_acc)
     }
 
     # Create record
