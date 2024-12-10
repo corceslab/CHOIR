@@ -208,14 +208,19 @@
     mean_acc <- mean(accuracies)
     var_acc <- stats::var(accuracies)
     mean_err <- (1 - mean_acc)*n_sampled
-    # Get batch accuracies
-    batch_acc <- c()
-    if (!is.null(use_batch)) {
-      for (b in 1:length(batches)) {
-        batch_inds <- which(use_batch == batches[b])
-        batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
-      }
-    }
+
+    # Permutation accuracies
+    permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
+    mean_permutation_acc <- mean(permutation_accuracies)
+    var_permutation_acc = stats::var(permutation_accuracies)
+
+    # Percentile of permuted mean via kernel density estimator
+    percentile_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_acc)
+    # Percentile of permuted variance via bootstrap
+    boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
+                                  function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
+    percentile_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_acc)
+
     # Repeated errors
     if (max_repeat_errors > 0 | collect_all_metrics == TRUE) {
       # Cluster 1
@@ -247,6 +252,8 @@
         }
         modified_accuracies <- accuracies + (mean_modified_acc - mean_acc)
         var_modified_acc <- stats::var(modified_accuracies)
+        percentile_modified_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
+        percentile_modified_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_modified_acc)
       }
     }
     # Feature importance
@@ -255,19 +262,53 @@
       feature_importance <- do.call(rbind, feature_importance)
       mean_feature_importance <- apply(feature_importance, 2, function(x) mean(x, na.rm = TRUE))
     }
-    # Permutation accuracies
-    permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
-    mean_permutation_acc <- mean(permutation_accuracies)
-    var_permutation_acc = stats::var(permutation_accuracies)
-    # Percentile of permuted mean via kernel density estimator
-    percentile_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_acc)
-    # Percentile of permuted variance via bootstrap
-    boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
-                                  function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
-    percentile_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_acc)
-    if (max_repeat_errors > 0) {
-      percentile_modified_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
-      percentile_modified_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_modified_acc)
+
+    # Get batch values
+    batch_acc <- c()
+    batch_var <- c()
+    batch_LOO_mean_acc <- c()
+    batch_LOO_var_acc <- c()
+    batch_LOO_mean_err <- c()
+    batch_LOO_mean_permutation_acc <- c()
+    batch_LOO_var_permutation_acc <- c()
+    batch_LOO_percentile_acc <- c()
+    batch_LOO_percentile_var <- c()
+    if (!is.null(use_batch)) {
+      for (b in 1:length(batches)) {
+        batch_inds <- which(use_batch == batches[b])
+        batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
+        batch_var <- c(batch_var, stats::var(accuracies[batch_inds]))
+        if (batch_LOO == TRUE) {
+          if (length(batches) > 2) {
+            # Repeat all assessments without iterations that use batch b
+            # Balanced accuracy
+            batch_LOO_mean_acc <- c(batch_LOO_mean_acc, mean(accuracies[-batch_inds]))
+            batch_LOO_var_acc <- c(batch_LOO_var_acc, stats::var(accuracies[-batch_inds]))
+            batch_LOO_mean_err <- c(batch_LOO_mean_err, batch_LOO_mean_acc[b])
+            # Permutation accuracies
+            batch_LOO_mean_permutation_acc <- c(batch_LOO_mean_permutation_acc, mean(permutation_accuracies[-batch_inds]))
+            batch_LOO_var_permutation_acc <- c(batch_LOO_var_permutation_acc, stats::var(permutation_accuracies[-batch_inds]))
+            # Percentile of permuted mean via kernel density estimator
+            batch_LOO_percentile_acc <- c(batch_LOO_percentile_acc, (1 - spatstat.explore::CDF(stats::density(permutation_accuracies[-batch_inds]))(batch_LOO_mean_acc[b])))
+            # Percentile of permuted variance via bootstrap
+            boot_permutation_var <- apply(matrix(seq(1:length(permutation_accuracies[-batch_inds])), 1,
+                                                 length(permutation_accuracies[-batch_inds])), 2,
+                                          function(x) stats::var(sample(permutation_accuracies[-batch_inds],
+                                                                        length(permutation_accuracies[-batch_inds]),
+                                                                        replace = TRUE)))
+            batch_LOO_percentile_var <- c(batch_LOO_percentile_var,
+                                          spatstat.explore::CDF(stats::density(boot_permutation_var))(batch_LOO_var_acc[b]))
+          } else {
+            batch_LOO_mean_acc <- ""
+            batch_LOO_var_acc <- ""
+            batch_LOO_mean_err <- ""
+            batch_LOO_mean_permutation_acc <- ""
+            batch_LOO_var_permutation_acc <- ""
+            batch_LOO_percentile_acc <- ""
+            batch_LOO_percentile_var <- ""
+          }
+        }
+      }
     }
 
     # Create record
@@ -317,8 +358,31 @@
     if (!is.null(use_batch)) {
       current_comparison <- dplyr::mutate(current_comparison,
                                           batches_used = paste(batches, collapse = "; "),
-                                          batch_accuracies = paste(round(batch_acc, 3), collapse = "; "))
+                                          batch_mean_accuracies = paste(round(batch_acc, 5), collapse = "; "),
+                                          batch_var_accuracies = paste(round(batch_var, 5), collapse = "; "))
     }
+    if (batch_LOO == TRUE) {
+      if (length(batches) > 2) {
+        current_comparison <- dplyr::mutate(current_comparison,
+                                            batch_LOO_mean_accuracies = paste(round(batch_LOO_mean_acc, 5), collapse = "; "),
+                                            batch_LOO_var_accuracies = paste(round(batch_LOO_var_acc, 5), collapse = "; "),
+                                            batch_LOO_mean_errors = paste(round(batch_LOO_mean_err, 5), collapse = "; "),
+                                            batch_LOO_mean_permuted_accuracies = paste(round(batch_LOO_mean_permutation_acc, 5), collapse = "; "),
+                                            batch_LOO_var_permuted_accuracies = paste(round(batch_LOO_var_permutation_acc, 5), collapse = "; "),
+                                            batch_LOO_percentile_accuracies = paste(round(batch_LOO_percentile_acc, 5), collapse = "; "),
+                                            batch_LOO_percentile_variances = paste(round(batch_LOO_percentile_var, 5), collapse = "; "))
+      } else {
+        current_comparison <- dplyr::mutate(current_comparison,
+                                            batch_LOO_mean_accuracies = NA,
+                                            batch_LOO_var_accuracies = NA,
+                                            batch_LOO_mean_errors = NA,
+                                            batch_LOO_mean_permuted_accuracies = NA,
+                                            batch_LOO_var_permuted_accuracies = NA,
+                                            batch_LOO_percentile_accuracies = NA,
+                                            batch_LOO_percentile_variances = NA)
+      }
+    }
+
     if (min_connections > 0 | collect_all_metrics == TRUE) {
       current_comparison <- dplyr::mutate(current_comparison,
                                           connectivity = adjacent)
@@ -344,53 +408,89 @@
     }
 
     # Get comparison result based on conditions
-    if (all(current_comparison$mean_accuracy[1] >= min_accuracy,
-            current_comparison$percentile_accuracy[1] < alpha,
-            (current_comparison$percentile_variance[1] < alpha |
-             use_variance == FALSE))) {
-      comparison_result <- "split"
-      reason <- "split"
-      if (use_variance == FALSE) {
-        max_p <- current_comparison$percentile_accuracy[1]
-      } else {
-        max_p <- max(current_comparison$percentile_accuracy[1],
-                     current_comparison$percentile_variance[1])
-      }
-    } else if (max_repeat_errors > 0) {
-      if (all(current_comparison$mean_accuracy[1] >= min_accuracy,
-              max_repeat_errors > 0,
-              current_comparison$percentile_accuracy[1] < alpha*2,
-              (current_comparison$percentile_variance[1] < alpha*2 |
-               use_variance == FALSE),
-              current_comparison$percentile_modified_accuracy[1] < alpha,
-              (current_comparison$percentile_modified_variance[1] < alpha |
-               use_variance == FALSE),
-              current_comparison$n_repeat_errors1[1] <= min(max_repeat_errors, 0.3*length(cluster1_cells)),
-              current_comparison$n_repeat_errors2[1] <= min(max_repeat_errors, 0.3*length(cluster2_cells)))) {
-        comparison_result <- "split"
-        reason <- "split: repeat error"
-        if (use_variance == FALSE) {
-          max_p <- min(current_comparison$percentile_accuracy[1],
-                       current_comparison$percentile_modified_accuracy[1])
-        } else {
-          max_p <- max(min(current_comparison$percentile_accuracy[1],
-                           current_comparison$percentile_modified_accuracy[1]),
-                       min(current_comparison$percentile_variance[1],
-                           current_comparison$percentile_modified_variance[1]))
-        }
-      } else if (all(current_comparison$mean_accuracy[1] < min_accuracy,
-                     current_comparison$percentile_accuracy[1] < alpha,
-                     (current_comparison$percentile_variance[1] < alpha |
-                      use_variance == FALSE))) {
-        comparison_result <- "merge"
-        reason <- "merge: min accuracy"
-      } else {
-        comparison_result <- "merge"
-        reason <- "merge"
-      }
+    # When batch_LOO is TRUE, will evaluate all iterations, as well as
+    # when leaving out iterations using each batch in turn
+    # Will stop if split is achieved
+    if (batch_LOO == TRUE & length(batches) > 2) {
+      eval_mean_acc <- c(mean_acc, batch_LOO_mean_acc)
+      eval_percentile_acc <- c(percentile_acc, batch_LOO_percentile_acc)
+      eval_percentile_var <- c(percentile_var, batch_LOO_percentile_var)
     } else {
-      comparison_result <- "merge"
-      reason <- "merge"
+      eval_mean_acc <- mean_acc
+      eval_percentile_acc <- percentile_acc
+      eval_percentile_var <- percentile_var
+    }
+    stop <- FALSE
+    eval <- 1
+    while (eval <= length(eval_mean_acc) & stop == FALSE) {
+      if (all(eval_mean_acc[eval] >= min_accuracy,
+              eval_percentile_acc[eval] < alpha,
+              (eval_percentile_var[eval] < alpha |
+               use_variance == FALSE))) {
+        comparison_result <- "split"
+        if (eval == 1) {
+          reason <- "split"
+        } else {
+          reason <- paste0("split: batch ", batches[eval - 1], " left out")
+        }
+        if (use_variance == FALSE) {
+          max_p <- eval_percentile_acc[eval]
+        } else {
+          max_p <- max(eval_percentile_acc[eval],
+                       eval_percentile_var[eval])
+        }
+        stop <- TRUE
+      } else if (eval == 1 & max_repeat_errors > 0) {
+        if (all(current_comparison$mean_accuracy[1] >= min_accuracy,
+                max_repeat_errors > 0,
+                current_comparison$percentile_accuracy[1] < alpha*2,
+                (current_comparison$percentile_variance[1] < alpha*2 |
+                 use_variance == FALSE),
+                current_comparison$percentile_modified_accuracy[1] < alpha,
+                (current_comparison$percentile_modified_variance[1] < alpha |
+                 use_variance == FALSE),
+                current_comparison$n_repeat_errors1[1] <= min(max_repeat_errors, 0.3*length(cluster1_cells)),
+                current_comparison$n_repeat_errors2[1] <= min(max_repeat_errors, 0.3*length(cluster2_cells)))) {
+          comparison_result <- "split"
+          reason <- "split: repeat error"
+          if (use_variance == FALSE) {
+            max_p <- min(current_comparison$percentile_accuracy[1],
+                         current_comparison$percentile_modified_accuracy[1])
+          } else {
+            max_p <- max(min(current_comparison$percentile_accuracy[1],
+                             current_comparison$percentile_modified_accuracy[1]),
+                         min(current_comparison$percentile_variance[1],
+                             current_comparison$percentile_modified_variance[1]))
+          }
+        } else if (all(current_comparison$mean_accuracy[1] < min_accuracy,
+                       current_comparison$percentile_accuracy[1] < alpha,
+                       (current_comparison$percentile_variance[1] < alpha |
+                        use_variance == FALSE))) {
+          comparison_result <- "merge"
+          reason <- "merge: min accuracy"
+        } else {
+          comparison_result <- "merge"
+          if (all(current_comparison$mean_accuracy[1] < min_accuracy,
+                  current_comparison$percentile_accuracy[1] < alpha,
+                  (current_comparison$percentile_variance[1] < alpha |
+                   use_variance == FALSE))) {
+            reason <- "merge: min accuracy"
+          } else {
+            reason <- "merge"
+          }
+        }
+      } else if (eval == 1) {
+        comparison_result <- "merge"
+        if (all(current_comparison$mean_accuracy[1] < min_accuracy,
+                current_comparison$percentile_accuracy[1] < alpha,
+                (current_comparison$percentile_variance[1] < alpha |
+                 use_variance == FALSE))) {
+          reason <- "merge: min accuracy"
+        } else {
+          reason <- "merge"
+        }
+      }
+      eval <- eval + 1
     }
 
     # Add decision

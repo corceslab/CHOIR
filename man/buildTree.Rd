@@ -31,6 +31,7 @@ buildTree(
   batch_correction_method = "none",
   batch_correction_params = list(),
   batch_labels = NULL,
+  batch_LOO = FALSE,
   neighbor_params = list(),
   cluster_params = list(algorithm = 1, group.singletons = TRUE),
   use_assay = NULL,
@@ -157,6 +158,12 @@ when \code{batch_correction_method = 'Harmony'}.}
 \item{batch_labels}{If applying batch correction, a character string or
 vector indicating the name of the column containing the batch labels.
 Defaults to \code{NULL}.}
+
+\item{batch_LOO}{A boolean value indicating whether to check for instances
+in which a single batch obscures the distinction between two clusters. When
+set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
+test comparisons using 3 or more batches, and the lowest resulting p-value
+is used. Defaults to \code{FALSE}.}
 
 \item{neighbor_params}{A list of additional parameters to be passed to
 \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for

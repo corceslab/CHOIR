@@ -78,6 +78,11 @@
 #' @param batch_labels If applying batch correction, a character string or
 #' vector indicating the name of the column containing the batch labels.
 #' Defaults to \code{NULL}.
+#' @param batch_LOO A boolean value indicating whether to check for instances
+#' in which a single batch obscures the distinction between two clusters. When
+#' set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
+#' test comparisons using 3 or more batches, and the lowest resulting p-value
+#' is used. Defaults to \code{FALSE}.
 #' @param cluster_params A list of additional parameters to be passed to
 #' Seurat::FindClusters() for clustering at each level of the tree. Note that if
 #' \code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
@@ -156,6 +161,7 @@ pruneTree <- function(object,
                       normalization_method = NULL,
                       batch_correction_method = NULL,
                       batch_labels = NULL,
+                      batch_LOO = NULL,
                       cluster_params = NULL,
                       use_assay = NULL,
                       countsplit = NULL,
@@ -214,6 +220,7 @@ pruneTree <- function(object,
                              "normalization_method" = "none",
                              "batch_correction_method" = "none",
                              "batch_labels" = NULL,
+                             "batch_LOO" = FALSE,
                              "cluster_params" = list(algorithm = 1,
                                                      group.singletons = TRUE),
                              "use_assay"  = NULL,
@@ -240,6 +247,7 @@ pruneTree <- function(object,
   normalization_method <- .retrieveParam(normalization_method, "normalization_method", buildTree_parameters, default_parameters)
   batch_correction_method <- .retrieveParam(batch_correction_method, "batch_correction_method", buildTree_parameters, default_parameters)
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
+  batch_LOO <- .retrieveParam(batch_LOO, "batch_LOO", buildTree_parameters, default_parameters)
   cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
   countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
@@ -676,6 +684,7 @@ pruneTree <- function(object,
                        "\n - Distance approximation: ", distance_approx,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Batch leave-one-out adjustment: ", batch_LOO,
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
@@ -693,16 +702,20 @@ pruneTree <- function(object,
                    'mean_repeat_errors1', 'mean_repeat_errors2',
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
-                   'batches_used', 'batch_mean_accuracies',
+                   'batches_used', 'batch_mean_accuracies', 'batch_var_accuracies',
+                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
+                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
+                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
                    'connectivity', 'root_distance', 'subtree_distance', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(batch_correction_method == "Harmony", 20:21, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 22, NULL),
-                                    `if`(methods::is(distance_awareness, "numeric"), 23:24, NULL),
-                                    25:26)]
+                                    `if`(batch_correction_method == "Harmony", 20:22, NULL),
+                                    `if`(batch_LOO == TRUE, 23:29, NULL),
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
+                                    `if`(methods::is(distance_awareness, "numeric"), 31:32, NULL),
+                                    33:34)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 
@@ -1570,6 +1583,7 @@ pruneTree <- function(object,
                                      batches = `if`(batch_correction_method == "Harmony",
                                                     batches[current_cell_IDs],
                                                     NULL),
+                                     batch_LOO = batch_LOO,
                                      tree_records = data.frame(tree_type = NULL,
                                                                tree_name = NULL,
                                                                num_cells = NULL,
@@ -1721,6 +1735,7 @@ pruneTree <- function(object,
                          "normalization_method" = normalization_method,
                          "batch_correction_method" = batch_correction_method,
                          "batch_labels" = batch_labels,
+                         "batch_LOO" = batch_LOO,
                          "cluster_tree_provided" = cluster_tree_provided,
                          "input_matrix_provided" = input_matrix_provided,
                          "nn_matrix_provided" = nn_matrix_provided,

@@ -649,8 +649,8 @@
   }
 
   # Single logical value
-  # verbose, collect_all_metrics, use_variance, legend, accuracy_scores, countsplit
-  if (name %in% c("verbose", "collect_all_metrics", "use_variance", "legend", "accuracy_scores", "countsplit")) {
+  # verbose, collect_all_metrics, use_variance, legend, accuracy_scores, countsplit, batch_LOO
+  if (name %in% c("verbose", "collect_all_metrics", "use_variance", "legend", "accuracy_scores", "countsplit", "batch_LOO")) {
     # Must be T/F
     if (!methods::is(input, "logical") | length(input) != 1) {
       stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")

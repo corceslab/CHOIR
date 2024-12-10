@@ -109,6 +109,7 @@ classifiers trained on randomly permuted cluster labels.</p>
 <span>  batch_correction_method <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  batch_correction_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  batch_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  batch_LOO <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  neighbor_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  cluster_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>algorithm <span class="op">=</span> <span class="fl">1</span>, group.singletons <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  use_assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -294,6 +295,14 @@ when <code>batch_correction_method = 'Harmony'</code>.</p></dd>
 <dd><p>If applying batch correction, a character string or
 vector indicating the name of the column containing the batch labels.
 Defaults to <code>NULL</code>.</p></dd>
+
+
+<dt>batch_LOO</dt>
+<dd><p>A boolean value indicating whether to check for instances
+in which a single batch obscures the distinction between two clusters. When
+set to <code>TRUE</code>, a "leave-one-out" (LOO) approach is taken in permutation
+test comparisons using 3 or more batches, and the lowest resulting p-value
+is used. Defaults to <code>FALSE</code>.</p></dd>
 
 
 <dt>neighbor_params</dt>
