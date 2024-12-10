@@ -4,7 +4,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-**CHOIR** (**c**lustering **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
+**CHOIR** (**c**luster **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
 
 <br>
 
@@ -12,7 +12,7 @@
 
 CHOIR is on bioRxiv! You can find it [here](https://www.biorxiv.org/content/10.1101/2024.01.18.576317v1).
 
-Petersen et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
+Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
 
 ## Installation
 

@@ -49,189 +49,289 @@ buildTree(
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat', 'SingleCellExperiment', or
-'ArchRProject'.}
+\item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
+or \code{ArchRProject}. For multi-omic data, we recommend using
+\code{ArchRProject} objects.}
 
 \item{key}{The name under which CHOIR-related data for this run is stored in
-the object. Defaults to 'CHOIR'.}
+the object. Defaults to “CHOIR”.}
 
-\item{alpha}{A numeric value indicating the significance level used for
-permutation test comparisons of cluster prediction accuracies. Defaults to
-0.05.}
+\item{alpha}{A numerical value indicating the significance level used for
+permutation test comparisons of cluster distinguishability. Defaults to 0.05.
+Decreasing the alpha value will yield more conservative clusters (fewer
+clusters) and will often decrease the computational time required, because
+fewer cluster comparisons may be needed.}
 
-\item{p_adjust}{A string indicating which multiple comparison adjustment to
-use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
-'bonferroni'.}
+\item{p_adjust}{A string indicating which multiple comparison adjustment
+method to use. Permitted values are “bonferroni”, “fdr”, and “none”. Defaults
+to “bonferroni”. Other correction methods may be less conservative,
+identifying more clusters, as CHOIR applies filters that reduce the total
+number of tests performed.}
 
 \item{feature_set}{A string indicating whether to train random forest
-classifiers on 'all' features or only variable ('var') features. Defaults to
-'var'.}
+classifiers on “all” features or only variable (“var”) features. Defaults to
+“var”. Computational time and memory required may increase if more features
+are used. Using all features instead of variable features may result in more
+conservative cluster calls.}
 
 \item{exclude_features}{A character vector indicating features that should be
-excluded from input to the random forest classifier. Default = \code{NULL}
-will not exclude any features.}
+excluded from input to the random forest classifier. Defaults to \code{NULL},
+which means that no features will be excluded. This parameter can be used,
+for example, to exclude features correlated with cell quality, such as
+mitochondrial genes. Failure to exclude problematic features could result in
+clusters driven by cell quality, while over-exclusion of features could
+reduce the ability of CHOIR to distinguish cell populations that differ by
+those features.}
 
-\item{n_iterations}{A numeric value indicating the number of iterations run
-for each permutation test comparison. Defaults to 100.}
+\item{n_iterations}{A numerical value indicating the number of iterations run
+for each permutation test comparison. Increasing the number of iterations
+will approximately linearly increase the computational time required but
+provide a more accurate estimation of the significance of the permutation
+test. Decreasing the number of iterations runs the risk of leading to
+underclustering due to lack of statistical power. The default value, 100
+iterations, was selected because it avoids underclustering, while minimizing
+computational time and the diminishing returns from running CHOIR with
+additional iterations.}
 
-\item{n_trees}{A numeric value indicating the number of trees in each random
-forest. Defaults to 50.}
+\item{n_trees}{A numerical value indicating the number of trees in each
+random forest. Defaults to 50. Increasing the number of trees is likely to
+increase the computational time required. Though not entirely predictable,
+increasing the number of trees up to a point may enable more nuanced
+distinctions, but is likely to provide diminishing returns.}
 
-\item{use_variance}{A boolean value indicating whether to use the variance of
+\item{use_variance}{A Boolean value indicating whether to use the variance of
 the random forest accuracy scores as part of the permutation test threshold.
-Defaults to \code{TRUE}.}
+Defaults to \code{TRUE}. Setting this parameter to \code{FALSE} will make
+CHOIR considerably less conservative, identifying more clusters, particularly
+on large datasets.}
 
-\item{min_accuracy}{A numeric value indicating the minimum accuracy required
-of the random forest classifier, below which clusters will be automatically
-merged. Defaults to 0.5 (chance).}
+\item{min_accuracy}{A numerical value indicating the minimum accuracy
+required of the random forest classifier, below which clusters will be
+automatically merged. Defaults to 0.5, representing the random chance
+probability of assigning correct cluster labels; therefore, decreasing the
+minimum accuracy is not recommended. Increasing the minimum accuracy will
+lead to more conservative cluster assignments and will often decrease the
+computational time required, because fewer cluster comparisons may be needed.}
 
-\item{min_connections}{A numeric value indicating the minimum number of
-nearest neighbors between two clusters for them to be considered 'adjacent'.
-Non-adjacent clusters will not be merged. Defaults to 1.}
+\item{min_connections}{A numerical value indicating the minimum number of
+nearest neighbors between two clusters for those clusters to be considered
+adjacent. Non-adjacent clusters will not be merged. Defaults to 1. This
+threshold allows CHOIR to avoid running the full permutation test comparison
+for clusters that are highly likely to be distinct, saving computational
+time. Therefore, setting this parameter to 0 will increase the number of
+permutation test comparisons run and, thus, the computational time. The
+intent of this parameter is only to avoid running permutation test
+comparisons between clusters that are so different that they should not be
+merged. Therefore, we do not recommend increasing this parameter value
+beyond 10, as higher values may result in instances of overclustering.}
 
-\item{max_repeat_errors}{Used to account for situations in which random
-forest classifier errors are concentrated among a few cells that are
-repeatedly misassigned. A numeric value indicating the maximum number of such
-'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
-will not be evaluated. Defaults to 20.}
+\item{max_repeat_errors}{A numerical value indicating the maximum number of
+repeatedly mislabeled cells that will be taken into account during the
+permutation tests. This parameter is used to account for situations in which
+random forest classifier errors are concentrated among a few cells that are
+repeatedly misassigned. If set to 0, such repeat errors will not be
+evaluated. Defaults to 20. These situations are relatively infrequent, but
+setting this parameter to lower values (especially 0) may result in
+underclustering due to a small number of intermediate cells. Setting this
+parameter to higher values may lead to instances of overclustering and is not
+recommended.}
 
-\item{distance_approx}{A boolean value indicating whether or not to use
-approximate distance calculations. Default = \code{TRUE} will use
-centroid-based distances.}
+\item{distance_approx}{A Boolean value indicating whether or not to use
+approximate distance calculations. Defaults to \code{TRUE}, which will use
+centroid-based distances. Setting distance approximation to \code{FALSE} will
+substantially increase the computational time and memory required,
+particularly for large datasets. Using approximated distances (\code{TRUE})
+rather than absolute distances (\code{FALSE}) is unlikely to have a
+meaningful effect on the distance thresholds imposed by CHOIR.}
 
-\item{sample_max}{A numeric value indicating the maximum number of cells used
-per cluster to train/test each random forest classifier. Default = \code{Inf}
-does not cap the number of cells used.}
+\item{sample_max}{A numerical value indicating the maximum number of cells to
+be sampled per cluster to train/test each random forest classifier. Defaults
+to \code{Inf} (infinity), which does not cap the number of cells used, so all
+cells will be used in all comparisons. Decreasing this parameter may decrease
+the computational time required, but may result in instances of
+underclustering. If input is provided to both the \code{downsampling_rate}
+and \code{sample_max} parameters, the minimum resulting cell number is
+calculated and used for each comparison.}
 
-\item{downsampling_rate}{A numeric value indicating the proportion of cells
-used per cluster to train/test each random forest classifier. Default =
-"auto" sets the downsampling rate according to the dataset size, for
-efficiency.}
+\item{downsampling_rate}{A numerical value indicating the proportion of cells
+to be sampled per cluster to train/test each random forest classifier. For
+efficiency, the default value, "auto", sets the downsampling rate according
+to the dataset size. Decreasing this parameter may decrease the computational
+time required, but may also make the final cluster calls more conservative.
+If input is provided to both \code{downsampling_rate} and
+\code{sample_max parameters}, the minimum resulting cell number is calculated
+and used for each comparison.}
 
 \item{min_reads}{A numeric value used to filter out features prior to input
-to the random forest classifier. Default = \code{NULL} will filter out
-features with 0 counts for the current clusters being compared. Numeric input
-values should be used only with count input matrices, e.g., ATAC tile
-matrices, whereby at least 1 read will be required for the provided number
-of cells.}
+to the random forest classifier. The default value, \code{NULL}, will filter
+out features with 0 counts for the current clusters being compared. Higher
+values should be used with caution, but may increase the signal-to-noise
+ratio encountered by the random forest classifiers.}
 
 \item{max_clusters}{Indicates the extent to which the hierarchical clustering
-tree will be expanded. Default = 'auto' will expand the tree until instances
-of underclustering have been eliminated in all branches. Alternately, supply
-a numeric value indicating the maximum number of clusters to expand the
-tree to.}
+tree will be expanded. Defaults to “auto”, which will expand the tree until
+cases of underclustering have been eliminated in all branches. Alternatively,
+supply a numerical value indicating the maximum number of clusters to which
+to the tree should be expanded. Using the default value for this parameter is
+highly recommended to avoid instances of underclustering. Setting a numerical
+value in this parameter hampers the ability of CHOIR to ensure that
+underclustering has not occurred.}
 
-\item{min_cluster_depth}{A numeric value indicating the maximum cluster size
-at the bottom of the clustering tree, prior to pruning branches. Defaults to
-2000.}
+\item{min_cluster_depth}{A numerical value indicating the maximum cluster
+size at the bottom of the clustering tree, prior to pruning branches.
+Defaults to 2000. Increasing this parameter can cause a computational
+bottleneck when generating the initial clustering tree for some large
+datasets; therefore, the default value is recommended. However, changing this
+value is unlikely to have meaningful effects on the final cluster results.}
 
 \item{normalization_method}{A character string or vector indicating which
 normalization method to use. In general, input data should be supplied to
-CHOIR after normalization, except in cases when the user wishes to use
-\code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
-'SCTransform'. Defaults to 'none'.}
+CHOIR after normalization, except when the user wishes to use
+\code{Seurat SCTransform} normalization. Permitted values are “none” or
+“SCTransform”. Defaults to “none”. Because CHOIR has not been tested
+thoroughly with \code{SCTransform} normalization, we do not recommend this
+approach at this time. For multi-omic datasets, provide a vector with a value
+corresponding to each provided value of \code{use_assay} or
+\code{ArchR_matrix} in the same order.}
 
-\item{subtree_reductions}{A boolean value indicating whether to generate a
-new dimensionality reduction for each subtree. Defaults to \code{TRUE}.}
+\item{subtree_reductions}{A Boolean value indicating whether to generate a
+new dimensionality reduction and set of highly variable features for each
+subtree. Defaults to \code{TRUE}, which enables CHOIR to compare similar
+clusters using a more nuanced set of features. Setting this parameter to
+\code{FALSE} may decrease computational time, but may result in
+instances of underclustering.}
 
 \item{reduction_method}{A character string or vector indicating which
-dimensionality reduction method to use. Permitted values are 'PCA' for
-principal component analysis, 'LSI' for latent semantic indexing, and
-'IterativeLSI' for iterative latent semantic indexing. Default = \code{NULL}
-will specify a method automatically based on the input data type.}
+dimensionality reduction method to use. Permitted values are “PCA” for
+principal component analysis, “LSI” for latent semantic indexing, and
+“IterativeLSI” for iterative latent semantic indexing. These three methods
+implement the \code{Seurat} function \code{RunPCA}, the \code{Signac}
+function \code{RunSVD}, and the \code{ArchR} function \code{addIterativeLSI},
+respectively. The default value, \code{NULL}, will select a method based on
+the input data type, specifically “IterativeLSI” for \code{ArchR} objects,
+“LSI” for \code{Seurat} or \code{SingleCellExperiment} objects when parameter
+\code{atac} is \code{TRUE}, and “PCA” in all other cases. For multi-omic
+datasets, provide a vector with a value corresponding to each provided value
+of \code{use_assay} or \code{ArchR_matrix} in the same order.}
 
-\item{reduction_params}{A list of additional parameters to be passed to
-the selected dimensionality reduction method.}
+\item{reduction_params}{A list of additional parameters to be passed to the
+selected dimensionality reduction method. By default, CHOIR will use the
+default parameter settings of the dimensionality reduction method indicated
+by the input to parameter reduction_method. Input to this parameter is passed
+to each downstream dimensionality reduction method and will overwrite or
+augment those defaults. Altering the performance of the dimensionality
+reduction in CHOIR will affect downstream clustering results, but not in ways
+that are easily predictable.}
 
-\item{n_var_features}{A numeric value indicating how many variable features
-to identify. Default = \code{NULL} will use 2000 features, or 25000 features
-for ATAC-seq data.}
+\item{n_var_features}{A numerical value indicating how many variable features
+to identify. Defaults to 2000 features for most data inputs, or 25000
+features for ATAC-seq data. Increasing the number of features may increase
+the computational time and memory required. If the provided value is either
+substantially higher or lower, instances of underclustering may occur. For
+multi-omic datasets, provide a vector with a value corresponding to each
+provided value of \code{use_assay} or \code{ArchR_matrix} in the same order.}
 
-\item{batch_correction_method}{A character string or vector indicating which
-batch correction method to use. Permitted values are 'Harmony' and
-'none'. Defaults to 'none'.}
+\item{batch_correction_method}{A character string indicating which batch
+correction method to use. Permitted values are “Harmony” and “none”. Defaults
+to “none”. Batch correction should only be used when the different batches
+are not expected to also have unique cell types or cell states. Using batch
+correction would ensure that clusters do not originate from a single batch,
+thereby making the final cluster calls more conservative.}
 
 \item{batch_correction_params}{A list of additional parameters to be passed
 to the selected batch correction method for each iteration. Only applicable
-when \code{batch_correction_method = 'Harmony'}.}
+when \code{batch_correction_method} is “Harmony”.}
 
-\item{batch_labels}{If applying batch correction, a character string or
-vector indicating the name of the column containing the batch labels.
-Defaults to \code{NULL}.}
-
-\item{batch_LOO}{A boolean value indicating whether to check for instances
-in which a single batch obscures the distinction between two clusters. When
-set to \code{TRUE}, a "leave-one-out" (LOO) approach is taken in permutation
-test comparisons using 3 or more batches, and the lowest resulting p-value
-is used. Defaults to \code{FALSE}.}
+\item{batch_labels}{A character string that, if applying batch correction,
+specifies the name of the column in the input object metadata containing the
+batch labels. Defaults to \code{NULL}.}
 
 \item{neighbor_params}{A list of additional parameters to be passed to
-\code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
-Seurat or SingleCellExperiment objects,
-\code{Seurat::FindMultiModalNeighbors()}).}
+\code{Seurat} function \code{FindNeighbors} (or, in the case of multi-modal
+data for \code{Seurat} or \code{SingleCellExperiment} objects, \code{Seurat}
+function \code{FindMultiModalNeighbors}).}
 
 \item{cluster_params}{A list of additional parameters to be passed to
-Seurat::FindClusters() for clustering at each level of the tree. Note that if
-\code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
-clusters such that each singleton constitutes its own cluster.}
+\code{Seurat} function \code{FindClusters} for clustering at each level of
+the tree. By default, when the \code{Seurat::FindClusters} parameter
+\code{group.singletons} is set to \code{TRUE}, CHOIR relabels clusters such
+that each singleton constitutes its own cluster.}
 
-\item{use_assay}{For Seurat or SingleCellExperiment objects, a character
-string or vector indicating the assay(s) to use in the provided object.
-Default = \code{NULL} will choose the current active assay for Seurat objects
-and the \code{logcounts} assay for SingleCellExperiment objects.}
+\item{use_assay}{For \code{Seurat} or \code{SingleCellExperiment} objects, a
+character string or vector indicating the assay(s) to use in the provided
+object. The default value, \code{NULL}, will choose the current active assay
+for \code{Seurat} objects and the \code{logcounts} assay for
+\code{SingleCellExperiment} objects.}
 
-\item{use_slot}{For Seurat objects, a character string or vector indicating
-the layers(s) — previously known as slot(s) — to use in the provided object.
-Default = \code{NULL} will choose a layer/slot based on the selected assay.
-If a non-standard assay is provided, do not leave \code{use_slot} as
-\code{NULL}.}
+\item{use_slot}{For \code{Seurat} objects, a character string or vector
+indicating the layers(s)—previously known as slot(s)—to use in the provided
+object. The default value, \code{NULL}, will choose a layer/slot based on the
+selected assay. If an assay other than "RNA", "sketch”, "SCT”, or
+"integrated" is provided, you must specify a value for \code{use_slot}. For
+multi-omic datasets, provide a vector with a value corresponding to each
+provided value of \code{use_assay} in the same order.}
 
-\item{ArchR_matrix}{For ArchR objects, a character string or vector
-indicating which matri(ces) to use in the provided object. Default =
-\code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
-'GeneExpressionMatrix' for RNA-seq data.}
+\item{ArchR_matrix}{For \code{ArchR} objects, a character string or vector
+indicating which matrix or matrices to use in the provided object. The
+default value, \code{NULL}, will use the “GeneScoreMatrix” for ATAC-seq data
+or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
+provide a vector with a value corresponding to each modality.}
 
-\item{ArchR_depthcol}{For ArchR objects, a character string or vector
-indicating which column to use for correlation with sequencing depth.
-Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
-'Gex_nUMI' for RNA-seq data.}
+\item{ArchR_depthcol}{For \code{ArchR} objects, a character string or vector
+indicating which column to use for correlation with sequencing depth. The
+default value, \code{NULL}, will use the “nFrags” column for ATAC-seq data or
+the “Gex_nUMI” for RNA-seq data. For multi-omic datasets, provide a vector
+with a value corresponding to each provided value of \code{ArchR_matrix} in
+the same order.}
 
-\item{countsplit}{A boolean value indicating whether or not to use
-countsplit input data (see A. Neufeld \code{countsplit} package), such that
-one matrix of counts is used for clustering tree generation, and a separate
-matrix is used for all random forest classifier permutation testing. Defaults
-to \code{FALSE}.}
+\item{countsplit}{A Boolean value indicating whether or not to use count
+split input data (see \code{countsplit} package), such that one matrix of
+counts is used for clustering tree generation and a separate matrix is used
+for all random forest classifier permutation testing. Defaults to
+\code{FALSE}. Enabling count splitting is likely to result in more
+conservative final cluster calls and is likely to perform best in datasets
+with high read depths.}
 
-\item{countsplit_suffix}{A character vector indicating the suffixes
-that distinguish the two countsplit matrices to be used. Suffixes are
-appended onto input string/vector for \code{use_slot} for Seurat objects,
-\code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
-ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
-suffixes "_1" and "_2".}
+\item{countsplit_suffix}{A character vector indicating the suffixes that
+distinguish the two count split matrices to be used. Suffixes are appended
+onto the input string/vector for parameter \code{use_slot} for \code{Seurat}
+objects, \code{use_assay} for \code{SingleCellExperiment} objects, or
+\code{ArchR_matrix} for \code{ArchR} objects. When count splitting is
+enabled, the default value \code{NULL} uses suffixes "_1" and "_2".}
 
 \item{reduction}{An optional matrix of dimensionality reduction cell
-embeddings to be used for subsequent clustering steps. Defaults to
-\code{NULL}, whereby dimensionality reduction(s) will instead be calculated
-using method specified by \code{reduction_method}.}
+embeddings provided by the user for subsequent clustering steps. By default,
+this parameter is set to \code{NULL}, and the dimensionality reduction(s)
+will be calculated using the method specified by the \code{reduction_method}
+parameter.}
 
-\item{var_features}{An optional character vector of variable features to be
-used for subsequent clustering steps. Defaults to \code{NULL}, whereby new
-sets of variable features will instead be generated.}
+\item{var_features}{An optional character vector of names of variable
+features to be used for subsequent clustering steps. By default, this
+parameter is set to \code{NULL}, and variable features will be calculated as
+part of running CHOIR. Input to this parameter is required when a
+dimensionality reduction is supplied to parameter \code{reduction}. For
+multi-omic datasets, concatenate feature names for all modalities.}
 
-\item{atac}{A boolean value or vector indicating whether the provided data is
-ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
-ATAC-seq data, it is important to supply this parameter as a vector
-corresponding to each modality in order.}
+\item{atac}{A Boolean value or vector indicating whether the provided data is
+ATAC-seq data. For multi-omic datasets, provide a vector with a value
+corresponding to each provided value of \code{use_assay} or
+\code{ArchR_matrix} in the same order. Defaults to \code{FALSE}.}
 
-\item{n_cores}{A numeric value indicating the number of cores to use for
-parallelization. Default = \code{NULL} will use the number of available cores
-minus 2.}
+\item{n_cores}{A numerical value indicating the number of cores to use for
+parallelization. By default, CHOIR will use the number of available cores
+minus 2. CHOIR is parallelized at the computation of permutation test
+iterations. Therefore, any number of cores up to the number of iterations
+will theoretically decrease the computational time required. In practice,
+8–16 cores are recommended for datasets up to 500,000 cells.}
 
-\item{random_seed}{A numeric value indicating the random seed to be used.}
+\item{random_seed}{A numerical value indicating the random seed to be used.
+Defaults to 1. CHOIR uses randomization throughout the generation and pruning
+of the clustering tree. Therefore, changing the random seed may yield slight
+differences in the final cluster assignments.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
-during the execution of this function. Can be set to \code{FALSE} for a
-cleaner output.}
+\item{verbose}{A Boolean value indicating whether to use verbose output
+during the execution of CHOIR. Defaults to \code{TRUE}, but can be set to
+\code{FALSE} for a cleaner output.}
 }
 \value{
 Returns the object with the following added data stored under the

@@ -674,8 +674,7 @@
 
 .getNewLabels <- function(merge_groups,
                           level,
-                          compiled_labels,
-                          ) {
+                          compiled_labels) {
 
   # Create new list
   merge_group_labels <- vector(mode = "list", length(merge_groups))
