@@ -505,20 +505,21 @@
   return(centroid_distances)
 }
 
-# Generate new cluster labels ---------------------------
+# Generate new cluster labels ---------------------------  #### CHANGE SO THAT IT CHECKS BOTH CURRENT AND ORIGINAL LEVEL, FOR NON REDUNDANCY
 #
 # Generate new cluster labels that are non-redundant.
 #
 # merge_groups -- A list indicating which clusters will merge
-# parent_labels -- The current list of cluster labels
+# level -- Level at which new label will be generated
+# compiled_labels -- The set of compiled cluster labels that have been previously used
+
 .getNewLabels <- function(merge_groups,
-                          parent_labels) {
+                          level,
+                          compiled_labels,
+                          ) {
 
   # Create new list
   merge_group_labels <- vector(mode = "list", length(merge_groups))
-
-  # Get level of parent_labels
-  level <- stringr::str_extract(parent_labels[1], "L\\d*")
 
   # For each element in merge_groups
   for (i in 1:length(merge_groups)) {
@@ -535,20 +536,20 @@
       } else {
         use_root <- "P0"
       }
-      # Find the max number under that tree among the parent cluster labels
-      root_parent_labels <- parent_labels[grepl(use_root, parent_labels)]
-      if (length(root_parent_labels) == 0) {
+      # Find the max number under that tree among the parent cluster labels with the matching level
+      root_compiled_labels <- compiled_labels[grepl(paste0(use_root, "_L", level, "_"), compiled_labels)]
+      if (length(root_compiled_labels) == 0) {
         num <- 1
       } else {
-        num <- max(as.numeric(unlist(stringr::str_extract(root_parent_labels, "\\d*$")))) + 1
+        num <- max(as.numeric(unlist(stringr::str_extract(root_compiled_labels, "\\d*$")))) + 1
       }
       # The subsequent number is used and recorded
-      new_label <- paste0(use_root, "_", level, "_", num)
+      new_label <- paste0(use_root, "_L", level, "_", num)
       merge_group_labels[[i]] <- new_label
-      parent_labels <- c(parent_labels, new_label)
+      compiled_labels <- c(compiled_labels, new_label)
     }
   }
   # Return list
   return(list("merge_group_labels" = merge_group_labels,
-              "evolving_parent_IDs" = parent_labels))
+              "compiled_cluster_labels" = compiled_labels))
 }
