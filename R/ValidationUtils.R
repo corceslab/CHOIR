@@ -852,11 +852,25 @@
     if (input != "auto") {
       # Should be of class 'numeric', must be a single value
       if (!methods::is(input, "numeric") | length(input) != 1) {
-        stop("Input value for '", name, "' must be either 'auto' or a single value of class 'numeric'. Please supply valid input!")
+        stop("Input value for '", name, "' must be either NULL or a single value of class 'numeric'. Please supply valid input!")
       }
-      # Must be above 0 and at or below 1
-      if (input <= 0 | input > 1) {
-        stop("Input value for '", name, "' must be either 'auto' or a positive number less than or equal to 1. Please supply valid input!")
+      # Must be above 0
+      if (input <= 0) {
+        stop("Input value for '", name, "' must be either NULL or a positive number. Please supply valid input!")
+      }
+    }
+  }
+
+  # min_reads
+  if (name == "min_reads") {
+    if (!is.null(input)) {
+      # Should be of class 'numeric', must be a single value
+      if (!methods::is(input, "numeric") | length(input) != 1) {
+        stop("Input value for '", name, "' must be either NULL or a single value of class 'numeric'. Please supply valid input!")
+      }
+      # Must be above 0
+      if (input <= 0) {
+        stop("Input value for '", name, "' must be either NULL or a positive number. Please supply valid input!")
       }
     }
   }

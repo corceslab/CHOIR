@@ -58,10 +58,15 @@
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells
-#' used per cluster to train/test each random forest classifier. Default =
-#' "auto" sets the downsampling rate according to the dataset size, for
-#' efficiency.
+#' @param downsampling_rate A numeric value indicating the proportion of cells used
+#' per cluster to train/test each random forest classifier. Default = "auto" sets
+#' the downsampling rate according to the dataset size, for efficiency.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. Default = \code{NULL} will filter out
+#' features with 0 counts for the current clusters being compared. Numeric input
+#' values should be used only with count input matrices, e.g., ATAC tile
+#' matrices, whereby at least 1 read will be required for the provided number
+#' of cells.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except in cases when the user wishes to use
@@ -147,6 +152,7 @@ pruneTree <- function(object,
                       collect_all_metrics = FALSE,
                       sample_max = NULL,
                       downsampling_rate = NULL,
+                      min_reads = NULL,
                       normalization_method = NULL,
                       batch_correction_method = NULL,
                       batch_labels = NULL,
@@ -204,6 +210,7 @@ pruneTree <- function(object,
                              "distance_approx" = TRUE,
                              "sample_max" = Inf,
                              "downsampling_rate" = "auto",
+                             "min_reads" = NULL,
                              "normalization_method" = "none",
                              "batch_correction_method" = "none",
                              "batch_labels" = NULL,
@@ -229,6 +236,7 @@ pruneTree <- function(object,
   distance_approx <- .retrieveParam(distance_approx, "distance_approx", buildTree_parameters, default_parameters)
   sample_max <- .retrieveParam(sample_max, "sample_max", buildTree_parameters, default_parameters)
   downsampling_rate <- .retrieveParam(downsampling_rate, "downsampling_rate", buildTree_parameters, default_parameters)
+  min_reads <- .retrieveParam(min_reads, "min_reads", buildTree_parameters, default_parameters)
   normalization_method <- .retrieveParam(normalization_method, "normalization_method", buildTree_parameters, default_parameters)
   batch_correction_method <- .retrieveParam(batch_correction_method, "batch_correction_method", buildTree_parameters, default_parameters)
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
@@ -251,6 +259,7 @@ pruneTree <- function(object,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(min_reads, "min_reads")
   .validInput(cluster_params, "cluster_params")
   .validInput(use_assay, "use_assay", object)
   .validInput(countsplit, "countsplit")
@@ -458,6 +467,48 @@ pruneTree <- function(object,
                                                                            return.only.var.genes = FALSE,
                                                                            seed.use = random_seed,
                                                                            verbose = FALSE)@assays$SCT@scale.data)
+          } else if (normalization_method_m == "TFIDF") {
+            # TF-IDF adapted from Stuart et al.
+            row_sums <- rowSums(input_matrix_list[[m]])
+            idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+            input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+          } else if (normalization_method_m == "BinaryTFIDF") {
+            # Binarize matrix
+            input_matrix_list[[m]] <- input_matrix_list[[m]][input_matrix_list[[m]] > 0] <- 1
+            # TF-IDF adapted from Stuart et al.
+            row_sums <- rowSums(input_matrix_list[[m]])
+            idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+            input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+          } else if (normalization_method_m == "ReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+          } else if (normalization_method_m == "LogReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+            # Log transform
+            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]])
           }
         }
         input_matrix <- do.call(rbind, input_matrix_list)
@@ -478,6 +529,50 @@ pruneTree <- function(object,
                                                                return.only.var.genes = FALSE,
                                                                seed.use = random_seed,
                                                                verbose = FALSE)@assays$SCT@scale.data)
+        } else if (normalization_method == "TFIDF") {
+          # TF-IDF adapted from Stuart et al.
+          input_matrix <- as(input_matrix, "dgCMatrix")
+          row_sums <-  Matrix::rowSums(input_matrix)
+          idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+          input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+          input_matrix <- log1p(input_matrix*10000)
+        } else if (normalization_method == "BinaryTFIDF") {
+          # Binarize matrix
+          input_matrix <- input_matrix[input_matrix > 0] <- 1
+          # TF-IDF adapted from Stuart et al.
+          input_matrix <- as(input_matrix, "dgCMatrix")
+          row_sums <-  Matrix::rowSums(input_matrix)
+          idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+          input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+          input_matrix <- log1p(input_matrix*10000)
+        } else if (normalization_method == "ReadsInTSS") {
+          ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+          # Fetch ReadsInTSS
+          reads_in_TSS <- .retrieveData(object,
+                                        key = "CHOIR",
+                                        type = "cell_metadata",
+                                        name = "ReadsInTSS")
+          names(reads_in_TSS) <- cell_IDs
+          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
+          # Divide each cell's values by cell's ReadsInTSS
+          input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+          # Multiply by scale factor 10000
+          input_matrix <- input_matrix*10000
+        } else if (normalization_method == "LogReadsInTSS") {
+          ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+          # Fetch ReadsInTSS
+          reads_in_TSS <- .retrieveData(object,
+                                        key = "CHOIR",
+                                        type = "cell_metadata",
+                                        name = "ReadsInTSS")
+          names(reads_in_TSS) <- cell_IDs
+          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
+          # Divide each cell's values by cell's ReadsInTSS
+          input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+          # Multiply by scale factor 10000
+          input_matrix <- input_matrix*10000
+          # Log transform
+          input_matrix <- log1p(input_matrix)
         }
         input_matrix <- BiocGenerics::t(input_matrix)
       }
@@ -633,6 +728,10 @@ pruneTree <- function(object,
   results_of_underclustering_check <- c()
   underclustering_buffer <- FALSE
 
+  # Set of all cluster labels in original tree
+  compiled_cluster_labels <- unlist(apply(cluster_tree, 2, unique))
+  names(compiled_cluster_labels) <- NULL
+
   # -------------------------------------------------------------------------
   # Iterate through each level of the cluster tree (bottom-up)
   # -------------------------------------------------------------------------
@@ -669,7 +768,6 @@ pruneTree <- function(object,
   while (complete == FALSE) {
     # Get all cluster IDs at this level
     unique_parent_IDs <- unique(parent_IDs)
-    evolving_parent_IDs <- unique_parent_IDs
 
     # For each parent cluster
     for (parent in 1:length(unique_parent_IDs)) {
@@ -786,6 +884,7 @@ pruneTree <- function(object,
                                                              collect_all_metrics = collect_all_metrics,
                                                              sample_max = sample_max,
                                                              downsampling_rate = downsampling_rate,
+                                                             min_reads = min_reads,
                                                              input_matrix = input_matrices[[use_input_matrix]],
                                                              nn_matrix = nn_matrices[[use_nn_matrix]],
                                                              comparison_records = comparison_records,
@@ -966,6 +1065,7 @@ pruneTree <- function(object,
                                                                   collect_all_metrics = collect_all_metrics,
                                                                   sample_max = sample_max,
                                                                   downsampling_rate = downsampling_rate,
+                                                                  min_reads = min_reads,
                                                                   input_matrix = input_matrices[[use_input_matrix]],
                                                                   nn_matrix = nn_matrices[[use_nn_matrix]],
                                                                   comparison_records = comparison_records,
@@ -1026,6 +1126,7 @@ pruneTree <- function(object,
                                                                   max_repeat_errors = max_repeat_errors,
                                                                   sample_max = sample_max,
                                                                   downsampling_rate = downsampling_rate,
+                                                                  min_reads = min_reads,
                                                                   collect_all_metrics = collect_all_metrics,
                                                                   input_matrix = input_matrices[[use_input_matrix]],
                                                                   nn_matrix = nn_matrices[[use_nn_matrix]],
@@ -1177,8 +1278,9 @@ pruneTree <- function(object,
           }
           # Convert merge groups to new cluster names
           new_labels_list <- .getNewLabels(merge_groups = merge_group_list,
-                                           parent_labels = evolving_parent_IDs)
-          evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+                                           level = lvl,
+                                           compiled_labels = compiled_cluster_labels)
+          compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
           merge_group_labels <- new_labels_list[["merge_group_labels"]]
 
           # Update child_IDs
@@ -1356,8 +1458,9 @@ pruneTree <- function(object,
           }
           new_labels_list <- .getNewLabels(merge_groups = list(c(merge_pair$cluster1[1],
                                                                  merge_pair$cluster2[1])),
-                                           parent_labels = evolving_parent_IDs)
-          evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+                                           level = lvl,
+                                           compiled_labels = compiled_cluster_labels)
+          compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
           merged_label <- new_labels_list[["merge_group_labels"]][[1]]
 
           child_IDs[child_IDs %in% c(merge_pair$cluster1[1], merge_pair$cluster2[1])] <- merged_label
@@ -1432,6 +1535,12 @@ pruneTree <- function(object,
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
             use_input_matrix <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
+            if ("subtree_reductions" %in% names(buildTree_parameters)) {
+              subtree_reductions <- buildTree_parameters[["subtree_reductions"]]
+              if (subtree_reductions == FALSE) {
+                use_input_matrix <- "P0"
+              }
+            }
             # Build subtree
             subtree_list <- .getTree(snn_matrix = `if`(!is.null(snn_matrix),
                                                        snn_matrix[current_cell_IDs, current_cell_IDs],
