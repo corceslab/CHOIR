@@ -22,6 +22,7 @@ pruneTree(
   collect_all_metrics = FALSE,
   sample_max = NULL,
   downsampling_rate = NULL,
+  min_reads = NULL,
   normalization_method = NULL,
   batch_correction_method = NULL,
   batch_labels = NULL,
@@ -111,6 +112,13 @@ does not cap the number of cells used.}
 used per cluster to train/test each random forest classifier. Default =
 "auto" sets the downsampling rate according to the dataset size, for
 efficiency.}
+
+\item{min_reads}{A numeric value used to filter out features prior to input
+to the random forest classifier. Default = \code{NULL} will filter out
+features with 0 counts for the current clusters being compared. Numeric input
+values should be used only with count input matrices, e.g., ATAC tile
+matrices, whereby at least 1 read will be required for the provided number
+of cells.}
 
 \item{normalization_method}{A character string or vector indicating which
 normalization method to use. In general, input data should be supplied to

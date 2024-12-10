@@ -374,18 +374,78 @@
           reduction_params$dimsToUse <- 1:min(30, n_cells - 1)
         }
         # Run iterative LSI
-        object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
-                                                         "name" = "CHOIR_IterativeLSI",
-                                                         "varFeatures" = n_var_features,
-                                                         "saveIterations" = FALSE,
-                                                         "useMatrix" = ArchR_matrix,
-                                                         "depthCol" = ArchR_depthcol,
-                                                         "force" = TRUE,
-                                                         "seed" = random_seed,
-                                                         "threads" = n_cores),
-                                                    reduction_params))
+        if (ArchR_matrix == "GeneScoreMatrix") {
+          iterativeLSI_matrix <- "TileMatrix"
+        } else {
+          iterativeLSI_matrix <- ArchR_matrix
+        }
+
+        if (ArchR_matrix == "GeneExpressionMatrix") {
+          object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
+                                                           "name" = "CHOIR_IterativeLSI",
+                                                           "varFeatures" = 2000,
+                                                           "saveIterations" = FALSE,
+                                                           "useMatrix" = iterativeLSI_matrix,
+                                                           "depthCol" = ArchR_depthcol,
+                                                           "force" = TRUE,
+                                                           "seed" = random_seed,
+                                                           "threads" = n_cores),
+                                                      reduction_params))
+        } else {
+          object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
+                                                           "name" = "CHOIR_IterativeLSI",
+                                                           "varFeatures" = 25000,
+                                                           "saveIterations" = FALSE,
+                                                           "useMatrix" = iterativeLSI_matrix,
+                                                           "depthCol" = ArchR_depthcol,
+                                                           "force" = TRUE,
+                                                           "seed" = random_seed,
+                                                           "threads" = n_cores),
+                                                      reduction_params))
+        }
+
         # Extract variable features (dataframe)
-        var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
+        if (ArchR_matrix != "GeneScoreMatrix") {
+          var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
+        } else {
+          # Extract GeneScoreMatrix ### FIX LATER ###
+          feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+          print("check1")
+          feature_names <- feature_matrix@elementMetadata$name
+          print("check2")
+          feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
+          print("check3")
+          rownames(feature_matrix) <- feature_names
+          print("check4")
+          # Subset to current cells
+          if (!is.null(use_cells)) {
+            print(use_cells[1:5])
+            print(colnames(feature_matrix)[1:5])
+            feature_matrix <- feature_matrix[,use_cells]
+          }
+          print("check5")
+          feature_matrix <- as.matrix(feature_matrix)
+          print(feature_matrix[1:5,1:5])
+          print("check6")
+          # Find variable features
+          var_features <-  Seurat:::FindVariableFeatures.V3Matrix(feature_matrix, verbose = TRUE)
+          print("check7")
+          print(head(var_features))
+          var_features <- data.frame(var_features)
+          print("check8")
+          if ("vst.variance.standardized" %in% colnames(var_features)) {
+            var_features <- var_features %>%
+              dplyr::arrange(-vst.variance.standardized) %>%
+              utils::head(n_var_features) %>%
+              rownames()
+          } else {
+            var_features <- var_features %>%
+              dplyr::arrange(-variance.standardized) %>%
+              utils::head(n_var_features) %>%
+              rownames()
+          }
+          print("check9")
+        }
 
         # Harmony batch correction
         # Check number of batches
@@ -910,7 +970,7 @@
 # downsampling_rate -- A numeric value indicating the proportion of cells used per cluster to train/test random forest classifier
 # batch_correction_method -- Character string or vector indicating which batch correction method to use
 # batches -- Character vector of batch labels for each cell
-# batch_LOO -- A boolean indicating whether to use a leave-one-out approach for batches
+# min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # tree_records -- A dataframe comprising records from tree generation
 # tree_id -- Name of tree
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
@@ -938,6 +998,7 @@
                      max_repeat_errors = 20,
                      sample_max = Inf,
                      downsampling_rate = NULL,
+                     min_reads = NULL,
                      batch_correction_method = NULL,
                      batches = NULL,
                      batch_LOO = NULL,
@@ -987,6 +1048,7 @@
                                     max_repeat_errors = max_repeat_errors,
                                     sample_max = sample_max,
                                     downsampling_rate = downsampling_rate,
+                                    min_reads = min_reads,
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
                                     batch_LOO = batch_LOO,
@@ -1503,6 +1565,7 @@
                              max_repeat_errors,
                              sample_max,
                              downsampling_rate,
+                             min_reads,
                              batch_correction_method,
                              batches,
                              batch_LOO,
@@ -1744,7 +1807,7 @@
                                                 collect_all_metrics = FALSE,
                                                 sample_max = sample_max,
                                                 downsampling_rate = downsampling_rate,
-                                                batch_LOO = batch_LOO,
+                                                min_reads = min_reads,
                                                 input_matrix = input_matrix[current_cells, ],
                                                 nn_matrix = nn_matrix[current_cells, current_cells],
                                                 comparison_records = comparison_records,
@@ -1877,7 +1940,7 @@
                                               collect_all_metrics = FALSE,
                                               sample_max = sample_max,
                                               downsampling_rate = downsampling_rate,
-                                              batch_LOO = batch_LOO,
+                                              min_reads = min_reads,
                                               input_matrix = input_matrix[current_cells,],
                                               nn_matrix = nn_matrix[current_cells, current_cells],
                                               comparison_records = comparison_records,
@@ -1964,7 +2027,7 @@
                                                     collect_all_metrics = FALSE,
                                                     sample_max = sample_max,
                                                     downsampling_rate = downsampling_rate,
-                                                    batch_LOO = batch_LOO,
+                                                    min_reads = min_reads,
                                                     input_matrix = input_matrix[current_cells, ],
                                                     nn_matrix = nn_matrix[current_cells, current_cells],
                                                     comparison_records = comparison_records,

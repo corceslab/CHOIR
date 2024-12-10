@@ -66,10 +66,15 @@
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells
-#' used per cluster to train/test each random forest classifier. Default =
-#' "auto" sets the downsampling rate according to the dataset size, for
-#' efficiency.
+#' @param downsampling_rate A numeric value indicating the proportion of cells used
+#' per cluster to train/test each random forest classifier. Default = "auto" sets
+#' the downsampling rate according to the dataset size, for efficiency.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. Default = \code{NULL} will filter out
+#' features with 0 counts for the current clusters being compared. Numeric input
+#' values should be used only with count input matrices, e.g., ATAC tile
+#' matrices, whereby at least 1 read will be required for the provided number
+#' of cells.
 #' @param max_clusters Indicates the extent to which the hierarchical clustering
 #' tree will be expanded. Default = 'auto' will expand the tree until instances
 #' of underclustering have been eliminated in all branches. Alternately, supply
@@ -200,6 +205,7 @@ CHOIR <- function(object,
                   collect_all_metrics = FALSE,
                   sample_max = Inf,
                   downsampling_rate = "auto",
+                  min_reads = NULL,
                   max_clusters = "auto",
                   min_cluster_depth = 2000,
                   normalization_method = "none",
@@ -256,6 +262,7 @@ CHOIR <- function(object,
                       max_repeat_errors = max_repeat_errors,
                       sample_max = sample_max,
                       downsampling_rate = downsampling_rate,
+                      min_reads = min_reads,
                       max_clusters = max_clusters,
                       min_cluster_depth = min_cluster_depth,
                       distance_approx = distance_approx,

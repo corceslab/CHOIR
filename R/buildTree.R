@@ -49,10 +49,15 @@
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells
-#' used per cluster to train/test each random forest classifier. Default =
-#' "auto" sets the downsampling rate according to the dataset size, for
-#' efficiency.
+#' @param downsampling_rate A numeric value indicating the proportion of cells used
+#' per cluster to train/test each random forest classifier. Default = "auto" sets
+#' the downsampling rate according to the dataset size, for efficiency.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. Default = \code{NULL} will filter out
+#' features with 0 counts for the current clusters being compared. Numeric input
+#' values should be used only with count input matrices, e.g., ATAC tile
+#' matrices, whereby at least 1 read will be required for the provided number
+#' of cells.
 #' @param max_clusters Indicates the extent to which the hierarchical clustering
 #' tree will be expanded. Default = 'auto' will expand the tree until instances
 #' of underclustering have been eliminated in all branches. Alternately, supply
@@ -179,6 +184,7 @@ buildTree <- function(object,
                       distance_approx = TRUE,
                       sample_max = Inf,
                       downsampling_rate = "auto",
+                      min_reads = NULL,
                       max_clusters = "auto",
                       min_cluster_depth = 2000,
                       normalization_method = "none",
@@ -231,6 +237,8 @@ buildTree <- function(object,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(min_reads, "min_reads")
+  .validInput(max_clusters, "max_clusters")
   .validInput(min_cluster_depth, "min_cluster_depth")
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
@@ -466,7 +474,8 @@ buildTree <- function(object,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
-                       "\n - Batch leave-one-out adjustment: ", batch_LOO,
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
@@ -808,6 +817,48 @@ buildTree <- function(object,
                                                                              return.only.var.genes = FALSE,
                                                                              seed.use = random_seed,
                                                                              verbose = FALSE)@assays$SCT@scale.data)
+            } else if (normalization_method_m == "TFIDF") {
+              # TF-IDF adapted from Stuart et al.
+              row_sums <- rowSums(input_matrix_list[[m]])
+              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+            } else if (normalization_method_m == "BinaryTFIDF") {
+              # Binarize matrix
+              input_matrix_list[[m]] <- input_matrix_list[[m]][input_matrix_list[[m]] > 0] <- 1
+              # TF-IDF adapted from Stuart et al.
+              row_sums <- rowSums(input_matrix_list[[m]])
+              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
+              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
+            } else if (normalization_method_m == "ReadsInTSS") {
+              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+              # Fetch ReadsInTSS
+              reads_in_TSS <- .retrieveData(object,
+                                            key = "CHOIR",
+                                            type = "cell_metadata",
+                                            name = "ReadsInTSS")
+              names(reads_in_TSS) <- cell_IDs
+              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+              # Divide each cell's values by cell's ReadsInTSS
+              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+              # Multiply by scale factor 10000
+              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+            } else if (normalization_method_m == "LogReadsInTSS") {
+              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+              # Fetch ReadsInTSS
+              reads_in_TSS <- .retrieveData(object,
+                                            key = "CHOIR",
+                                            type = "cell_metadata",
+                                            name = "ReadsInTSS")
+              names(reads_in_TSS) <- cell_IDs
+              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+              # Divide each cell's values by cell's ReadsInTSS
+              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
+              # Multiply by scale factor 10000
+              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
+              # Log transform
+              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]])
             }
           }
           input_matrix <- do.call(rbind, input_matrix_list)
@@ -826,6 +877,50 @@ buildTree <- function(object,
                                                                  return.only.var.genes = FALSE,
                                                                  seed.use = random_seed,
                                                                  verbose = FALSE)@assays$SCT@scale.data)
+          } else if (normalization_method == "TFIDF") {
+            # TF-IDF adapted from Stuart et al.
+            input_matrix <- as(input_matrix, "dgCMatrix")
+            row_sums <-  Matrix::rowSums(input_matrix)
+            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+            input_matrix <- log1p(input_matrix*10000)
+          } else if (normalization_method == "BinaryTFIDF") {
+            # Binarize matrix
+            input_matrix <- input_matrix[input_matrix > 0] <- 1
+            # TF-IDF adapted from Stuart et al.
+            input_matrix <- as(input_matrix, "dgCMatrix")
+            row_sums <-  Matrix::rowSums(input_matrix)
+            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
+            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
+            input_matrix <- log1p(input_matrix*10000)
+          } else if (normalization_method == "ReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix <- input_matrix*10000
+          } else if (normalization_method == "LogReadsInTSS") {
+            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
+            # Fetch ReadsInTSS
+            reads_in_TSS <- .retrieveData(object,
+                                          key = "CHOIR",
+                                          type = "cell_metadata",
+                                          name = "ReadsInTSS")
+            names(reads_in_TSS) <- cell_IDs
+            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
+            # Divide each cell's values by cell's ReadsInTSS
+            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
+            # Multiply by scale factor 10000
+            input_matrix <- input_matrix*10000
+            # Log transform
+            input_matrix <- log1p(input_matrix)
           }
         }
         # Progress
@@ -997,6 +1092,7 @@ buildTree <- function(object,
                                       max_repeat_errors = max_repeat_errors,
                                       sample_max = sample_max,
                                       downsampling_rate = downsampling_rate,
+                                      min_reads = min_reads,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
                                       batch_LOO = batch_LOO,
@@ -1162,6 +1258,7 @@ buildTree <- function(object,
                          "distance_approx"  = distance_approx,
                          "sample_max" = sample_max,
                          "downsampling_rate" = downsampling_rate,
+                         "min_reads" = min_reads,
                          "max_clusters" = max_clusters,
                          "min_cluster_depth" = min_cluster_depth,
                          "normalization_method" = normalization_method,

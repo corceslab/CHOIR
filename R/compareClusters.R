@@ -52,10 +52,15 @@
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells
-#' used per cluster to train/test each random forest classifier. Default =
-#' "auto" sets the downsampling rate according to the dataset size, for
-#' efficiency.
+#' @param downsampling_rate A numeric value indicating the proportion of cells used
+#' per cluster to train/test each random forest classifier. Default = "auto" sets
+#' the downsampling rate according to the dataset size, for efficiency.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. Default = \code{NULL} will filter out
+#' features with 0 counts for the current clusters being compared. Numeric input
+#' values should be used only with count input matrices, e.g., ATAC tile
+#' matrices, whereby at least 1 read will be required for the provided number
+#' of cells.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except in cases when the user wishes to use
@@ -133,6 +138,7 @@ compareClusters <- function(object = NULL,
                             collect_all_metrics = FALSE,
                             sample_max = Inf,
                             downsampling_rate = "auto",
+                            min_reads = NULL,
                             normalization_method = "none",
                             batch_labels = NULL,
                             batch_LOO = FALSE,
@@ -170,6 +176,7 @@ compareClusters <- function(object = NULL,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(min_reads, "min_reads")
   .validInput(batch_labels, "batch_labels", object)
   .validInput(batch_LOO, "batch_LOO")
   .validInput(collect_all_metrics, "collect_all_metrics")
@@ -436,7 +443,7 @@ compareClusters <- function(object = NULL,
                                            collect_all_metrics = collect_all_metrics,
                                            sample_max = sample_max,
                                            downsampling_rate = downsampling_rate,
-                                           batch_LOO = batch_LOO,
+                                           min_reads = min_reads,
                                            input_matrix = input_matrix,
                                            nn_matrix = nn_matrix,
                                            comparison_records = comparison_records,

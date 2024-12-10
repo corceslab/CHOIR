@@ -3,6 +3,7 @@
 export("%>%")
 export(CHOIR)
 export(CHOIRpalette)
+export(buildParentTree)
 export(buildTree)
 export(compareClusters)
 export(inferTree)
