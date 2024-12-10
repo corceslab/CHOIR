@@ -221,7 +221,7 @@
           }
         }
         # By method
-        if (verbose) message("                      Running ", reduction_method, " with ", n_var_features, " variable features..")
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " with ", n_var_features, " variable features..")
         if (reduction_method == "PCA") {
 
           if (normalization_method == "SCTransform" | (!is.null(use_assay) && use_assay == "SCT")) {
@@ -265,13 +265,13 @@
           if (!any(names(reduction_params) == "verbose")) {
             reduction_params$verbose <- FALSE
           }
-          .requirePackage("Signac")
+          .requirePackage("Signac", source = "cran")
           reduction_coords <- do.call(Signac::RunSVD, c(list("object" = scaled_features[var_features,]),
                                                         reduction_params))@cell.embeddings
         }
       } else if (atac == TRUE) {
         # Find "top" features instead of variable features
-        .requirePackage("Signac")
+        .requirePackage("Signac", source = "cran")
         var_features <- Signac::FindTopFeatures(feature_matrix, verbose = FALSE) %>%
           dplyr::arrange(-percentile) %>%
           utils::head(n_var_features) %>%
@@ -286,7 +286,7 @@
           }
         }
         # By method
-        if (verbose) message("                      Running ", reduction_method, " for ATAC-seq data with ", n_var_features, " variable features..")
+        if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " for ATAC-seq data with ", n_var_features, " variable features..")
         if (reduction_method == "LSI") {
           # If parameters are provided, check 'em
           if (any(names(reduction_params) %in% c("object", "assay", "features"))) {
@@ -303,23 +303,29 @@
 
       # Harmony batch correction
       if (batch_correction_method == "Harmony") {
-        # Check provided parameters
-        if (any(names(batch_correction_params) %in% c("data_mat", "meta_data", "vars_use", "do_pca"))) {
-          stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
+        # Check number of batches
+        n_batches <- dplyr::n_distinct(metadata[,batch_labels])
+        if (n_batches > 1) {
+          # Check provided parameters
+          if (any(names(batch_correction_params) %in% c("data_mat", "meta_data", "vars_use", "do_pca"))) {
+            stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
+          }
+          # If provided parameters need to be supplemented, do so
+          if (!any(names(batch_correction_params) == "verbose")) {
+            batch_correction_params$verbose <- FALSE
+          }
+          # Run Harmony
+          if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
+          if (!("character" %in% methods::is(metadata[,batch_labels]))) {
+            metadata[,batch_labels] <- as.character(metadata[,batch_labels])
+          }
+          reduction_coords <- suppressWarnings(do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
+                                                                                      "meta_data" = metadata,
+                                                                                      "vars_use" = batch_labels),
+                                                                                 batch_correction_params)))
+        } else {
+          message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
         }
-        # If provided parameters need to be supplemented, do so
-        if (!any(names(batch_correction_params) == "verbose")) {
-          batch_correction_params$verbose <- FALSE
-        }
-        # Run Harmony
-        if (!("character" %in% methods::is(metadata[,batch_labels]))) {
-          metadata[,batch_labels] <- as.character(metadata[,batch_labels])
-        }
-        reduction_coords <- do.call(harmony::HarmonyMatrix, c(list("data_mat" = reduction_coords,
-                                                                   "meta_data" = metadata,
-                                                                   "vars_use" = batch_labels,
-                                                                   "do_pca" = FALSE),
-                                                              batch_correction_params))
       }
     } else if (methods::is(object, "ArchRProject")) {
       # Subset object if cell names are provided
@@ -354,7 +360,7 @@
         }
       }
       # By method
-      if (verbose) message("                      Running ", reduction_method, " with ", n_var_features, " variable features..")
+      if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running ", reduction_method, " with ", n_var_features, " variable features..")
       if (reduction_method == "IterativeLSI") {
         # Check provided parameters
         if (any(names(reduction_params) %in% c("ArchRProj", "name", "varFeatures", "saveIterations", "useMatrix", "depthCol", "force", "threads", "seed"))) {
@@ -442,7 +448,13 @@
         }
 
         # Harmony batch correction
+        # Check number of batches
         if (batch_correction_method == "Harmony") {
+          n_batches <- dplyr::n_distinct(object@cellColData[, batch_labels])
+        } else {
+          n_batches <- 1
+        }
+        if (batch_correction_method == "Harmony" & n_batches > 1) {
           # Check provided parameters
           if (any(names(batch_correction_params) %in% c("ArchRProj", "reducedDims", "name", "groupBy", "force"))) {
             stop("Parameter inputs for 'batch_correction_params' conflict with parameters that are necessarily set by CHOIR. Please supply valid input!")
@@ -454,6 +466,7 @@
           if (!("character" %in% methods::is(object@cellColData[, batch_labels]))) {
             object@cellColData[, batch_labels] <- as.character(object@cellColData[, batch_labels])
           }
+          if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
           object <- do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
                                                       "reducedDims" = "CHOIR_IterativeLSI",
                                                       "name" = "CHOIR_Harmony",
@@ -468,6 +481,9 @@
             full_reduction <- object@reducedDims$CHOIR_Harmony
           }
         } else {
+          if (batch_correction_method == "Harmony") {
+            message(format(Sys.time(), "%Y-%m-%d %X"), " : Only one batch present. Skipped Harmony batch correction.")
+          }
           # Extract dimensionality reduction coordinates
           reduction_coords <- object@reducedDims$CHOIR_IterativeLSI$matSVD
           # If part of multiple modalities, also extract full ArchR reduction
@@ -477,6 +493,18 @@
         }
       }
     }
+    # Check whether reduction_coords have row and column names
+    if (is.null(rownames(reduction_coords))) {
+      if (!is.null(use_cells)) {
+        rownames(reduction_coords) <- use_cells
+      } else {
+        rownames(reduction_coords) <- .getCellIDs(object = object, use_assay = use_assay)
+      }
+    }
+    if (is.null(colnames(reduction_coords))) {
+      colnames(reduction_coords) <- paste0(reduction_method, "_", seq(1, ncol(reduction_coords)))
+    }
+    # Output
     reduction_output <- list("reduction_coords" = reduction_coords,
                              "var_features" = var_features,
                              "full_reduction" = full_reduction)
@@ -633,7 +661,7 @@
         }
       }
       starting_res <- res
-      if (verbose) message("\n                      Starting resolution: ", starting_res)
+      if (verbose) message("                      Starting resolution: ", starting_res)
     } else if (n_clust_res1 > n_clust_res0) {
       # From 1 to 0.1, -0.3 until there is the same # of clusters as res=0
       # From 0.1 on, go down by a power of 10 until there is the same # of clusters as res=0
@@ -671,7 +699,7 @@
         starting_res <- res*10
         decimal_places <- decimal_places - 1
       }
-      if (verbose) message("\n                      Starting resolution: ", starting_res)
+      if (verbose) message("                      Starting resolution: ", starting_res)
     }
   }
   decimal_places <- decimal_places + 1
@@ -715,7 +743,7 @@
                           reduction = NULL,
                           distance_approx = TRUE) {
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
   n_levels <- ncol(cluster_tree)
   new_tree <- data.frame("CellID" = rownames(cluster_tree),
@@ -905,7 +933,7 @@
       }
       # Change cluster labels, first to just numerical
       cluster_tree[, i] <- as.numeric(as.factor(cluster_tree[, i]))
-      # Now add labels for parent tree ("P0") and level
+      # Now add labels for root tree ("P0") and level
       cluster_tree[, i] <- paste0("P0_L", i, "_", cluster_tree[, i])
     }
   }
@@ -941,6 +969,7 @@
 # downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
 # min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # tree_records -- A dataframe comprising records from tree generation
+# tree_id -- Name of tree
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
 .getTree <- function(snn_matrix,
@@ -970,6 +999,7 @@
                      batch_correction_method = NULL,
                      batches = NULL,
                      tree_records = NULL,
+                     tree_id = "P0",
                      n_cores,
                      random_seed) {
   if (tree_type == "silhouette") {
@@ -982,6 +1012,7 @@
                                  res0_clusters = res0_clusters,
                                  decimal_places = decimal_places,
                                  tree_records = tree_records,
+                                 tree_id = tree_id,
                                  n_cores = n_cores,
                                  random_seed = random_seed)
   } else if (tree_type == "full") {
@@ -1017,6 +1048,7 @@
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
                                     tree_records = tree_records,
+                                    tree_id = tree_id,
                                     n_cores = n_cores,
                                     random_seed = random_seed)
   }
@@ -1034,6 +1066,7 @@
                           res0_clusters,
                           decimal_places,
                           tree_records,
+                          tree_id = "P0",
                           n_cores,
                           random_seed) {
   # Find number of cells
@@ -1046,7 +1079,7 @@
 
   # Check whether package cluster is imported if distance_approx == FALSE
   if (distance_approx == FALSE) {
-    .requirePackage("cluster")
+    .requirePackage("cluster", source = "cran")
   }
 
   # Initialize dataframe for multi-level clustering results across range of resolutions
@@ -1073,7 +1106,7 @@
 
   # Add to records
   tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                 tree_name = "P0",
+                                                 tree_name = tree_id,
                                                  num_cells = n_cells,
                                                  resolution = 0,
                                                  num_clusters = n_clust,
@@ -1111,7 +1144,7 @@
       stop <- TRUE
       # Add to records
       tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                     tree_name = "P0",
+                                                     tree_name = tree_id,
                                                      num_cells = n_cells,
                                                      resolution = res,
                                                      num_clusters = n_clust,
@@ -1139,7 +1172,7 @@
         stop_reason <- paste0("Cannot subdivide further.")
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1157,7 +1190,7 @@
         stop_reason <- paste0("Number of clusters is decreasing.")
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1200,7 +1233,7 @@
 
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                       tree_name = "P0",
+                                                       tree_name = tree_id,
                                                        num_cells = n_cells,
                                                        resolution = res,
                                                        num_clusters = new_n_clust,
@@ -1269,7 +1302,7 @@
     cluster_tree <- data.frame(mrtree_output$labelmat.mrtree)
     # Add to records
     tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
-                                                   tree_name = "P0",
+                                                   tree_name = tree_id,
                                                    num_cells = n_cells,
                                                    resolution = NA,
                                                    num_clusters = dplyr::n_distinct(cluster_tree[,ncol(cluster_tree)]),
@@ -1531,6 +1564,7 @@
                              batch_correction_method,
                              batches,
                              tree_records,
+                             tree_id,
                              n_cores,
                              random_seed) {
   # Find number of cells
@@ -1543,7 +1577,7 @@
   }
 
   if (distance_approx == FALSE) {
-    .requirePackage("clv")
+    .requirePackage("clv", source = "cran")
   }
 
   # Data frame to gather comparison records
@@ -1573,9 +1607,9 @@
   rownames(multi_level_clusters) <- colnames(snn_matrix)
 
   if (nrow(tree_records) > 0) {
-    current_tree_name <- paste0("P", as.numeric(sub("P", "", tree_records[nrow(tree_records), "tree_name"])) + 1)
+    current_tree_name <- paste0(tree_id, "_", as.numeric(gsub(".*?(\\d+)$", "\\1", tree_records[nrow(tree_records), "tree_name"])) + 1)
   } else {
-    current_tree_name <- "P"
+    current_tree_name <- tree_id
   }
 
   unresolved_cells <- colnames(snn_matrix)
@@ -2105,4 +2139,67 @@
 
   return(list("cluster_tree" = cluster_tree,
               "tree_records" = tree_records))
+}
+
+#' Infer clustering tree ---------------------------
+#'
+#' Generate clustering tree from provided, pre-generated clusters. Provide a set
+#' of cluster labels and either a dimensionality reduction or distance matrix.
+#' If a dimensionality reduction is provided, centroid distances will be
+#' calculated and used.
+#'
+#' @param cluster_labels  A named vector of cluster IDs. Names must correspond
+#' to cell IDs.
+#' @param dist_matrix An optional distance matrix of cell to cell distances
+#' (based on dimensionality reduction cell embeddings).
+#' @param reduction An optional matrix of dimensionality reduction cell
+#' embeddings to be used for distance calculations.
+#' @param verbose A boolean value indicating whether to use verbose output
+#' during the execution of this function. Can be set to \code{FALSE} for a
+#' cleaner output.
+#'
+#' @return A clustering tree as a dataframe.
+#' @export
+#'
+inferTree <- function(cluster_labels,
+                      dist_matrix = NULL,
+                      reduction = NULL,
+                      verbose = TRUE) {
+  .validInput(cluster_labels, name = "cluster_labels")
+  .validInput(dist_matrix, name = "dist_matrix", names(cluster_labels))
+  .validInput(reduction, name = "reduction", list("inferTree", names(cluster_labels)))
+  .validInput(verbose, name = "verbose")
+
+  if (is.null(reduction) & is.null(dist_matrix)) {
+    stop("Please provide input to either 'reduction' or 'dist_matrix'.")
+  } else if (!is.null(reduction) & !is.null(dist_matrix)) {
+    warning("Input provided to both 'reduction' and 'dist_matrix'. Only input to 'dist_matrix' was used.")
+    distance_description <- "from provided 'dist_matrix'"
+    distance_approx <- FALSE
+  } else if (is.null(reduction) & !is.null(dist_matrix)) {
+    distance_description <- "from provided 'dist_matrix'"
+    distance_approx <- FALSE
+  } else if (!is.null(reduction) & is.null(dist_matrix)) {
+    distance_description <- "calculated from provided 'reduction'"
+    distance_approx <- TRUE
+  }
+  n_clusters <- dplyr::n_distinct(cluster_labels)
+
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Inferring clustering tree from ", n_clusters, " provided clusters, using distances ", distance_description, "..")
+  # Create initial clustering tree dataframe
+  initial_tree <- data.frame(L1 = 1,
+                             L2 = as.numeric(as.factor(cluster_labels)))
+  # Create hierarchy
+  cluster_tree <- .optimizeTree(cluster_tree = initial_tree,
+                                reduction = reduction,
+                                dist_matrix = dist_matrix,
+                                distance_approx = distance_approx)
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Inferred clustering tree has ", ncol(cluster_tree), " levels.")
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Labeling clusters according to CHOIR conventions..")
+  cluster_tree <- .checkClusterLabels(cluster_tree)
+
+  # Add cell IDs as rownames to cluster tree
+  rownames(cluster_tree) <- names(cluster_labels)
+
+  return(cluster_tree)
 }

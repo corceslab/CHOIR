@@ -16,7 +16,21 @@ knitr::opts_chunk$set(
 
 # Installation
 
-To install the package, please use the following:
+CHOIR is designed to be run on Unix-based operating systems such as macOS and linux.
+
+CHOIR installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
+
+First, install remotes (for installing GitHub packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
+```
+
+Then, install BiocManager (for installing bioconductor packages) if it isn’t already installed:
+```{r, eval = FALSE}
+if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
+```
+
+Then, install CHOIR:
 ```{r, eval = FALSE}
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
@@ -25,7 +39,7 @@ remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repo
 
 # Introduction
 
-This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell data. CHOIR is applicable to single-cell data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). Detailed parameter definitions are available under the [Functions](https://www.choirclustering.com/reference/index.html) tab.
+This vignette provides a basic example of how to run CHOIR, a clustering algorithm for single-cell data. CHOIR is applicable to single-cell data of any modality, including RNA, ATAC, and proteomics. It is also applicable to multi-modal data (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#using-choir-with-multi-modal-data)). Detailed parameter definitions are available under the [Functions](https://www.choirclustering.com/reference/index.html) tab.
 
 CHOIR is based on the premise that if clusters contain biologically different cell types or states, a machine learning classifier that considers features present in cells from each cluster should be able to distinguish the clusters with a higher level of accuracy than machine learning classifiers trained on randomly permuted cluster labels. The use of permutation testing approaches allows CHOIR to introduce statistical significance thresholds into the clustering process.
 
@@ -33,9 +47,10 @@ CHOIR proceeds in two main steps. First, CHOIR generates a hierarchical clusteri
 
 You’ll need the following packages installed to run this tutorial:
 ```{r, message = FALSE, warning = FALSE}
-library(CHOIR)
-library(Seurat)
+if (!requireNamespace("scRNAseq", quietly = TRUE)) BiocManager::install("scRNAseq")
 library(scRNAseq)
+library(Seurat)
+library(CHOIR)
 ```
 
 ### Example data
@@ -49,9 +64,9 @@ colnames(data_matrix) <- seq(1:ncol(data_matrix))
 
 ### Pre-processing
 
-CHOIR takes as input a Seurat, SingleCellExperiment, or ArchR object containing one or more feature matrices. Input data should already have undergone appropriate quality control and normalization steps (unless you are using SCTransform, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). Note that the exact pre-processing steps used are up to the user.
+CHOIR takes as input a Seurat, SingleCellExperiment, or ArchR object containing one or more feature matrices. Input data should already have undergone appropriate quality control and normalization steps (unless you are using SCTransform, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#input-object-types)). Note that the exact pre-processing steps used are up to the user.
 
-This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options). First, we will create a Seurat object using the read count matrix. For simplicity, here we'll just exclude cells with fewer than 100 reads and genes present in less than 5 cells.
+This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#input-object-types). First, we will create a Seurat object using the read count matrix. For simplicity, here we'll just exclude cells with fewer than 100 reads and genes present in less than 5 cells.
 
 ```{r, message = FALSE, warning = FALSE, results = FALSE}
 seurat_object <- CreateSeuratObject(data_matrix, 
@@ -79,9 +94,13 @@ The two steps can be run together using the function `CHOIR()` or separately usi
 
 The `CHOIR()` function will run all of the steps of the CHOIR algorithm in sequence. CHOIR is highly parallelized, so efficiency greatly improves as `n_cores` is increased.
 
-The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as CHOIR applies filters that reduce the total number of tests performed (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)). 
+The default significance level used by CHOIR is `alpha = 0.05` with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as CHOIR applies filters that reduce the total number of tests performed (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#choir-parameters)). 
 
-We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
+We recommend using the default value of `alpha = 0.05` with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
+
+If your data has multiple batches, we highly recommend using CHOIR's built-in batch correction, using the `batch_correction_method` and `batch_labels` parameters (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#choir-parameters)).
+
+To use separate "count split" input matrices for building vs. pruning the clustering tree, set `countsplit = TRUE` and provide matrix suffixes to `countsplit_suffix` (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#count-splitting) for details).
 
 ```{r, eval = FALSE}
 seurat_object <- CHOIR(seurat_object, 
@@ -92,12 +111,12 @@ seurat_object <- CHOIR(seurat_object,
 
 Alternately, we can run each of the two main steps of CHOIR individually. 
 
-For users who already have a set of clusters generated by a different tool, and wish to assess whether these clusters are under- or over-clustered, start at Step 2 (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#advanced-options)).
+For users who already have a set of clusters generated by a different tool, and wish to assess whether these clusters are under- or over-clustered, start at Step 2 (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#providing-pre-generated-clusters)).
 
 ### Step 1: Generate hierarchical clustering tree
-CHOIR generates a hierarchical clustering tree by computing dimensionality reduction and nearest neighbor adjacency matrices for the data, computing clusters across a series of sampled resolutions, then reconciling those clustering results into a consensus clustering tree using package `MRtree`. When using the default parameter `max_clusters = 'auto'`, CHOIR applies a series of subclustering steps to ensure that the tree is not underclustered. Specifically, the silhouette score is assessed at each new level of the emerging tree. When the silhouette score is maximized, each cluster at this level is subset, a new dimensionality reduction is generated, and the cluster is then subclustered. Each of these subtrees continues to be subdivided until the farthest pair of nearest neighboring clusters is found to be overclustered using the permutation test approach.
+CHOIR generates a hierarchical clustering tree by computing dimensionality reduction and nearest neighbor adjacency matrices for the data, computing clusters across a series of sampled resolutions, then reconciling those clustering results into a consensus clustering tree using package `MRtree`. When using the default parameter `max_clusters = "auto"`, CHOIR applies a series of subclustering steps to ensure that the tree is not underclustered. Specifically, the silhouette score is assessed at each new level of the emerging tree. When the silhouette score is maximized, each cluster at this level is subset, a new dimensionality reduction is generated, and the cluster is then subclustered. Each of these subtrees continues to be subdivided until the farthest pair of nearest neighboring clusters is found to be overclustered using the permutation test approach.
 
-The user can determine which method is used for dimensionality reduction and batch correction, as well as supply specific parameters for dimensionality reduction, batch correction, detecting nearest neighbors, and modularity-based clustering, as needed. 
+The user can determine which method is used for dimensionality reduction and batch correction, as well as supply specific parameters for dimensionality reduction, batch correction, detecting nearest neighbors, and modularity-based clustering, as needed. If your data has multiple batches, we highly recommend using CHOIR's built-in batch correction, using the `batch_correction_method` and `batch_labels` parameters (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#choir-parameters)).
 
 Here, we will build the hierarchical clustering tree using default parameter settings.
 
@@ -111,7 +130,7 @@ After constructing the hierarchical clustering tree, CHOIR iterates through each
 
 In parallel, CHOIR shuffles the cluster labels and repeats the same process. Both comparisons are repeated using bootstrapped samples (default = 100 iterations), resulting in a permutation test that compares the true prediction accuracy for the clusters to the prediction accuracy for a chance division of the cells into two random groups.
 
-This permutation test yields a p-value that determines whether these clusters are slated to merge or remain separate. The significance threshold used can be adjusted using the `alpha` parameter. We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
+This permutation test yields a p-value that determines whether these clusters are slated to merge or remain separate. The significance threshold used can be adjusted using the `alpha` parameter. We recommend using the default value of `alpha = 0.05` with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
 seurat_object <- pruneTree(seurat_object, 
@@ -157,17 +176,19 @@ For Seurat objects, the default assay is used if no input is provided for parame
 *  If `use_assay` is either "RNA" or "sketch", CHOIR will look for the `data` slot
 *  If `use_assay` is either "SCT" or "integrated", CHOIR will look for the `scale.data` slot
 
-The default dimensionality reduction method for Seurat objects is 'PCA', except in the case of ATAC-seq data, where it is 'LSI'.
+Some Seurat v5 objects have multiple layers (e.g., "data.1", "data.2", "data.2"..) with different subsets of cells stored under the same assay. Currently, CHOIR requires a single layer containing all cells in an assay. For these cases, please re-organize the Seurat object prior to running CHOIR.
 
-If you would like to use SCTransform normalization rather than log normalization, please provide raw counts and set the parameter `normalization_method` to 'SCTransform'. Note that SCTransform has not been thoroughly tested with CHOIR.
+The default dimensionality reduction method for Seurat objects is "PCA", except in the case of ATAC-seq data, for which it is "LSI".
+
+If you would like to use SCTransform normalization rather than log normalization, please provide raw counts and set the parameter `normalization_method = "SCTransform"`. Note that SCTransform has not been thoroughly tested with CHOIR.
 
 Labels for the final clusters identified by CHOIR can be found in the `meta.data` slot of the Seurat object. Other CHOIR outputs are stored under the `misc` slot of the Seurat object.
 
 ### SingleCellExperiment
 
-For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to 'logcounts'.
+For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to "logcounts".
 
-The default dimensionality reduction method for SingleCellExperiment objects is 'PCA', except in the case of ATAC-seq data, where it is 'LSI'.
+The default dimensionality reduction method for SingleCellExperiment objects is "PCA", except in the case of ATAC-seq data, where it is "LSI".
 
 Labels for the final clusters identified by CHOIR can be found in the `colData` slot of the SingleCellExperiment object. Other CHOIR outputs are stored under `metadata`.
 
@@ -175,7 +196,7 @@ Labels for the final clusters identified by CHOIR can be found in the `colData` 
 
 For ArchR objects, if no input is provided for parameter `ArchR_matrix`, the "TileMatrix" is used. If no input for parameter `ArchR_depthcol` is provided, "nFrags" is used.
 
-The default dimensionality reduction method for ArchR objects is 'IterativeLSI'.
+The default dimensionality reduction method for ArchR objects is "IterativeLSI".
 
 Labels for the final clusters identified by CHOIR can be found in the `cellColData` slot of the ArchR object. Other CHOIR outputs are stored under `projectMetadata`.
 
@@ -183,15 +204,22 @@ Labels for the final clusters identified by CHOIR can be found in the `cellColDa
 
 ### Batch correction
 
-For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method` to 'Harmony'. This not only generates Harmony-corrected dimensionality reductions, but ensures that random forest classifer comparisons are batch-aware. 
+For datasets with multiple batches, it is recommended to apply Harmony batch correction through CHOIR by setting the parameter `batch_correction_method = "Harmony"`. This not only generates Harmony-corrected dimensionality reductions, but ensures that random forest classifer comparisons are batch-aware. Provide the name of the cell metadata column containing batch information to parameter `batch_labels`.
 
 Use caution in applying this method if your groups of interest (e.g., disease vs. control) are batch-confounded AND you expect cell types unique to each of these groups.
 
+Below is an example command to run CHOIR with batch correction:
+```{r, eval = FALSE}
+seurat_object <- CHOIR(seurat_object, 
+                       batch_correction_method = "Harmony",
+                       batch_labels = "Batch") # Change 'Batch' to corresponding cell metadata column for your data
+```
+
 ### Significance level & multiple comparison correction
 
-The default significance level used by CHOIR is $\alpha = 0.05$ with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as `CHOIR` applies filters that reduce the total number of tests performed (see below). 
+The default significance level used by CHOIR is `alpha = 0.05` with Bonferroni multiple comparison correction. Other correction methods may be less conservative, as `CHOIR` applies filters that reduce the total number of tests performed (see below). 
 
-We recommend using the default value of $\alpha = 0.05$ with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
+We recommend using the default value of `alpha = 0.05` with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ### Filters
 
@@ -204,7 +232,7 @@ CHOIR uses various filters to reduce the number of necessary permutation test co
 
 ### Downsampling
 
-CHOIR uses downsampling to increase efficiency for larger datasets. Using the default parameter setting of `downsampling_rate = "auto"`, downsampling occurs at each random forest classifer comparison. The downsampling rate is determined based on the overall dataset size. To disable downsampling, set `downsampling_rate = 1`.
+CHOIR uses downsampling to increase efficiency for larger datasets. Using the default parameter setting of `downsampling_rate = "auto"`, downsampling occurs at each random forest classifer comparison. The downsampling rate is determined based on the overall dataset size. To disable downsampling, set `downsampling_rate = 1`. For datasets that require batch correction across many batches, we recommend setting `downsampling_rate = 1`.
 
 Additional downsampling can be imposed using parameter `sample_max`, indicating the maximum number of cells used per cluster to train/test each random forest classifier. By default, this is not used.
 
@@ -222,12 +250,51 @@ To `pruneTree()`, provide:
 
 ## Using CHOIR with ATAC-seq data
 
-If your input data is ATAC-seq data, make sure to set input parameter `atac` to `TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data. If your data exclusively contains ATAC-seq data (no other modalities), it is recommended to set parameter `use_variance` to `FALSE`.
+If your input data is ATAC-seq data, make sure to set input parameter `atac = TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data. If your data exclusively contains ATAC-seq data (no other modalities), it is recommended to set parameter `use_variance = FALSE`. 
+
+CHOIR is compatible with both ArchR and Signac approaches to ATAC-seq analysis, but has been most thoroughly tested with ArchR objects.
+
+Below is an example command to run CHOIR with ATAC-seq data:
+```{r, eval = FALSE}
+ArchR_object <- CHOIR(ArchR_object,
+                      atac = TRUE,
+                      use_variance = FALSE)
+```
+
 
 ## Using CHOIR with multi-modal data
 
-If you are providing input data which contains multiple modalities from the same cell, such as RNA + ATAC multiome data, you must provide multiple values (as a vector) to parameters `use_assay` and `use_slot` (for Seurat objects), `use_assay` for (SingleCellExperiment objects), or `ArchR_matrix`and `ArchR_depthcol` for ArchR objects.
+If you are providing input data which contains multiple modalities from the same cell, such as RNA + ATAC multiome data, you must provide multiple values (as a vector) to parameters `use_assay` and `use_slot` (for Seurat objects), `use_assay` for (SingleCellExperiment objects), or `ArchR_matrix` and `ArchR_depthcol` for ArchR objects.
 
-If you want to use different methods of normalization, dimensionality reduction, number of variable features, or batch correction for each modality, input to related parameters must also be provided as vectors or lists with one value per modality.
+If you want to use different methods of normalization, dimensionality reduction, number of variable features, or batch correction for each modality, input to related parameters must also be provided as vectors or lists with one value per modality. CHOIR creates a joint dimensionality reduction for the modalities and uses all provided feature matrices as joint input to train/test random forest classifiers. 
 
-CHOIR creates a joint dimensionality reduction for the modalities and uses all provided feature matrices as joint input to train/test random forest classifiers.
+CHOIR's approach to distance approximation is not currently compatible with multi-modal Seurat or SingleCellExperiment objects. Thus, for maximal efficiency, we recommend using ArchR objects for multi-modal analysis with CHOIR. Alternately, distance approximation can be disabled with `distance_approx = FALSE`, but may slow down computation.
+
+Below is an example command to run CHOIR with joint RNA-seq and ATAC-seq data:
+```{r, eval = FALSE}
+ArchR_object <- CHOIR(ArchR_object,
+                      ArchR_matrix = c("TileMatrix", "GeneExpressionMatrix"),
+                      ArchR_depthcol <- c("nFrags", "Gex_nUMI"),
+                      atac = c(TRUE, FALSE))
+```
+
+## Count splitting
+
+Count splitting is a method developed by Neufeld et al. ([paper](https://doi.org/10.1093/biostatistics/kxac047)) to split a count matrix into two matrices with the same dimensions, to avoid "double dipping" in cross validation of clusters. When parameter `countsplit = TRUE`, CHOIR accepts count split input matrices. One matrix will be used to calculate highly variable features, dimensionality reductions, nearest neighbor adjacency matrices, and the initial clustering tree. The other matrix will be exclusively used as input to the random forest classifiers, in order to decide when clusters should or should not be merged.
+
+We can take our Seurat object and run count splitting using the following code, which will extract our existing count matrix, run function `countsplit::countsplit`, and store the resulting matrices back in our object with added suffixes (default is "_1" and "_2"). Use parameter `normalization_method` to apply normalization and store the normalized count split matrices.
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+seurat_object <- runCountSplit(seurat_object)
+```
+
+CHOIR can then be run using the resulting matrices.
+
+```{r, message = TRUE, warning = FALSE, results = "hide"}
+seurat_object <- CHOIR(seurat_object, 
+                       use_slot = "counts_log", 
+                       countsplit = TRUE, 
+                       n_cores = 2)
+```
+
+Alternately, users can provide their own count split matrices. They must share a prefix, which is provided to `use_slot` for Seurat objects or `use_assay` for SingleCellExperiment objects. The unique suffixes should be provided to `countsplit_suffix` as a character vector.

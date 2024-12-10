@@ -1,12 +1,18 @@
 #' Run CHOIR clustering
 #'
-#' This function constructs a hierarchical clustering tree starting from a single
-#' cluster encompassing all cells. First, a root tree is constructed, from which
-#' subtrees are subsequently generated. Each branch is subdivided until all
-#' cases of underclustering are eliminated. Then, CHOIR will move iteratively
-#' up the provided hierarchical clustering tree, and use permutation tests of
-#' random forest classifier prediction accuracies to identify which clusters
-#' should be merged, in order to identify robust final clusters.
+#' This function runs CHOIR clustering to identify a set of clusters that
+#' represent statistically distinct populations. CHOIR is based on the premise
+#' that, if clusters contain biologically different cell types or states, a
+#' classifier that considers features present in cells from each cluster should
+#' be able to distinguish the clusters with a higher level of accuracy than
+#' classifiers trained on randomly permuted cluster labels.
+#'
+#' First, a hierarchical clustering tree is generated using a top-down approach
+#' that proceeds from an initial partition, in which all cells are in the same
+#' cluster, to a partition in which all cells are demonstrably overclustered.
+#' Second, to identify a final set of clusters, this hierarchical clustering
+#' tree is pruned from the bottom up using a framework of random forest
+#' classifiers and permutation tests.
 #'
 #' For multi-modal data, optionally supply parameter inputs as vectors/lists
 #' that sequentially specify the value for each modality.
@@ -15,13 +21,15 @@
 #' 'ArchRProject'.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to 'CHOIR'.
-#' @param alpha A numerical value indicating the significance level used for
-#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
-#' @param p_adjust A string indicating which multiple comparison
-#' adjustment to use. Permitted values are 'fdr', 'bonferroni', and 'none'.
-#' Defaults to 'bonferroni'.
+#' @param alpha A numeric value indicating the significance level used for
+#' permutation test comparisons of cluster prediction accuracies. Defaults to
+#' 0.05.
+#' @param p_adjust A string indicating which multiple comparison adjustment to
+#' use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
+#' 'bonferroni'.
 #' @param feature_set A string indicating whether to train random forest
-#' classifiers on 'all' features or only variable ('var') features. Defaults to 'var'.
+#' classifiers on 'all' features or only variable ('var') features. Defaults to
+#' 'var'.
 #' @param exclude_features A character vector indicating features that should be
 #' excluded from input to the random forest classifier. Default = \code{NULL}
 #' will not exclude any features.
@@ -34,27 +42,27 @@
 #' Defaults to \code{TRUE}.
 #' @param min_accuracy A numeric value indicating the minimum accuracy required
 #' of the random forest classifier, below which clusters will be automatically
-#' merged. Defaults to 0.5.
+#' merged. Defaults to 0.5 (chance).
 #' @param min_connections A numeric value indicating the minimum number of
 #' nearest neighbors between two clusters for them to be considered 'adjacent'.
 #' Non-adjacent clusters will not be merged. Defaults to 1.
 #' @param max_repeat_errors Used to account for situations in which random
 #' forest classifier errors are concentrated among a few cells that are
-#' repeatedly misassigned. Numeric value indicating the maximum number of such
+#' repeatedly misassigned. A numeric value indicating the maximum number of such
 #' 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
 #' will not be evaluated. Defaults to 20.
 #' @param distance_approx A boolean value indicating whether or not to use
-#' approximate distance calculations. Default = TRUE will use centroid-based
-#' distances.
-#' @param distance_awareness To omit all distance calculations, set to
-#' \code{FALSE}. Otherwise, a numeric value representing the distance threshold
+#' approximate distance calculations. Default = \code{TRUE} will use
+#' centroid-based distances.
+#' @param distance_awareness A numeric value representing the distance threshold
 #' above which a cluster will not merge with another cluster. Specifically,
-#' this value is a multiplier applied to the distance between a cluster and its
-#' closest distinguishable neighbor, giving the threshold. Default = 2 sets
-#' this threshold at a 2-fold increase in distance.
-#' @param collect_all_metrics A boolean value indicating whether to collect and save
-#' additional metrics from the random forest classifiers, including feature
-#' importances and tree depth. Defaults to \code{FALSE}.
+#' this value is multiplied by the distance between a cluster and its
+#' closest distinguishable neighbor to set the threshold. Default = 2 sets
+#' this threshold at a 2-fold increase in distance. Alternately, to omit all
+#' distance calculations, set to \code{FALSE}.
+#' @param collect_all_metrics A boolean value indicating whether to collect and
+#' save additional metrics from the random forest classifier comparisons,
+#' including feature importances and tree depth. Defaults to \code{FALSE}.
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
@@ -68,10 +76,10 @@
 #' matrices, whereby at least 1 read will be required for the provided number
 #' of cells.
 #' @param max_clusters Indicates the extent to which the hierarchical clustering
-#' tree will be expanded. Default = 'auto' will expand the tree until cases of
-#' underclustering have been eliminated in all branches. Alternately, supply a
-#' numerical value indicating the maximum number of clusters to expand the tree
-#' to.
+#' tree will be expanded. Default = 'auto' will expand the tree until instances
+#' of underclustering have been eliminated in all branches. Alternately, supply
+#' a numeric value indicating the maximum number of clusters to expand the
+#' tree to.
 #' @param min_cluster_depth A numeric value indicating the maximum cluster size
 #' at the bottom of the clustering tree, prior to pruning branches. Defaults to
 #' 2000.
@@ -80,42 +88,44 @@
 #' CHOIR after normalization, except in cases when the user wishes to use
 #' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
 #' 'SCTransform'. Defaults to 'none'.
-#' @param subtree_reductions Whether to generate a new dimensionality
-#' reduction for each subtree. Defaults to \code{TRUE}.
+#' @param subtree_reductions A boolean value indicating whether to generate a
+#' new dimensionality reduction for each subtree. Defaults to \code{TRUE}.
 #' @param reduction_method A character string or vector indicating which
 #' dimensionality reduction method to use. Permitted values are 'PCA' for
 #' principal component analysis, 'LSI' for latent semantic indexing, and
 #' 'IterativeLSI' for iterative latent semantic indexing. Default = \code{NULL}
-#' will specify a method based on the input data type.
+#' will specify a method automatically based on the input data type.
 #' @param reduction_params A list of additional parameters to be passed to
 #' the selected dimensionality reduction method.
-#' @param n_var_features A numerical value indicating how many variable
-#' features to identify. Default = \code{NULL} will use 2000 features, or 25000
-#' features for ATAC-seq data.
+#' @param n_var_features A numeric value indicating how many variable features
+#' to identify. Default = \code{NULL} will use 2000 features, or 25000 features
+#' for ATAC-seq data.
 #' @param batch_correction_method A character string or vector indicating which
 #' batch correction method to use. Permitted values are 'Harmony' and
 #' 'none'. Defaults to 'none'.
 #' @param batch_correction_params A list of additional parameters to be passed
 #' to the selected batch correction method for each iteration. Only applicable
-#' when 'batch_correction_method' = 'Harmony'.
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
+#' when \code{batch_correction_method = 'Harmony'}.
+#' @param batch_labels If applying batch correction, a character string or
+#' vector indicating the name of the column containing the batch labels.
+#' Defaults to \code{NULL}.
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
 #' Seurat or SingleCellExperiment objects,
 #' \code{Seurat::FindMultiModalNeighbors()}).
 #' @param cluster_params A list of additional parameters to be passed to
 #' Seurat::FindClusters() for clustering at each level of the tree. Note that if
-#' 'group.singletons' is set to TRUE, buildTree relabels clusters such that each
-#' singleton constitutes its own cluster.
+#' \code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
+#' clusters such that each singleton constitutes its own cluster.
 #' @param use_assay For Seurat or SingleCellExperiment objects, a character
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{log_counts} assay for SingleCellExperiment objects.
+#' and the \code{logcounts} assay for SingleCellExperiment objects.
 #' @param use_slot For Seurat objects, a character string or vector indicating
-#' the slot(s) to use in the provided object. Default = \code{NULL} will choose
-#' a slot based on the selected assay. If a non-standard assay is provided, do
-#' not leave \code{use_slot} as \code{NULL}.
+#' the layers(s) — previously known as slot(s) — to use in the provided object.
+#' Default = \code{NULL} will choose a layer/slot based on the selected assay.
+#' If a non-standard assay is provided, do not leave \code{use_slot} as
+#' \code{NULL}.
 #' @param ArchR_matrix For ArchR objects, a character string or vector
 #' indicating which matri(ces) to use in the provided object. Default =
 #' \code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
@@ -124,17 +134,28 @@
 #' indicating which column to use for correlation with sequencing depth.
 #' Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
 #' 'Gex_nUMI' for RNA-seq data.
+#' @param countsplit A boolean value indicating whether or not to use
+#' countsplit input data (see A. Neufeld \code{countsplit} package), such that
+#' one matrix of counts is used for clustering tree generation, and a separate
+#' matrix is used for all random forest classifier permutation testing. Defaults
+#' to \code{FALSE}.
+#' @param countsplit_suffix A character vector indicating the suffixes
+#' that distinguish the two countsplit matrices to be used. Suffixes are
+#' appended onto input string/vector for \code{use_slot} for Seurat objects,
+#' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+#' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+#' suffixes "_1" and "_2".
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
-#' \code{NULL}, whereby dimensionality reduction(s) will be calculated using
-#' method specified by 'reduction_method' as part of the \code{buildTree()}
-#' function.
+#' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
+#' using method specified by \code{reduction_method}.
 #' @param var_features An optional character vector of variable features to be
-#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby
-#' variable features will be calculated as part of the \code{buildTree()}
-#' function.
+#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby new
+#' sets of variable features will instead be generated.
 #' @param atac A boolean value or vector indicating whether the provided data is
-#' ATAC-seq data. Defaults to \code{FALSE}.
+#' ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
+#' ATAC-seq data, it is important to supply this parameter as a vector
+#' corresponding to each modality in order.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
@@ -143,19 +164,21 @@
 #' during the execution of this function. Can be set to \code{FALSE} for a
 #' cleaner output.
 #'
-#' @return Returns the object with the following added data stored under the provided
-#' key: \describe{
-#'   \item{final_clusters}{Clustering results for each provided threshold value}
-#'   \item{stepwise_clusters}{A dataframe of clustering results for each progressive step through the
-#'   clustering tree at each provided threshold value}
-#'   \item{comparison_records}{A dataframe of all recorded comparisons}
-#'   \item{feature_importances}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each feature across all comparisons}
-#'   \item{reduction}{Cell embeddings for all calculated dimensionality reductions}
-#'   \item{var_features}{Variable features for all calculated dimensionality reductions}
-#'   \item{cell_IDs}{Cell IDs belonging to each subtree, if applicable}
-#'   \item{graph}{All calculated nearest neighbor and shared nearest neighbor adjacency matrices}
-#'   \item{clusters}{Full hierarchical cluster tree}
+#' @return Returns the object with the following added data stored under the
+#' provided key: \describe{
+#'   \item{cell_IDs}{Cell IDs belonging to each subtree}
+#'   \item{clusters}{Final clusters, full hierarchical cluster tree, and
+#'   stepwise cluster results for each progressive pruning step}
+#'   \item{graph}{All calculated nearest neighbor and shared nearest neighbor
+#'   adjacency matrices}
 #'   \item{parameters}{Record of parameter values used}
+#'   \item{records}{Metadata for decision points during hierarchical tree
+#'   construction, all recorded permutation test comparisons, and feature
+#'   importance scores from all comparisons}
+#'   \item{reduction}{Cell embeddings for all calculated dimensionality
+#'   reductions}
+#'   \item{var_features}{Variable features for all calculated dimensionality
+#'   reductions}
 #'   }
 #'
 #' @export
@@ -195,6 +218,8 @@ CHOIR <- function(object,
                   use_slot = NULL,
                   ArchR_matrix = NULL,
                   ArchR_depthcol = NULL,
+                  countsplit = FALSE,
+                  countsplit_suffix = NULL,
                   reduction = NULL,
                   var_features = NULL,
                   atac = FALSE,
@@ -249,6 +274,8 @@ CHOIR <- function(object,
                       use_slot = use_slot,
                       ArchR_matrix = ArchR_matrix,
                       ArchR_depthcol = ArchR_depthcol,
+                      countsplit = countsplit,
+                      countsplit_suffix = countsplit_suffix,
                       reduction = reduction,
                       var_features = var_features,
                       atac = atac,

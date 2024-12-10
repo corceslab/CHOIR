@@ -28,9 +28,12 @@ pruneTree(
   batch_labels = NULL,
   cluster_params = NULL,
   use_assay = NULL,
+  countsplit = NULL,
+  countsplit_suffix = NULL,
   cluster_tree = NULL,
   input_matrix = NULL,
   nn_matrix = NULL,
+  snn_matrix = NULL,
   dist_matrix = NULL,
   reduction = NULL,
   n_cores = NULL,
@@ -45,15 +48,17 @@ pruneTree(
 \item{key}{The name under which CHOIR-related data for this run is stored in
 the object. Defaults to 'CHOIR'.}
 
-\item{alpha}{A numerical value indicating the significance level used for
-permutation test comparisons of cluster distinguishability. Defaults to 0.05.}
+\item{alpha}{A numeric value indicating the significance level used for
+permutation test comparisons of cluster prediction accuracies. Defaults to
+0.05.}
 
-\item{p_adjust}{A string indicating which multiple comparison
-adjustment to use. Permitted values are 'fdr', 'bonferroni', and 'none'.
-Defaults to 'bonferroni'.}
+\item{p_adjust}{A string indicating which multiple comparison adjustment to
+use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
+'bonferroni'.}
 
 \item{feature_set}{A string indicating whether to train random forest
-classifiers on 'all' features or only variable ('var') features. Defaults to 'var'.}
+classifiers on 'all' features or only variable ('var') features. Defaults to
+'var'.}
 
 \item{exclude_features}{A character vector indicating features that should be
 excluded from input to the random forest classifier. Default = \code{NULL}
@@ -67,12 +72,11 @@ forest. Defaults to 50.}
 
 \item{use_variance}{A boolean value indicating whether to use the variance of
 the random forest accuracy scores as part of the permutation test threshold.
-Defaults to \code{TRUE}. If only ATAC-seq data is supplied, it is recommended
-to set to \code{FALSE}.}
+Defaults to \code{TRUE}.}
 
 \item{min_accuracy}{A numeric value indicating the minimum accuracy required
 of the random forest classifier, below which clusters will be automatically
-merged. Defaults to 0.5.}
+merged. Defaults to 0.5 (chance).}
 
 \item{min_connections}{A numeric value indicating the minimum number of
 nearest neighbors between two clusters for them to be considered 'adjacent'.
@@ -80,32 +84,33 @@ Non-adjacent clusters will not be merged. Defaults to 1.}
 
 \item{max_repeat_errors}{Used to account for situations in which random
 forest classifier errors are concentrated among a few cells that are
-repeatedly misassigned. Numeric value indicating the maximum number of such
+repeatedly misassigned. A numeric value indicating the maximum number of such
 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
 will not be evaluated. Defaults to 20.}
 
 \item{distance_approx}{A boolean value indicating whether or not to use
-approximate distance calculations. Default = TRUE will use centroid-based
-distances.}
+approximate distance calculations. Default = \code{TRUE} will use
+centroid-based distances.}
 
-\item{distance_awareness}{To omit all distance calculations, set to
-\code{FALSE}. Otherwise, a numeric value representing the distance threshold
+\item{distance_awareness}{A numeric value representing the distance threshold
 above which a cluster will not merge with another cluster. Specifically,
-this value is a multiplier applied to the distance between a cluster and its
-closest distinguishable neighbor, giving the threshold. Default = 2 sets
-this threshold at a 2-fold increase in distance.}
+this value is multiplied by the distance between a cluster and its
+closest distinguishable neighbor to set the threshold. Default = 2 sets
+this threshold at a 2-fold increase in distance. Alternately, to omit all
+distance calculations, set to \code{FALSE}.}
 
-\item{collect_all_metrics}{A boolean value indicating whether to collect and save
-additional metrics from the random forest classifiers, including feature
-importances and tree depth. Defaults to \code{FALSE}.}
+\item{collect_all_metrics}{A boolean value indicating whether to collect and
+save additional metrics from the random forest classifier comparisons,
+including feature importances and tree depth. Defaults to \code{FALSE}.}
 
 \item{sample_max}{A numeric value indicating the maximum number of cells used
 per cluster to train/test each random forest classifier. Default = \code{Inf}
 does not cap the number of cells used.}
 
-\item{downsampling_rate}{A numeric value indicating the proportion of cells used
-per cluster to train/test each random forest classifier. Default = "auto" sets
-the downsampling rate according to the dataset size, for efficiency.}
+\item{downsampling_rate}{A numeric value indicating the proportion of cells
+used per cluster to train/test each random forest classifier. Default =
+"auto" sets the downsampling rate according to the dataset size, for
+efficiency.}
 
 \item{min_reads}{A numeric value used to filter out features prior to input
 to the random forest classifier. Default = \code{NULL} will filter out
@@ -121,21 +126,35 @@ CHOIR after normalization, except in cases when the user wishes to use
 'SCTransform'. Defaults to 'none'.}
 
 \item{batch_correction_method}{A character string or vector indicating which
-batch correction method to use. Permitted values are 'Harmony', 'VAE', and
+batch correction method to use. Permitted values are 'Harmony' and
 'none'. Defaults to 'none'.}
 
-\item{batch_labels}{If applying batch correction, the name of the column
-containing the batch labels. Defaults to \code{NULL}.}
+\item{batch_labels}{If applying batch correction, a character string or
+vector indicating the name of the column containing the batch labels.
+Defaults to \code{NULL}.}
 
 \item{cluster_params}{A list of additional parameters to be passed to
 Seurat::FindClusters() for clustering at each level of the tree. Note that if
-'group.singletons' is set to TRUE, clusters are relabeled such that each
-singleton constitutes its own cluster.}
+\code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
+clusters such that each singleton constitutes its own cluster.}
 
 \item{use_assay}{For Seurat or SingleCellExperiment objects, a character
 string or vector indicating the assay(s) to use in the provided object.
 Default = \code{NULL} will choose the current active assay for Seurat objects
-and the \code{log_counts} assay for SingleCellExperiment objects.}
+and the \code{logcounts} assay for SingleCellExperiment objects.}
+
+\item{countsplit}{A boolean value indicating whether or not to use
+countsplit input data (see A. Neufeld \code{countsplit} package), such that
+one matrix of counts is used for clustering tree generation, and a separate
+matrix is used for all random forest classifier permutation testing. Defaults
+to \code{FALSE}.}
+
+\item{countsplit_suffix}{A character vector indicating the suffixes
+that distinguish the two countsplit matrices to be used. Suffixes are
+appended onto input string/vector for \code{use_slot} for Seurat objects,
+\code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+suffixes "_1" and "_2".}
 
 \item{cluster_tree}{An optional dataframe containing the cluster IDs of each
 cell across the levels of a hierarchical clustering tree. Default = \code{NULL}
@@ -149,6 +168,10 @@ the feature x cell matri(ces) indicated by function \code{buildTree()}.}
 \item{nn_matrix}{An optional matrix containing the nearest neighbor adjacency
 of the cells. Default = \code{NULL} will look for the adjacency matri(ces)
 generated by function \code{buildTree()}.}
+
+\item{snn_matrix}{An optional matrix containing the shared nearest neighbor
+adjacency of the cells. Default = \code{NULL} will look for the adjacency
+matri(ces) generated by function \code{buildTree()}.}
 
 \item{dist_matrix}{An optional distance matrix of cell to cell distances (based
 on dimensionality reduction cell embeddings). Default = \code{NULL} will look
@@ -169,18 +192,23 @@ during the execution of this function. Can be set to \code{FALSE} for a
 cleaner output.}
 }
 \value{
-Returns the object with the following added data stored under the provided
-key: \describe{
-\item{final_clusters}{Clustering results for each provided threshold value}
-\item{stepwise_clusters}{A dataframe of clustering results for each progressive step through the
-clustering tree at each provided threshold value}
-\item{comparison_records}{A dataframe of all recorded comparisons}
-\item{feature_importances}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each feature across all comparisons}
+Returns the object with the following added data stored under the
+provided key: \describe{
+\item{clusters}{Final clusters and stepwise cluster results for each
+progressive pruning step}
+\item{parameters}{Record of parameter values used}
+\item{records}{Metadata for all recorded permutation test comparisons and
+feature importance scores from all comparisons}
 }
 }
 \description{
-This function will move iteratively up the provided hierarchical clustering
-tree, and use permutation tests of random forest classifier prediction
-accuracies to identify which clusters should be merged, in order to identify
-robust final clusters.
+To identify a final set of clusters, this function will move iteratively from
+the bottom up to prune the provided hierarchical clustering tree using a
+framework of random forest classifiers and permutation tests.
+}
+\details{
+If \code{CHOIR::buildTree()} was run prior to this function, most parameters
+will be retrieved from the object. Alternately, parameter values can be
+supplied. For multi-modal data, optionally supply parameter inputs as
+vectors/lists that sequentially specify the value for each modality.
 }

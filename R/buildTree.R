@@ -1,24 +1,27 @@
 #' Build full hierarchical clustering tree
 #'
-#' This function constructs a hierarchical clustering tree starting from a single
-#' cluster encompassing all cells. First, a parent tree is constructed, from which
-#' subtrees are subsequently generated. Each branch is subdivided until all
-#' cases of underclustering are eliminated.
+#' This function performs the first step of the CHOIR algorithm. It constructs
+#' a hierarchical clustering tree starting from a single cluster encompassing
+#' all cells. First, a root tree is constructed, from which subtrees are
+#' subsequently generated. Each branch is subdivided until all cells are
+#' demonstrably overclustered.
 #'
 #' For multi-modal data, optionally supply parameter inputs as vectors/lists
 #' that sequentially specify the value for each modality.
 #'
-#' @param object An object of class 'Seurat' (any version, but v5 is recommended),
-#' 'SingleCellExperiment', or 'ArchRProject'.
+#' @param object An object of class 'Seurat', 'SingleCellExperiment', or
+#' 'ArchRProject'.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to 'CHOIR'.
-#' @param alpha A numerical value indicating the significance level used for
-#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
+#' @param alpha A numeric value indicating the significance level used for
+#' permutation test comparisons of cluster prediction accuracies. Defaults to
+#' 0.05.
+#' @param p_adjust A string indicating which multiple comparison adjustment to
+#' use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
+#' 'bonferroni'.
 #' @param feature_set A string indicating whether to train random forest
-#' @param p_adjust A string indicating which multiple comparison
-#' adjustment to use. Permitted values are 'fdr', 'bonferroni', and 'none'.
-#' Defaults to 'bonferroni'.
-#' classifiers on 'all' features or only variable ('var') features. Defaults to 'var'.
+#' classifiers on 'all' features or only variable ('var') features. Defaults to
+#' 'var'.
 #' @param exclude_features A character vector indicating features that should be
 #' excluded from input to the random forest classifier. Default = \code{NULL}
 #' will not exclude any features.
@@ -28,22 +31,21 @@
 #' forest. Defaults to 50.
 #' @param use_variance A boolean value indicating whether to use the variance of
 #' the random forest accuracy scores as part of the permutation test threshold.
-#' Defaults to \code{TRUE}. If only ATAC-seq data is supplied, it is recommended
-#' to set to \code{FALSE}.
+#' Defaults to \code{TRUE}.
 #' @param min_accuracy A numeric value indicating the minimum accuracy required
 #' of the random forest classifier, below which clusters will be automatically
-#' merged. Defaults to 0.5.
+#' merged. Defaults to 0.5 (chance).
 #' @param min_connections A numeric value indicating the minimum number of
 #' nearest neighbors between two clusters for them to be considered 'adjacent'.
 #' Non-adjacent clusters will not be merged. Defaults to 1.
 #' @param max_repeat_errors Used to account for situations in which random
 #' forest classifier errors are concentrated among a few cells that are
-#' repeatedly misassigned. Numeric value indicating the maximum number of such
+#' repeatedly misassigned. A numeric value indicating the maximum number of such
 #' 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
 #' will not be evaluated. Defaults to 20.
 #' @param distance_approx A boolean value indicating whether or not to use
-#' approximate distance calculations. Default = TRUE will use centroid-based
-#' distances.
+#' approximate distance calculations. Default = \code{TRUE} will use
+#' centroid-based distances.
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
@@ -57,10 +59,10 @@
 #' matrices, whereby at least 1 read will be required for the provided number
 #' of cells.
 #' @param max_clusters Indicates the extent to which the hierarchical clustering
-#' tree will be expanded. Default = 'auto' will expand the tree until cases of
-#' underclustering have been eliminated in all branches. Alternately, supply a
-#' numerical value indicating the maximum number of clusters to expand the tree
-#' to.
+#' tree will be expanded. Default = 'auto' will expand the tree until instances
+#' of underclustering have been eliminated in all branches. Alternately, supply
+#' a numeric value indicating the maximum number of clusters to expand the
+#' tree to.
 #' @param min_cluster_depth A numeric value indicating the maximum cluster size
 #' at the bottom of the clustering tree, prior to pruning branches. Defaults to
 #' 2000.
@@ -69,42 +71,44 @@
 #' CHOIR after normalization, except in cases when the user wishes to use
 #' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
 #' 'SCTransform'. Defaults to 'none'.
-#' @param subtree_reductions Whether to generate a new dimensionality
-#' reduction for each subtree. Defaults to \code{TRUE}.
+#' @param subtree_reductions A boolean value indicating whether to generate a
+#' new dimensionality reduction for each subtree. Defaults to \code{TRUE}.
 #' @param reduction_method A character string or vector indicating which
 #' dimensionality reduction method to use. Permitted values are 'PCA' for
 #' principal component analysis, 'LSI' for latent semantic indexing, and
 #' 'IterativeLSI' for iterative latent semantic indexing. Default = \code{NULL}
-#' will specify a method based on the input data type.
+#' will specify a method automatically based on the input data type.
 #' @param reduction_params A list of additional parameters to be passed to
 #' the selected dimensionality reduction method.
-#' @param n_var_features A numerical value indicating how many variable
-#' features to identify. Default = \code{NULL} will use 2000 features, or 25000
-#' features for ATAC-seq data.
+#' @param n_var_features A numeric value indicating how many variable features
+#' to identify. Default = \code{NULL} will use 2000 features, or 25000 features
+#' for ATAC-seq data.
 #' @param batch_correction_method A character string or vector indicating which
 #' batch correction method to use. Permitted values are 'Harmony' and
 #' 'none'. Defaults to 'none'.
 #' @param batch_correction_params A list of additional parameters to be passed
 #' to the selected batch correction method for each iteration. Only applicable
-#' when 'batch_correction_method' = 'Harmony'.
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
+#' when \code{batch_correction_method = 'Harmony'}.
+#' @param batch_labels If applying batch correction, a character string or
+#' vector indicating the name of the column containing the batch labels.
+#' Defaults to \code{NULL}.
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
 #' Seurat or SingleCellExperiment objects,
 #' \code{Seurat::FindMultiModalNeighbors()}).
 #' @param cluster_params A list of additional parameters to be passed to
 #' Seurat::FindClusters() for clustering at each level of the tree. Note that if
-#' 'group.singletons' is set to TRUE, clusters are relabeled such that each
-#' singleton constitutes its own cluster.
+#' \code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
+#' clusters such that each singleton constitutes its own cluster.
 #' @param use_assay For Seurat or SingleCellExperiment objects, a character
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{log_counts} assay for SingleCellExperiment objects.
+#' and the \code{logcounts} assay for SingleCellExperiment objects.
 #' @param use_slot For Seurat objects, a character string or vector indicating
-#' the slot(s) (Seurat v4) or layer(s) (Seurat v5) to use in the provided object.
-#' Default = \code{NULL} will choose a slot/layer based on the selected assay.
-#' If a non-standard assay is provided, do not leave \code{use_slot} as \code{NULL}.
+#' the layers(s) — previously known as slot(s) — to use in the provided object.
+#' Default = \code{NULL} will choose a layer/slot based on the selected assay.
+#' If a non-standard assay is provided, do not leave \code{use_slot} as
+#' \code{NULL}.
 #' @param ArchR_matrix For ArchR objects, a character string or vector
 #' indicating which matri(ces) to use in the provided object. Default =
 #' \code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
@@ -113,17 +117,28 @@
 #' indicating which column to use for correlation with sequencing depth.
 #' Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
 #' 'Gex_nUMI' for RNA-seq data.
+#' @param countsplit A boolean value indicating whether or not to use
+#' countsplit input data (see A. Neufeld \code{countsplit} package), such that
+#' one matrix of counts is used for clustering tree generation, and a separate
+#' matrix is used for all random forest classifier permutation testing. Defaults
+#' to \code{FALSE}.
+#' @param countsplit_suffix A character vector indicating the suffixes
+#' that distinguish the two countsplit matrices to be used. Suffixes are
+#' appended onto input string/vector for \code{use_slot} for Seurat objects,
+#' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+#' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+#' suffixes "_1" and "_2".
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for subsequent clustering steps. Defaults to
-#' \code{NULL}, whereby dimensionality reduction(s) will be calculated using
-#' method specified by 'reduction_method' as part of the \code{buildTree()}
-#' function.
+#' \code{NULL}, whereby dimensionality reduction(s) will instead be calculated
+#' using method specified by \code{reduction_method}.
 #' @param var_features An optional character vector of variable features to be
-#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby
-#' variable features will be calculated as part of the \code{buildTree()}
-#' function.
+#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby new
+#' sets of variable features will instead be generated.
 #' @param atac A boolean value or vector indicating whether the provided data is
-#' ATAC-seq data. Defaults to \code{FALSE}.
+#' ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
+#' ATAC-seq data, it is important to supply this parameter as a vector
+#' corresponding to each modality in order.
 #' @param n_cores A numeric value indicating the number of cores to use for
 #' parallelization. Default = \code{NULL} will use the number of available cores
 #' minus 2.
@@ -134,12 +149,17 @@
 #'
 #' @return Returns the object with the following added data stored under the
 #' provided key: \describe{
-#'   \item{reduction}{Cell embeddings for all calculated dimensionality reductions}
-#'   \item{var_features}{Variable features for all calculated dimensionality reductions}
-#'   \item{cell_IDs}{Cell IDs belonging to each subtree, if applicable}
-#'   \item{graph}{All calculated nearest neighbor and shared nearest neighbor adjacency matrices}
-#'   \item{clusters}{Full hierarchical cluster tree}
+#'   \item{cell_IDs}{Cell IDs belonging to each subtree}
+#'   \item{clusters}{Full hierarchical clustering tree}
+#'   \item{graph}{All calculated nearest neighbor and shared nearest neighbor
+#'   adjacency matrices}
 #'   \item{parameters}{Record of parameter values used}
+#'   \item{records}{Metadata for decision points during hierarchical tree
+#'   construction}
+#'   \item{reduction}{Cell embeddings for all calculated dimensionality
+#'   reductions}
+#'   \item{var_features}{Variable features for all calculated dimensionality
+#'   reductions}
 #'   }
 #'
 #' @export
@@ -177,6 +197,8 @@ buildTree <- function(object,
                       use_slot = NULL,
                       ArchR_matrix = NULL,
                       ArchR_depthcol = NULL,
+                      countsplit = FALSE,
+                      countsplit_suffix = NULL,
                       reduction = NULL,
                       var_features = NULL,
                       atac = FALSE,
@@ -187,6 +209,15 @@ buildTree <- function(object,
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
+
+  .validInput(max_clusters, "max_clusters")
+
+  # Progress
+  if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"),
+                                                 " : (Step 1/7) Checking inputs and preparing object..")
+  if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"),
+                                                 " : (Step 1/5) Checking inputs and preparing object..")
+
 
   .validInput(object, "object", "buildTree")
   .validInput(key, "key", list("buildTree", object))
@@ -203,14 +234,17 @@ buildTree <- function(object,
   .validInput(min_reads, "min_reads")
   .validInput(max_clusters, "max_clusters")
   .validInput(min_cluster_depth, "min_cluster_depth")
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
-  .validInput(ArchR_matrix, "ArchR_matrix", object)
+  .validInput(countsplit, "countsplit")
+  .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
+  .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
+  .validInput(use_slot, "use_slot", list(object, use_assay, countsplit, countsplit_suffix))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, countsplit, countsplit_suffix))
+
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
     object_type <- "ArchRProject"
-    .requirePackage("ArchR")
+    .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
   } else {
     n_modalities <- max(length(use_assay), 1)
     if (methods::is(object, "Seurat")) {
@@ -235,7 +269,7 @@ buildTree <- function(object,
       }
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
-      .requirePackage("SingleCellExperiment")
+      .requirePackage("SingleCellExperiment", source = "bioc")
     }
   }
 
@@ -283,6 +317,9 @@ buildTree <- function(object,
   # Set downsampling rate
   if (downsampling_rate == "auto") {
     downsampling_rate <- min(1, (1/2)^(log10(length(cell_IDs)/5000)))
+    if (batch_correction_method == "none") {
+      downsampling_rate <- downsampling_rate*0.5
+    }
   }
   # Random seed reproducibility
   if (n_cores > 1) {
@@ -292,11 +329,7 @@ buildTree <- function(object,
   # Check that required packages are loaded
   # Seurat needs to be loaded to use Seurat:::FindModalityWeights() and Seurat:::MultiModalNN()
   if (n_modalities >= 2 & !methods::is(object, "ArchRProject")) {
-    if (seurat_version == "v4") {
-      .requirePackage("Seurat", source = "cran")
-    } else if (seurat_version == "v5") {
-      stop("Please load Seurat v5 package prior to running CHOIR.")
-    }
+    .requirePackage("Seurat", source = "cran")
   }
 
   # If batch_correction_method is Harmony, make sure batch IDs is a character vector
@@ -313,14 +346,104 @@ buildTree <- function(object,
   }
 
   # ---------------------------------------------------------------------------
-  # Step 1: Initial dimensionality reduction
+  # Set values for countsplitting (if enabled)
   # ---------------------------------------------------------------------------
 
+  if (countsplit == TRUE) {
+    if (is.null(countsplit_suffix)) {
+      countsplit_suffix <- c("_1", "_2")
+    }
+    # Set new values
+    if (methods::is(object, "Seurat")) {
+      # Seurat object
+      # Set values of 'use_assay' and 'use_slot' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- Seurat::DefaultAssay(object)
+      }
+      if (is.null(use_slot)) {
+        if (use_assay %in% c("RNA", "sketch")) {
+          use_slot <- "data"
+        } else if (use_assay == "SCT" | use_assay == "integrated") {
+          use_slot <- "scale.data"
+        } else {
+          stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+        }
+      }
+      # Set new values
+      use_assay_build <- use_assay
+      use_assay_prune <- use_assay
+      use_slot_build <- paste0(use_slot, countsplit_suffix[1])
+      use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
+      countsplit_text <- paste0("\n - Assay: ", use_assay,
+                                "\n - ",
+                                ifelse(seurat_version == "v5", "Layer", "Slot"),
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_slot_build, collapse = " "),
+                                "\n - ",
+                                ifelse(seurat_version == "v5", "Layer", "Slot"),
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to prune tree: ",
+                                paste(use_slot_prune, collapse = " "))
+    } else if (methods::is(object, "SingleCellExperiment")) {
+      # SingleCellExperiment object
+      # Set value of 'use_assay' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- "logcounts"
+      }
+      # Set new values
+      use_assay_build <- paste0(use_assay, countsplit_suffix[1])
+      use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
+      countsplit_text <- paste0("\n - Assay",
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_assay_build, collapse = " "),
+                                "\n - Assay",
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to prune tree: ",
+                                paste(use_assay_prune, collapse = " "))
+    } else if (methods::is(object, "ArchRProject")) {
+      # ArchR object
+      # Set value of 'ArchR_matrix' if necessary
+      if (is.null(ArchR_matrix)) {
+        ArchR_matrix <- "TileMatrix"
+      }
+      # Set new values
+      use_assay_build <- NULL
+      use_assay_prune <- NULL
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
+      ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
+      countsplit_text <- ""
+    }
+  } else {
+    # No countsplitting, use same matrix to build & prune tree
+    use_assay_build <- use_assay
+    use_assay_prune <- use_assay
+    use_slot_build <- use_slot
+    use_slot_prune <- use_slot
+    ArchR_matrix_build <- ArchR_matrix
+    ArchR_matrix_prune <- ArchR_matrix
+    countsplit_text <- ""
+  }
+
+  # ---------------------------------------------------------------------------
   # Report object & parameter details
+  # ---------------------------------------------------------------------------
+
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
                        "\n - # of cells: ", length(cell_IDs),
-                       "\n - # of modalities: ", n_modalities)
+                       "\n - # of modalities: ", n_modalities,
+                       "\n - Countsplitting: ", countsplit,
+                       countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Normalization method: ", normalization_method,
@@ -350,10 +473,14 @@ buildTree <- function(object,
                        "\n - Random seed: ", random_seed,
                        "\n")
 
+  # ---------------------------------------------------------------------------
+  # Step 2: Initial dimensionality reduction
+  # ---------------------------------------------------------------------------
+
   # Run dimensionality reduction if not supplied by user
   if (is.null(reduction)) {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Running initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Running initial dimensionality reduction..")
+    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/7) Running initial dimensionality reduction..")
+    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/5) Running initial dimensionality reduction..")
     P0_dim_reduction <- .runDimReduction(object = object,
                                          normalization_method = normalization_method,
                                          reduction_method = reduction_method,
@@ -362,9 +489,9 @@ buildTree <- function(object,
                                          batch_correction_method = batch_correction_method,
                                          batch_correction_params = batch_correction_params,
                                          batch_labels = batch_labels,
-                                         use_assay = use_assay,
-                                         use_slot = use_slot,
-                                         ArchR_matrix = ArchR_matrix,
+                                         use_assay = use_assay_build,
+                                         use_slot = use_slot_build,
+                                         ArchR_matrix = ArchR_matrix_build,
                                          ArchR_depthcol = ArchR_depthcol,
                                          atac = atac,
                                          return_full = methods::is(object, "ArchRProject"),
@@ -372,8 +499,8 @@ buildTree <- function(object,
                                          random_seed = random_seed,
                                          verbose = verbose)
   } else {
-    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/6) Setting initial dimensionality reduction..")
-    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Setting initial dimensionality reduction..")
+    if (verbose  & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/7) Setting initial dimensionality reduction..")
+    if (verbose  & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/5) Setting initial dimensionality reduction..")
     P0_dim_reduction <- list("reduction_coords" = reduction,
                              "var_features" = var_features)
   }
@@ -393,7 +520,8 @@ buildTree <- function(object,
                          input_data = P0_dim_reduction[["reduction_coords"]],
                          name = "CHOIR_P0_reduction",
                          reduction_method = reduction_method,
-                         use_assay = use_assay)
+                         use_assay = use_assay_build,
+                         atac = atac)
   }
   # Clean up
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL
@@ -401,8 +529,8 @@ buildTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 2: Find nearest neighbors & calculate distance matrix for dimensionality reduction
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/6) Generating initial nearest neighbors graph..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
+  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/7) Generating initial nearest neighbors graph..")
+  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/5) Generating initial nearest neighbors graph..")
 
   # 1 vs. multiple dimensionality reductions
   if (n_modalities < 2 | methods::is(object, "ArchRProject")) {
@@ -427,15 +555,15 @@ buildTree <- function(object,
     colnames(tmp) <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
     rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
     tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
-    dim_list = vector("list", length = length(use_assay))
-    for (i in 1:length(use_assay)) {
+    dim_list = vector("list", length = n_modalities)
+    for (i in 1:n_modalities) {
       tmp_seurat[[paste0("DR_", i)]] <- Seurat::CreateDimReducObject(embeddings = P0_dim_reduction[["reduction_coords"]][[i]],
                                                                      key = paste0("DR_", i, "_"), assay = 'tmp')
       dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
     }
     # Find neighbors
     P0_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
-                                                                            "reduction.list" = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                                            "reduction.list" = list(paste0("DR_", seq(1, n_modalities))),
                                                                             "dim.list" = dim_list,
                                                                             "knn.graph.name" = "nn",
                                                                             "snn.graph.name" = "snn"),
@@ -443,7 +571,7 @@ buildTree <- function(object,
     # Dimensionality reduction distance matrix
     if (distance_approx == FALSE) {
       P0_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                  reduction_list = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                  reduction_list = list(paste0("DR_", seq(1, n_modalities))),
                                                   dim_list = dim_list)
       object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
     }
@@ -458,8 +586,8 @@ buildTree <- function(object,
   # ---------------------------------------------------------------------------
   # Step 3: Identify starting clustering resolution
   # ---------------------------------------------------------------------------
-  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/6) Identify starting clustering resolution..")
-  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
+  if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/7) Identify starting clustering resolution..")
+  if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/5) Identify starting clustering resolution..")
 
   P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
                                                    cluster_params = cluster_params,
@@ -467,7 +595,7 @@ buildTree <- function(object,
                                                    verbose = verbose)
 
   # ---------------------------------------------------------------------------
-  # Step 4: Build parent tree
+  # Step 4: Build root tree
   # ---------------------------------------------------------------------------
 
   # Create dataframe to store tree generation records
@@ -486,7 +614,7 @@ buildTree <- function(object,
                              stop_branching_reason = NULL)
 
   if (max_clusters == "auto") {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/6) Building parent clustering tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/7) Building root clustering tree..")
     P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                              dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
                              reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
@@ -526,7 +654,7 @@ buildTree <- function(object,
       P0_tree[,col] <- paste0("P0_", colnames(P0_tree)[col], "_", P0_tree[,col])
     }
   } else {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/4) Building clustering tree..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/5) Building clustering tree..")
     full_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
                                tree_type = "full",
                                max_clusters = max_clusters,
@@ -579,8 +707,8 @@ buildTree <- function(object,
     P0_clusters <- unique(P0_tree[, ncol(P0_tree)])
     P0_clusters_n <- length(P0_clusters)
 
-    if (verbose) message("                      Identified ", P0_clusters_n, " clusters in parent tree.")
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/6) Subclustering parent tree..")
+    if (verbose) message("                      Identified ", P0_clusters_n, " clusters in root tree.")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/7) Subclustering root tree..")
 
     # Initiate list of subtrees
     subtree_list <- vector("list", P0_clusters_n)
@@ -641,9 +769,9 @@ buildTree <- function(object,
                                                 batch_correction_method = batch_correction_method,
                                                 batch_correction_params = batch_correction_params,
                                                 batch_labels = batch_labels,
-                                                use_assay = use_assay,
-                                                use_slot = use_slot,
-                                                ArchR_matrix = ArchR_matrix,
+                                                use_assay = use_assay_build,
+                                                use_slot = use_slot_build,
+                                                ArchR_matrix = ArchR_matrix_build,
                                                 ArchR_depthcol = ArchR_depthcol,
                                                 atac = atac,
                                                 use_cells = cell_IDs_i,
@@ -660,9 +788,9 @@ buildTree <- function(object,
           input_matrix_list <- vector("list", n_modalities)
           for (m in 1:n_modalities) {
             # Match input arguments
-            use_assay_m <- .matchArg(use_assay, m)
-            use_slot_m <- .matchArg(use_slot, m)
-            ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
+            use_assay_prune_m <- .matchArg(use_assay_prune, m)
+            use_slot_prune_m <- .matchArg(use_slot_prune, m)
+            ArchR_matrix_prune_m <- .matchArg(ArchR_matrix_prune, m)
             normalization_method_m <- .matchArg(normalization_method, m)
             # Variable features
             if (feature_set == "var") {
@@ -671,9 +799,9 @@ buildTree <- function(object,
               use_features_m <- NULL
             }
             input_matrix_list[[m]] <- .getMatrix(object = object,
-                                                 use_assay = use_assay_m,
-                                                 use_slot = use_slot_m,
-                                                 ArchR_matrix = ArchR_matrix_m,
+                                                 use_assay = use_assay_prune_m,
+                                                 use_slot = use_slot_prune_m,
+                                                 ArchR_matrix = ArchR_matrix_prune_m,
                                                  use_features = use_features_m,
                                                  use_cells = cell_IDs_i,
                                                  verbose = FALSE)
@@ -729,9 +857,9 @@ buildTree <- function(object,
           input_matrix <- do.call(rbind, input_matrix_list)
         } else {
           input_matrix <- .getMatrix(object = object,
-                                     use_assay = use_assay,
-                                     use_slot = use_slot,
-                                     ArchR_matrix = ArchR_matrix,
+                                     use_assay = use_assay_prune,
+                                     use_slot = use_slot_prune,
+                                     ArchR_matrix = ArchR_matrix_prune,
                                      use_features = `if`(feature_set == "var",
                                                          P_i_dim_reduction[["var_features"]],
                                                          NULL),
@@ -828,7 +956,7 @@ buildTree <- function(object,
           }
           # Find neighbors
           P_i_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
-                                                                                   "reduction.list" = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                                                   "reduction.list" = list(paste0("DR_", seq(1, n_modalities))),
                                                                                    "dim.list" = dim_list,
                                                                                    "knn.graph.name" = "nn",
                                                                                    "snn.graph.name" = "snn"),
@@ -836,7 +964,7 @@ buildTree <- function(object,
           # Dimensionality reduction distance matrix
           if (distance_approx == FALSE) {
             P_i_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                         reduction_list = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                         reduction_list = list(paste0("DR_", seq(1, n_modalities))),
                                                          dim_list = dim_list)
             object <- .storeData(object, key, "reduction", P_i_reduction_dist, paste0("P", i, "_reduction_dist"))
           }
@@ -881,12 +1009,13 @@ buildTree <- function(object,
                                     res0_clusters = P_i_starting_resolution[["res0_clusters"]],
                                     decimal_places = P_i_starting_resolution[["decimal_places"]],
                                     tree_records = tree_records,
+                                    tree_id = paste0("P", i),
                                     n_cores = n_cores,
                                     random_seed = random_seed)
           P_i_tree <- P_i_tree_list[["cluster_tree"]]
 
           # Store records
-          tree_records <- rbind(tree_records, P_i_tree_list[["tree_records"]])
+          tree_records <- P_i_tree_list[["tree_records"]]
 
           # Clean up
           rm(P_i_tree_list)
@@ -960,6 +1089,7 @@ buildTree <- function(object,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
                                       tree_records = tree_records,
+                                      tree_id = paste0("P", i, "_", j),
                                       n_cores = n_cores,
                                       random_seed = random_seed)
             P_j_tree <- P_j_tree_list[["cluster_tree"]]
@@ -1042,7 +1172,7 @@ buildTree <- function(object,
     # ---------------------------------------------------------------------------
     # Step 6: Stitch trees together
     # ---------------------------------------------------------------------------
-    if (verbose) message("\n", format(Sys.time(), "%Y-%m-%d %X"), " : (Step 6/6) Compiling full clustering tree..")
+    if (verbose) message("\n", format(Sys.time(), "%Y-%m-%d %X"), " : (Step 7/7) Compiling full clustering tree..")
 
     # Create shell dataframe for subtree clusters
     subtrees <- data.frame(matrix(rep(NA, max_columns + 1), nrow = 1, ncol = max_columns + 1))
@@ -1137,6 +1267,15 @@ buildTree <- function(object,
                          "use_slot" = use_slot,
                          "ArchR_matrix" = ArchR_matrix,
                          "ArchR_depthcol" = ArchR_depthcol,
+                         "countsplit" = countsplit,
+                         "countsplit_suffix" = countsplit_suffix,
+                         "use_assay_build" = use_assay_build,
+                         "use_assay_prune" = use_assay_prune,
+                         "use_slot_build" = use_slot_build,
+                         "use_slot_prune" = use_slot_prune,
+                         "ArchR_matrix_build" = ArchR_matrix_build,
+                         "ArchR_matrix_prune" = ArchR_matrix_prune,
+                         "countsplit_text" = countsplit_text,
                          "reduction_provided" = !is.null(reduction),
                          "atac" = atac,
                          "random_seed" = random_seed)

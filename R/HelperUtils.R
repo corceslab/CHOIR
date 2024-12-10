@@ -7,6 +7,7 @@
 # Extract cell IDs/names from provided object
 #
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_assay -- For Seurat objects, character string/vector indicating assay to use
 .getCellIDs <- function(object,
                         use_assay = NULL) {
   # By object type
@@ -14,7 +15,18 @@
     if (is.null(use_assay)) {
       use_assay <- Seurat::DefaultAssay(object)
     }
-    cell_IDs <- colnames(object[[use_assay]])
+    if (length(use_assay) > 1) {
+      # If multiple assays, check that cell IDs are identical
+      cell_IDs <- colnames(object[[use_assay[1]]])
+      for (i in 2:length(use_assay)) {
+        cell_IDs_i <- colnames(object[[use_assay[i]]])
+        if (!identical(cell_IDs, cell_IDs_i)) {
+          stop("Cell IDs do not match across provided assays indicated by parameter 'use_assay'. Please supply valid input!")
+        }
+      }
+    } else {
+      cell_IDs <- colnames(object[[use_assay]])
+    }
   } else if (methods::is(object, "SingleCellExperiment")) {
     cell_IDs <- rownames(object@colData)
   } else if (methods::is(object, "ArchRProject")) {
@@ -30,7 +42,7 @@
 # object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
 # use_matrix -- If there is a user-supplied matrix, do not retrieve a matrix from the object
 # use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
-# use_slot -- For Seurat objects, a character string indicating the slot to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
 # ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
@@ -92,7 +104,7 @@
       use_assay <- Seurat::DefaultAssay(object)
     } else {
       # Check that input assay is present in object
-      .validInput(use_assay, "use_assay", object)
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     # Determine which slot to use
     if (is.null(use_slot)) {
@@ -105,13 +117,13 @@
       }
     }
     # Check that selected slot is present within selected assay in object
-    .validInput(use_slot, "use_slot", list(object, use_assay))
+    .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     # Extract matrix
-    if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
-      use_matrix <- seurat_object[[use_assay]]@layers[[use_slot]]
-      colnames(use_matrix) <- colnames(seurat_object[[use_assay]])
-      rownames(use_matrix) <- rownames(seurat_object[[use_assay]])
+      use_matrix <- object[[use_assay]]@layers[[use_slot]]
+      colnames(use_matrix) <- colnames(object[[use_assay]])
+      rownames(use_matrix) <- rownames(object[[use_assay]])
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
@@ -188,11 +200,11 @@
   if (is.null(use_matrix)) {
     # Get assay
     if (is.null(use_assay)) {
-      assay <- "logcounts"
-      .validInput(use_assay, "use_assay", object)
+      use_assay <- "logcounts"
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     use_matrix <- object@assays@data[[use_assay]]
-    if (verbose) message("                      Preparing input matrix using '", use_assay, "' assay..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing input matrix using '", use_assay, "' assay..")
   } else {
     # If assay is not NULL
     if (!is.null(use_assay)) {
@@ -304,6 +316,118 @@
   return(use_matrix)
 }
 
+# Store matrix ---------------------------
+#
+# Store a matrix in provided object
+#
+# object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_matrix -- Matrix to be stored
+# use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
+# ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
+# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+.storeMatrix <- function(object,
+                         use_matrix,
+                         use_assay = NULL,
+                         use_slot = NULL,
+                         ArchR_matrix = NULL,
+                         verbose = TRUE) {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    object <- .storeMatrix.Seurat(object,
+                                  use_matrix,
+                                  use_assay,
+                                  use_slot,
+                                  verbose)
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    object <- .storeMatrix.SingleCellExperiment(object,
+                                                use_matrix,
+                                                use_assay,
+                                                verbose)
+  } else if (methods::is(object, "ArchRProject")) {
+    # object <- .storeMatrix.ArchR(object,
+    #                              use_matrix,
+    #                              ArchR_matrix,
+    #                              verbose)
+    stop("Function '.storeMatrix' does not yet support ArchR objects.")
+  }
+  # Return object
+  return(object)
+}
+
+.storeMatrix.Seurat <- function(object,
+                                use_matrix,
+                                use_assay,
+                                use_slot,
+                                verbose) {
+  # Get assay
+  if (is.null(use_assay)) {
+    use_assay <- Seurat::DefaultAssay(object)
+  } else {
+    # Check that input assay is present in object
+    .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+  }
+  # Determine which slot to use
+  if (is.null(use_slot)) {
+    stop("For Seurat objects, .storeMatrix requires input for parameter 'use_slot', please supply a valid input for the slot parameter.")
+  }
+  if (!methods::is(use_slot, "character") | length(use_slot) != 1) {
+    stop("Input value for 'use_slot' is not a single value of of class 'character', please supply valid input!")
+  }
+  # Check that selected slot is NOT already present within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (use_slot %in% names(object[[use_assay]]@layers)) {
+      stop("Layer '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat v5 object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
+    if (exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
+  try(object[[use_assay]][use_slot] <- use_matrix)
+  # Check that selected slot does now exist within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (!(use_slot %in% names(object[[use_assay]]@layers))) {
+      stop("Layer '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat v5 object.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
+    if (!exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    } else if (slot_exists_1 == FALSE) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    }
+  }
+
+  # Return object
+  return(object)
+}
+
+.storeMatrix.SingleCellExperiment <- function(object,
+                                              use_matrix,
+                                              use_assay,
+                                              verbose) {
+  # Check assay
+  if (is.null(use_assay)) {
+    stop("For SingleCellExperiment objects, .storeMatrix requires input for parameter 'use_assay', please supply a valid input for the slot parameter.")
+  } else {
+    # Check that input assay is NOT already present in object
+    if (use_assay %in% names(object@assays)) {
+      stop("Assay '", use_assay, "' provided for parameter '", name, "' is already present in provided SingleCellExperiment object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing assay '", use_assay, "' in SingleCellExperiment object.")
+  object@assays@data[[use_assay]] <- use_matrix
+
+  # Return object
+  return(object)
+}
+
+
 # Store data ---------------------------
 #
 # Store data in object under specified key
@@ -321,7 +445,8 @@
                        input_data,
                        name,
                        reduction_method = NULL,
-                       use_assay = NULL) {
+                       use_assay = NULL,
+                       atac = NULL) {
   # By object type
   if (methods::is(object, "Seurat")) {
     # By type
@@ -329,15 +454,29 @@
       if (length(use_assay) > 1) {
         for (i in 1:length(use_assay)) {
           reduction_method_i <- .matchArg(reduction_method, i)
+          atac_i <- .matchArg(atac, i)
+          if (is.null(reduction_method_i)) {
+            if (atac_i == FALSE) {
+              reduction_method <- "PCA"
+            } else {
+              reduction_method <- "LSI"
+            }
+          }
           use_assay_i <- .matchArg(use_assay, i)
-          object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
+          try(object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
                                                                                                     key = reduction_method_i,
-                                                                                                    assay = use_assay_i))
+                                                                                                    assay = use_assay_i)), silent = TRUE)
+          if (!(paste0(name, "_", use_assay_i) %in% names(object@reductions))) {
+            warning("Reduction ", paste0(name, "_", use_assay_i), " is stored only in 'misc' slot under provided CHOIR 'key'.")
+          }
         }
       } else {
-        object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
+        try(object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
                                                                         key = reduction_method,
-                                                                        assay = use_assay))
+                                                                        assay = use_assay)), silent = TRUE)
+        if (!(name %in% names(object@reductions))) {
+          warning("Reduction ", name, " is stored only in 'misc' slot under provided CHOIR 'key'.")
+        }
       }
     } else if (type == "final_clusters") {
       object@meta.data[, name] <- input_data
@@ -436,7 +575,12 @@
 # name -- Name of parameter
 # parameter_list -- List of stored parameter values
 # default_list -- List of default parameter values
-.retrieveParam <- function(input, name, parameter_list, default_list) {
+# function_name -- Name of function for which parameter values were stored
+.retrieveParam <- function(input,
+                           name,
+                           parameter_list,
+                           default_list,
+                           function_name = "buildTree") {
   # If supplied parameter list contains name
   if (name %in% names(parameter_list)) {
     # For any parameters set to NULL, use values from parameter_list
@@ -444,7 +588,7 @@
       input <- parameter_list[[name]]
     } else if (input != parameter_list[[name]]) {
       # For any parameters not set to NULL, warn if value does not match parameter_list
-      warning("Supplied value for parameter '", name, "' does not match the value used for function 'buildTree'.")
+      warning("Supplied value for parameter '", name, "' does not match the value used for function '", function_name, "'.")
     }
   }
   # Set features that are still NULL to defaults

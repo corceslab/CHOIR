@@ -1,21 +1,27 @@
 #' Prune clustering tree using random forest classifiers
 #'
-#' This function will move iteratively up the provided hierarchical clustering
-#' tree, and use permutation tests of random forest classifier prediction
-#' accuracies to identify which clusters should be merged, in order to identify
-#' robust final clusters.
+#' To identify a final set of clusters, this function will move iteratively from
+#' the bottom up to prune the provided hierarchical clustering tree using a
+#' framework of random forest classifiers and permutation tests.
+#'
+#' If \code{CHOIR::buildTree()} was run prior to this function, most parameters
+#' will be retrieved from the object. Alternately, parameter values can be
+#' supplied. For multi-modal data, optionally supply parameter inputs as
+#' vectors/lists that sequentially specify the value for each modality.
 #'
 #' @param object An object of class 'Seurat', 'SingleCellExperiment', or
 #' 'ArchRProject'.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to 'CHOIR'.
-#' @param alpha A numerical value indicating the significance level used for
-#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
-#' @param p_adjust A string indicating which multiple comparison
-#' adjustment to use. Permitted values are 'fdr', 'bonferroni', and 'none'.
-#' Defaults to 'bonferroni'.
+#' @param alpha A numeric value indicating the significance level used for
+#' permutation test comparisons of cluster prediction accuracies. Defaults to
+#' 0.05.
+#' @param p_adjust A string indicating which multiple comparison adjustment to
+#' use. Permitted values are 'bonferroni', 'fdr', and 'none'. Defaults to
+#' 'bonferroni'.
 #' @param feature_set A string indicating whether to train random forest
-#' classifiers on 'all' features or only variable ('var') features. Defaults to 'var'.
+#' classifiers on 'all' features or only variable ('var') features. Defaults to
+#' 'var'.
 #' @param exclude_features A character vector indicating features that should be
 #' excluded from input to the random forest classifier. Default = \code{NULL}
 #' will not exclude any features.
@@ -25,31 +31,30 @@
 #' forest. Defaults to 50.
 #' @param use_variance A boolean value indicating whether to use the variance of
 #' the random forest accuracy scores as part of the permutation test threshold.
-#' Defaults to \code{TRUE}. If only ATAC-seq data is supplied, it is recommended
-#' to set to \code{FALSE}.
+#' Defaults to \code{TRUE}.
 #' @param min_accuracy A numeric value indicating the minimum accuracy required
 #' of the random forest classifier, below which clusters will be automatically
-#' merged. Defaults to 0.5.
+#' merged. Defaults to 0.5 (chance).
 #' @param min_connections A numeric value indicating the minimum number of
 #' nearest neighbors between two clusters for them to be considered 'adjacent'.
 #' Non-adjacent clusters will not be merged. Defaults to 1.
 #' @param max_repeat_errors Used to account for situations in which random
 #' forest classifier errors are concentrated among a few cells that are
-#' repeatedly misassigned. Numeric value indicating the maximum number of such
+#' repeatedly misassigned. A numeric value indicating the maximum number of such
 #' 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
 #' will not be evaluated. Defaults to 20.
 #' @param distance_approx A boolean value indicating whether or not to use
-#' approximate distance calculations. Default = TRUE will use centroid-based
-#' distances.
-#' @param distance_awareness To omit all distance calculations, set to
-#' \code{FALSE}. Otherwise, a numeric value representing the distance threshold
+#' approximate distance calculations. Default = \code{TRUE} will use
+#' centroid-based distances.
+#' @param distance_awareness A numeric value representing the distance threshold
 #' above which a cluster will not merge with another cluster. Specifically,
-#' this value is a multiplier applied to the distance between a cluster and its
-#' closest distinguishable neighbor, giving the threshold. Default = 2 sets
-#' this threshold at a 2-fold increase in distance.
-#' @param collect_all_metrics A boolean value indicating whether to collect and save
-#' additional metrics from the random forest classifiers, including feature
-#' importances and tree depth. Defaults to \code{FALSE}.
+#' this value is multiplied by the distance between a cluster and its
+#' closest distinguishable neighbor to set the threshold. Default = 2 sets
+#' this threshold at a 2-fold increase in distance. Alternately, to omit all
+#' distance calculations, set to \code{FALSE}.
+#' @param collect_all_metrics A boolean value indicating whether to collect and
+#' save additional metrics from the random forest classifier comparisons,
+#' including feature importances and tree depth. Defaults to \code{FALSE}.
 #' @param sample_max A numeric value indicating the maximum number of cells used
 #' per cluster to train/test each random forest classifier. Default = \code{Inf}
 #' does not cap the number of cells used.
@@ -68,18 +73,30 @@
 #' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
 #' 'SCTransform'. Defaults to 'none'.
 #' @param batch_correction_method A character string or vector indicating which
-#' batch correction method to use. Permitted values are 'Harmony', 'VAE', and
+#' batch correction method to use. Permitted values are 'Harmony' and
 #' 'none'. Defaults to 'none'.
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
+#' @param batch_labels If applying batch correction, a character string or
+#' vector indicating the name of the column containing the batch labels.
+#' Defaults to \code{NULL}.
 #' @param cluster_params A list of additional parameters to be passed to
 #' Seurat::FindClusters() for clustering at each level of the tree. Note that if
-#' 'group.singletons' is set to TRUE, clusters are relabeled such that each
-#' singleton constitutes its own cluster.
+#' \code{group.singletons} is set to \code{TRUE}, \code{CHOIR} relabels initial
+#' clusters such that each singleton constitutes its own cluster.
 #' @param use_assay For Seurat or SingleCellExperiment objects, a character
 #' string or vector indicating the assay(s) to use in the provided object.
 #' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{log_counts} assay for SingleCellExperiment objects.
+#' and the \code{logcounts} assay for SingleCellExperiment objects.
+#' @param countsplit A boolean value indicating whether or not to use
+#' countsplit input data (see A. Neufeld \code{countsplit} package), such that
+#' one matrix of counts is used for clustering tree generation, and a separate
+#' matrix is used for all random forest classifier permutation testing. Defaults
+#' to \code{FALSE}.
+#' @param countsplit_suffix A character vector indicating the suffixes
+#' that distinguish the two countsplit matrices to be used. Suffixes are
+#' appended onto input string/vector for \code{use_slot} for Seurat objects,
+#' \code{use_assay} for SingleCellExperiment objects, or \code{ArchR_matrix} for
+#' ArchR objects. When countsplitting is enabled, default = \code{NULL} uses
+#' suffixes "_1" and "_2".
 #' @param cluster_tree An optional dataframe containing the cluster IDs of each
 #' cell across the levels of a hierarchical clustering tree. Default = \code{NULL}
 #' will use the hierarchical clustering tree generation by function
@@ -90,6 +107,9 @@
 #' @param nn_matrix An optional matrix containing the nearest neighbor adjacency
 #' of the cells. Default = \code{NULL} will look for the adjacency matri(ces)
 #' generated by function \code{buildTree()}.
+#' @param snn_matrix An optional matrix containing the shared nearest neighbor
+#' adjacency of the cells. Default = \code{NULL} will look for the adjacency
+#' matri(ces) generated by function \code{buildTree()}.
 #' @param dist_matrix An optional distance matrix of cell to cell distances (based
 #' on dimensionality reduction cell embeddings). Default = \code{NULL} will look
 #' for the distance matri(ces) generated by function \code{buildTree()}.
@@ -104,13 +124,13 @@
 #' during the execution of this function. Can be set to \code{FALSE} for a
 #' cleaner output.
 #'
-#' @return Returns the object with the following added data stored under the provided
-#' key: \describe{
-#'   \item{final_clusters}{Clustering results for each provided threshold value}
-#'   \item{stepwise_clusters}{A dataframe of clustering results for each progressive step through the
-#'   clustering tree at each provided threshold value}
-#'   \item{comparison_records}{A dataframe of all recorded comparisons}
-#'   \item{feature_importance_records}{If 'collect_all_metrics' is true, a dataframe containing the feature importance scores for each feature across all comparisons}
+#' @return Returns the object with the following added data stored under the
+#' provided key: \describe{
+#'   \item{clusters}{Final clusters and stepwise cluster results for each
+#'   progressive pruning step}
+#'   \item{parameters}{Record of parameter values used}
+#'   \item{records}{Metadata for all recorded permutation test comparisons and
+#'   feature importance scores from all comparisons}
 #'   }
 #'
 #' @export
@@ -138,9 +158,12 @@ pruneTree <- function(object,
                       batch_labels = NULL,
                       cluster_params = NULL,
                       use_assay = NULL,
+                      countsplit = NULL,
+                      countsplit_suffix = NULL,
                       cluster_tree = NULL,
                       input_matrix = NULL,
                       nn_matrix = NULL,
+                      snn_matrix = NULL,
                       dist_matrix = NULL,
                       reduction = NULL,
                       n_cores = NULL,
@@ -150,6 +173,8 @@ pruneTree <- function(object,
   # ---------------------------------------------------------------------------
   # Retrieve/check parameter input validity
   # ---------------------------------------------------------------------------
+
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/2) Checking inputs and preparing object..")
 
   .validInput(object, "object", "pruneTree")
   .validInput(key, "key", list("pruneTree", object))
@@ -192,6 +217,9 @@ pruneTree <- function(object,
                              "cluster_params" = list(algorithm = 1,
                                                      group.singletons = TRUE),
                              "use_assay"  = NULL,
+                             "countsplit" = FALSE,
+                             "countsplit_suffix" = NULL,
+                             "countsplit_text" = "",
                              "random_seed" = 1)
 
   # For any parameters set to NULL, use parameters from buildTree or defaults
@@ -214,6 +242,9 @@ pruneTree <- function(object,
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
   cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
+  countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
+  countsplit_suffix <- .retrieveParam(countsplit_suffix, "countsplit_suffix", buildTree_parameters, default_parameters)
+  countsplit_text <- .retrieveParam(NULL, "countsplit_text", buildTree_parameters, default_parameters)
   random_seed <- .retrieveParam(random_seed, "random_seed", buildTree_parameters, default_parameters)
   # Verify parameter validity
   .validInput(alpha, "alpha")
@@ -231,7 +262,20 @@ pruneTree <- function(object,
   .validInput(min_reads, "min_reads")
   .validInput(cluster_params, "cluster_params")
   .validInput(use_assay, "use_assay", object)
+  .validInput(countsplit, "countsplit")
+  .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(random_seed, "random_seed")
+
+  # Add additional parameters if not provided
+  if (!any(names(cluster_params) == "verbose")) {
+    cluster_params$verbose <- FALSE
+  }
+  if (!any(names(cluster_params) == "algorithm")) {
+    cluster_params$algorithm <- 1
+  }
+  if (!any(names(cluster_params) == "group.singletons")) {
+    cluster_params$group.singletons <- TRUE
+  }
 
   # Extract cell IDs
   cell_IDs <- .getCellIDs(object, use_assay)
@@ -239,25 +283,32 @@ pruneTree <- function(object,
   .validInput(cluster_tree, "cluster_tree", object)
   .validInput(input_matrix, "input_matrix", cell_IDs)
   .validInput(nn_matrix, "nn_matrix", cell_IDs)
+  .validInput(snn_matrix, "snn_matrix", cell_IDs)
   .validInput(dist_matrix, "dist_matrix", object)
   .validInput(reduction, "reduction", list("pruneTree", object))
 
   # User supplied data should not be mixed with data from buildTree()
   if (methods::is(distance_awareness, "numeric") & distance_approx == FALSE) {
-    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(dist_matrix))) &
-        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(dist_matrix)))) {
-      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', or 'dist_matrix', it should be provided for all four.")
+    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix))) &
+        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix)))) {
+      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'dist_matrix', it should be provided for all five.")
     }
   } else if (methods::is(distance_awareness, "numeric") & distance_approx == TRUE) {
-    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(reduction))) &
-        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(reduction)))) {
-      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', or 'reduction', it should be provided for all four.")
+    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction))) &
+        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction)))) {
+      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'reduction', it should be provided for all five.")
     }
   } else {
-    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix))) &
-        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix)))) {
-      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', or 'nn_matrix', it should be provided for all three.")
+    if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix))) &
+        !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix)))) {
+      warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', or 'snn_matrix', it should be provided for all four.")
     }
+  }
+  # User supplied data cannot be used with countsplitting
+  if (!is.null(input_matrix) & countsplit == TRUE) {
+    warning("Countsplitting is not currently compatible with user-supplied data for 'input_matrix'. Parameter 'count_split' set to FALSE.")
+    countsplit <- FALSE
+    countsplit_suffix <- NULL
   }
 
   # Retrieve subtree data
@@ -282,7 +333,6 @@ pruneTree <- function(object,
   # ---------------------------------------------------------------------------
   # Prepare object
   # ---------------------------------------------------------------------------
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/2) Preparing object..")
 
   # Extract cluster tree
   if (is.null(cluster_tree)) {
@@ -314,28 +364,52 @@ pruneTree <- function(object,
     input_matrix <- BiocGenerics::t(input_matrix)
     input_matrices <- list("P0" = input_matrix)
     n_input_matrices <- 1
+    n_modalities <- 1
     # Feature names
     features <- colnames(input_matrix)
     # Clean up
     rm(input_matrix)
+    # Number of modalities & object type
+    if (methods::is(object, "ArchRProject")) {
+      object_type <- "ArchRProject"
+      .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
+    } else {
+      if (methods::is(object, "Seurat")) {
+        object_type <- "Seurat"
+      } else {
+        object_type <- "SingleCellExperiment"
+        .requirePackage("SingleCellExperiment", source = "bioc")
+      }
+    }
+    # Need n_modalities to validate some inputs
+    .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
+    .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, "pruneTree"))
+    .validInput(batch_labels, "batch_labels", object)
+    .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object_type, n_modalities))
   } else if (!is.null(buildTree_parameters)) {
     input_matrix_provided <- FALSE
     # Parameters for extracting matrices
     use_assay <- buildTree_parameters[["use_assay"]]
     use_slot <- buildTree_parameters[["use_slot"]]
     ArchR_matrix <- buildTree_parameters[["ArchR_matrix"]]
+    use_assay_build <- buildTree_parameters[["use_assay_build"]]
+    use_assay_prune <- buildTree_parameters[["use_assay_prune"]]
+    use_slot_build <- buildTree_parameters[["use_slot_build"]]
+    use_slot_prune <- buildTree_parameters[["use_slot_prune"]]
+    ArchR_matrix_build <- buildTree_parameters[["ArchR_matrix_build"]]
+    ArchR_matrix_prune <- buildTree_parameters[["ArchR_matrix_prune"]]
     # Number of modalities & object type
     if (methods::is(object, "ArchRProject")) {
       n_modalities <- max(length(ArchR_matrix), 1)
       object_type <- "ArchRProject"
-      .requirePackage("ArchR")
+      .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
     } else {
       n_modalities <- max(length(use_assay), 1)
       if (methods::is(object, "Seurat")) {
         object_type <- "Seurat"
       } else {
         object_type <- "SingleCellExperiment"
-        .requirePackage("SingleCellExperiment")
+        .requirePackage("SingleCellExperiment", source = "bioc")
       }
     }
     # Need n_modalities to validate some inputs
@@ -370,9 +444,9 @@ pruneTree <- function(object,
         input_matrix_list <- vector("list", n_modalities)
         for (m in 1:n_modalities) {
           # Match input arguments
-          use_assay_m <- .matchArg(use_assay, m)
-          use_slot_m <- .matchArg(use_slot, m)
-          ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
+          use_assay_prune_m <- .matchArg(use_assay_prune, m)
+          use_slot_prune_m <- .matchArg(use_slot_prune, m)
+          ArchR_matrix_prune_m <- .matchArg(ArchR_matrix_prune, m)
           normalization_method_m <- .matchArg(normalization_method, m)
           # Features
           if (length(use_features_subtree) > 1) {
@@ -381,9 +455,9 @@ pruneTree <- function(object,
             use_features_subtree_m <- use_features_subtree
           }
           input_matrix_list[[m]] <- .getMatrix(object = object,
-                                               use_assay = use_assay_m,
-                                               use_slot = use_slot_m,
-                                               ArchR_matrix = ArchR_matrix_m,
+                                               use_assay = use_assay_prune_m,
+                                               use_slot = use_slot_prune_m,
+                                               ArchR_matrix = ArchR_matrix_prune_m,
                                                use_features = use_features_subtree_m,
                                                exclude_features = exclude_features,
                                                use_cells = use_cells_subtree,
@@ -441,12 +515,11 @@ pruneTree <- function(object,
         input_matrix <- BiocGenerics::t(input_matrix)
         # Clean up
         rm(use_features_subtree_m)
-        rm(use_cells_subtree_m)
       } else {
         input_matrix <- .getMatrix(object = object,
-                                   use_assay = use_assay,
-                                   use_slot = use_slot,
-                                   ArchR_matrix = ArchR_matrix,
+                                   use_assay = use_assay_prune,
+                                   use_slot = use_slot_prune,
+                                   ArchR_matrix = ArchR_matrix_prune,
                                    use_features = use_features_subtree,
                                    exclude_features = exclude_features,
                                    use_cells = use_cells_subtree,
@@ -512,7 +585,6 @@ pruneTree <- function(object,
     names(input_matrices) <- subtree_names_filtered
     # Clean up
     rm(use_features_subtree)
-    rm(use_cells_subtree)
     rm(input_matrix)
   } else {
     stop("No 'input_matrix' supplied. Please supply valid input!")
@@ -538,6 +610,15 @@ pruneTree <- function(object,
     stop("No nearest neighbor adjacency matrix provided.")
   }
 
+  # Check on shared nearest neighbor matrix/matrices
+  if (!is.null(snn_matrix)) {
+    snn_matrix_provided <- TRUE
+  } else if (!is.null(buildTree_parameters)) {
+    snn_matrix_provided <- FALSE
+  } else {
+    stop("No shared nearest neighbor adjacency matrix provided.")
+  }
+
   # Reduction
   if (!is.null(reduction)) {
     reduction_provided <- TRUE
@@ -555,12 +636,18 @@ pruneTree <- function(object,
   # If 'Harmony' batch correction was used, extract batch labels
   if (batch_correction_method == "Harmony") {
     batches <- .retrieveData(object = object, key = key, type = "cell_metadata", name = batch_labels)
+    if ("Rle" %in% methods::is(batches)) {
+      batches <- methods::as(batches, "character")
+    }
     names(batches) <- cell_IDs
   }
 
   # Set downsampling rate
   if (downsampling_rate == "auto") {
     downsampling_rate <- min(1, (1/2)^(log10(length(cell_IDs)/5000)))
+    if (batch_correction_method == "none") {
+      downsampling_rate <- downsampling_rate*0.5
+    }
   }
 
   # Report object & parameter details
@@ -570,7 +657,9 @@ pruneTree <- function(object,
                        "\n - # of modalities: ", n_modalities,
                        "\n - # of subtrees: ", n_subtrees,
                        "\n - # of levels: ", n_levels,
-                       "\n - # of starting clusters: ", n_starting_clusters)
+                       "\n - # of starting clusters: ", n_starting_clusters,
+                       "\n - Countsplitting: ", countsplit,
+                       countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Alpha: ", alpha,
@@ -1453,7 +1542,9 @@ pruneTree <- function(object,
               }
             }
             # Build subtree
-            subtree_list <- .getTree(snn_matrix = .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs],
+            subtree_list <- .getTree(snn_matrix = `if`(!is.null(snn_matrix),
+                                                       snn_matrix[current_cell_IDs, current_cell_IDs],
+                                                       .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs]),
                                      nn_matrix = nn_matrices[[use_input_matrix]][current_cell_IDs, current_cell_IDs],
                                      dist_matrix = `if`(distance_approx == FALSE,
                                                         `if`(dist_matrix_provided == TRUE, dist_matrix[current_cell_IDs, current_cell_IDs],
@@ -1633,6 +1724,7 @@ pruneTree <- function(object,
                          "cluster_tree_provided" = cluster_tree_provided,
                          "input_matrix_provided" = input_matrix_provided,
                          "nn_matrix_provided" = nn_matrix_provided,
+                         "snn_matrix_provided" = snn_matrix_provided,
                          "dist_matrix_provided" = dist_matrix_provided,
                          "reduction_provided" = reduction_provided,
                          "random_seed" = random_seed)
