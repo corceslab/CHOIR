@@ -639,6 +639,10 @@ pruneTree <- function(object,
   results_of_underclustering_check <- c()
   underclustering_buffer <- FALSE
 
+  # Set of all cluster labels in original tree
+  compiled_cluster_labels <- unlist(apply(cluster_tree, 2, unique))
+  names(compiled_cluster_labels) <- NULL
+
   # -------------------------------------------------------------------------
   # Iterate through each level of the cluster tree (bottom-up)
   # -------------------------------------------------------------------------
@@ -675,7 +679,6 @@ pruneTree <- function(object,
   while (complete == FALSE) {
     # Get all cluster IDs at this level
     unique_parent_IDs <- unique(parent_IDs)
-    evolving_parent_IDs <- unique_parent_IDs
 
     # For each parent cluster
     for (parent in 1:length(unique_parent_IDs)) {
@@ -1186,8 +1189,9 @@ pruneTree <- function(object,
           }
           # Convert merge groups to new cluster names
           new_labels_list <- .getNewLabels(merge_groups = merge_group_list,
-                                           parent_labels = evolving_parent_IDs)
-          evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+                                           level = lvl,
+                                           compiled_labels = compiled_cluster_labels)
+          compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
           merge_group_labels <- new_labels_list[["merge_group_labels"]]
 
           # Update child_IDs
@@ -1365,8 +1369,9 @@ pruneTree <- function(object,
           }
           new_labels_list <- .getNewLabels(merge_groups = list(c(merge_pair$cluster1[1],
                                                                  merge_pair$cluster2[1])),
-                                           parent_labels = evolving_parent_IDs)
-          evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+                                           level = lvl,
+                                           compiled_labels = compiled_cluster_labels)
+          compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
           merged_label <- new_labels_list[["merge_group_labels"]][[1]]
 
           child_IDs[child_IDs %in% c(merge_pair$cluster1[1], merge_pair$cluster2[1])] <- merged_label
@@ -1441,6 +1446,12 @@ pruneTree <- function(object,
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
             use_input_matrix <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
+            if ("subtree_reductions" %in% names(buildTree_parameters)) {
+              subtree_reductions <- buildTree_parameters[["subtree_reductions"]]
+              if (subtree_reductions == FALSE) {
+                use_input_matrix <- "P0"
+              }
+            }
             # Build subtree
             subtree_list <- .getTree(snn_matrix = .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs],
                                      nn_matrix = nn_matrices[[use_input_matrix]][current_cell_IDs, current_cell_IDs],
