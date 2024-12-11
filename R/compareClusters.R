@@ -201,7 +201,6 @@ compareClusters <- function(object = NULL,
                             min_reads = NULL,
                             normalization_method = "none",
                             batch_labels = NULL,
-                            batch_LOO = FALSE,
                             use_assay = NULL,
                             use_slot = NULL,
                             ArchR_matrix = NULL,
@@ -238,7 +237,6 @@ compareClusters <- function(object = NULL,
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(min_reads, "min_reads")
   .validInput(batch_labels, "batch_labels", object)
-  .validInput(batch_LOO, "batch_LOO")
   .validInput(collect_all_metrics, "collect_all_metrics")
   .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
   .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
@@ -454,18 +452,14 @@ compareClusters <- function(object = NULL,
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
                    'batches_used', 'batch_mean_accuracies', 'batch_mean_variances',
-                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
-                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
-                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
                    'connectivity', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
                                     `if`(!is.null(batch_labels), 20:22, NULL),
-                                    `if`(batch_LOO == TRUE, 23:29, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
-                                    31:32)]
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 23, NULL),
+                                    24:25)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 

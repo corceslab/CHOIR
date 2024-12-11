@@ -1001,7 +1001,6 @@
                      min_reads = NULL,
                      batch_correction_method = NULL,
                      batches = NULL,
-                     batch_LOO = NULL,
                      tree_records = NULL,
                      tree_id = "P0",
                      n_cores,
@@ -1051,7 +1050,6 @@
                                     min_reads = min_reads,
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
-                                    batch_LOO = batch_LOO,
                                     tree_records = tree_records,
                                     tree_id = tree_id,
                                     n_cores = n_cores,
@@ -1568,7 +1566,6 @@
                              min_reads,
                              batch_correction_method,
                              batches,
-                             batch_LOO,
                              tree_records,
                              tree_id,
                              n_cores,
@@ -1596,18 +1593,14 @@
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
                    'batches_used', 'batch_mean_accuracies', 'batch_mean_variances',
-                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
-                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
-                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
                    'connectivity', 'root_distance', 'subtree_distance', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
                                     `if`(batch_correction_method == "Harmony", 20:22, NULL),
-                                    `if`(batch_LOO == TRUE, 23:29, NULL),
-                                    `if`(min_connections > 0, 30, NULL),
-                                    31:32)]
+                                    `if`(min_connections > 0, 23, NULL),
+                                    24:25)]
 
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics

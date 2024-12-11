@@ -297,7 +297,6 @@ buildTree <- function(object,
                       batch_correction_method = "none",
                       batch_correction_params = list(),
                       batch_labels = NULL,
-                      batch_LOO = FALSE,
                       neighbor_params = list(),
                       cluster_params = list(algorithm = 1,
                                             group.singletons = TRUE),
@@ -364,7 +363,8 @@ buildTree <- function(object,
         } else if ("Assay" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
           seurat_version <- "v4"
         } else {
-          stop("Assay '", Seurat::DefaultAssay(object), "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+          stop("Assay '", Seurat::DefaultAssay(object),
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
         }
       } else {
         if ("Assay5" %in% methods::is(object[[use_assay[1]]])) {
@@ -372,7 +372,8 @@ buildTree <- function(object,
         } else if ("Assay" %in% methods::is(object[[use_assay[1]]])) {
           seurat_version <- "v4"
         } else {
-          stop("Assay '", use_assay[1], "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+          stop("Assay '", use_assay[1],
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
         }
       }
     } else if (methods::is(object, "SingleCellExperiment")) {
@@ -398,7 +399,6 @@ buildTree <- function(object,
   .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, reduction_method))
   .validInput(batch_correction_params, "batch_correction_params", list(object, ArchR_matrix, use_assay, batch_correction_method))
   .validInput(batch_labels, "batch_labels", object)
-  .validInput(batch_LOO, "batch_LOO")
   .validInput(neighbor_params, "neighbor_params", list(object, n_modalities))
   .validInput(cluster_params, "cluster_params")
   .validInput(n_cores, "n_cores")
@@ -521,7 +521,8 @@ buildTree <- function(object,
       # ArchR object
       # Set value of 'ArchR_matrix' if necessary
       if (is.null(ArchR_matrix)) {
-        ArchR_matrix <- "TileMatrix"
+        ArchR_matrix <- "GeneScoreMatrix"
+        warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
       }
       # Set new values
       use_assay_build <- NULL
@@ -919,48 +920,6 @@ buildTree <- function(object,
                                                                              return.only.var.genes = FALSE,
                                                                              seed.use = random_seed,
                                                                              verbose = FALSE)@assays$SCT@scale.data)
-            } else if (normalization_method_m == "TFIDF") {
-              # TF-IDF adapted from Stuart et al.
-              row_sums <- rowSums(input_matrix_list[[m]])
-              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
-              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
-              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
-            } else if (normalization_method_m == "BinaryTFIDF") {
-              # Binarize matrix
-              input_matrix_list[[m]] <- input_matrix_list[[m]][input_matrix_list[[m]] > 0] <- 1
-              # TF-IDF adapted from Stuart et al.
-              row_sums <- rowSums(input_matrix_list[[m]])
-              idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
-              input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
-              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
-            } else if (normalization_method_m == "ReadsInTSS") {
-              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-              # Fetch ReadsInTSS
-              reads_in_TSS <- .retrieveData(object,
-                                            key = "CHOIR",
-                                            type = "cell_metadata",
-                                            name = "ReadsInTSS")
-              names(reads_in_TSS) <- cell_IDs
-              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
-              # Divide each cell's values by cell's ReadsInTSS
-              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
-              # Multiply by scale factor 10000
-              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
-            } else if (normalization_method_m == "LogReadsInTSS") {
-              ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-              # Fetch ReadsInTSS
-              reads_in_TSS <- .retrieveData(object,
-                                            key = "CHOIR",
-                                            type = "cell_metadata",
-                                            name = "ReadsInTSS")
-              names(reads_in_TSS) <- cell_IDs
-              reads_in_TSS <- reads_in_TSS[cell_IDs_i]
-              # Divide each cell's values by cell's ReadsInTSS
-              input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
-              # Multiply by scale factor 10000
-              input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
-              # Log transform
-              input_matrix_list[[m]] <- log1p(input_matrix_list[[m]])
             }
           }
           input_matrix <- do.call(rbind, input_matrix_list)
@@ -979,50 +938,6 @@ buildTree <- function(object,
                                                                  return.only.var.genes = FALSE,
                                                                  seed.use = random_seed,
                                                                  verbose = FALSE)@assays$SCT@scale.data)
-          } else if (normalization_method == "TFIDF") {
-            # TF-IDF adapted from Stuart et al.
-            input_matrix <- as(input_matrix, "dgCMatrix")
-            row_sums <-  Matrix::rowSums(input_matrix)
-            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
-            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
-            input_matrix <- log1p(input_matrix*10000)
-          } else if (normalization_method == "BinaryTFIDF") {
-            # Binarize matrix
-            input_matrix <- input_matrix[input_matrix > 0] <- 1
-            # TF-IDF adapted from Stuart et al.
-            input_matrix <- as(input_matrix, "dgCMatrix")
-            row_sums <-  Matrix::rowSums(input_matrix)
-            idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
-            input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
-            input_matrix <- log1p(input_matrix*10000)
-          } else if (normalization_method == "ReadsInTSS") {
-            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-            # Fetch ReadsInTSS
-            reads_in_TSS <- .retrieveData(object,
-                                          key = "CHOIR",
-                                          type = "cell_metadata",
-                                          name = "ReadsInTSS")
-            names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
-            # Divide each cell's values by cell's ReadsInTSS
-            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
-            # Multiply by scale factor 10000
-            input_matrix <- input_matrix*10000
-          } else if (normalization_method == "LogReadsInTSS") {
-            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-            # Fetch ReadsInTSS
-            reads_in_TSS <- .retrieveData(object,
-                                          key = "CHOIR",
-                                          type = "cell_metadata",
-                                          name = "ReadsInTSS")
-            names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[cell_IDs_i]
-            # Divide each cell's values by cell's ReadsInTSS
-            input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
-            # Multiply by scale factor 10000
-            input_matrix <- input_matrix*10000
-            # Log transform
-            input_matrix <- log1p(input_matrix)
           }
         }
         # Progress
@@ -1087,7 +1002,7 @@ buildTree <- function(object,
         # Progress
         tick_amount <- subtree_weights[P_i]*0.05
         if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
           hour_start_time <- Sys.time()
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                             " : ", round((percent_done + tick_amount)), "% (Subtree ", i,
@@ -1153,7 +1068,7 @@ buildTree <- function(object,
         # Progress
         tick_amount <- subtree_weights[P_i]*0.05
         if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
           hour_start_time <- Sys.time()
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                             " : ", round((percent_done + tick_amount)), "% (Subtree ", i,
@@ -1197,7 +1112,6 @@ buildTree <- function(object,
                                       min_reads = min_reads,
                                       batch_correction_method = batch_correction_method,
                                       batches = batches,
-                                      batch_LOO = batch_LOO,
                                       tree_records = tree_records,
                                       tree_id = paste0("P", i, "_", j),
                                       n_cores = n_cores,
@@ -1232,7 +1146,7 @@ buildTree <- function(object,
           # Progress
           tick_amount <- subtree_weights[P_i]*0.75*(1/P_i_clusters_n)
           if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                         (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                         (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
             hour_start_time <- Sys.time()
             pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                               " : ", round((percent_done + tick_amount)), "% (Subtree ", i,
@@ -1255,7 +1169,7 @@ buildTree <- function(object,
         # Progress
         tick_amount <- subtree_weights[P_i]*0.05
         if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
           hour_start_time <- Sys.time()
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                             " : ", round((percent_done + tick_amount)), "% (Subtree ", i,
@@ -1371,7 +1285,6 @@ buildTree <- function(object,
                          "batch_correction_method" = batch_correction_method,
                          "batch_correction_params" = batch_correction_params,
                          "batch_labels" = batch_labels,
-                         "batch_LOO" = batch_LOO,
                          "neighbor_params" = neighbor_params,
                          "cluster_params" = cluster_params,
                          "use_assay" = use_assay,

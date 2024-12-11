@@ -26,7 +26,6 @@ pruneTree(
   normalization_method = NULL,
   batch_correction_method = NULL,
   batch_labels = NULL,
-  batch_LOO = NULL,
   cluster_params = NULL,
   use_assay = NULL,
   countsplit = NULL,

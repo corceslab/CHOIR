@@ -28,7 +28,6 @@ compareClusters(
   min_reads = NULL,
   normalization_method = "none",
   batch_labels = NULL,
-  batch_LOO = FALSE,
   use_assay = NULL,
   use_slot = NULL,
   ArchR_matrix = NULL,

@@ -246,7 +246,6 @@ pruneTree <- function(object,
                       normalization_method = NULL,
                       batch_correction_method = NULL,
                       batch_labels = NULL,
-                      batch_LOO = NULL,
                       cluster_params = NULL,
                       use_assay = NULL,
                       countsplit = NULL,
@@ -305,7 +304,6 @@ pruneTree <- function(object,
                              "normalization_method" = "none",
                              "batch_correction_method" = "none",
                              "batch_labels" = NULL,
-                             "batch_LOO" = FALSE,
                              "cluster_params" = list(algorithm = 1,
                                                      group.singletons = TRUE),
                              "use_assay"  = NULL,
@@ -332,7 +330,6 @@ pruneTree <- function(object,
   normalization_method <- .retrieveParam(normalization_method, "normalization_method", buildTree_parameters, default_parameters)
   batch_correction_method <- .retrieveParam(batch_correction_method, "batch_correction_method", buildTree_parameters, default_parameters)
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
-  batch_LOO <- .retrieveParam(batch_LOO, "batch_LOO", buildTree_parameters, default_parameters)
   cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
   countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
@@ -560,48 +557,6 @@ pruneTree <- function(object,
                                                                            return.only.var.genes = FALSE,
                                                                            seed.use = random_seed,
                                                                            verbose = FALSE)@assays$SCT@scale.data)
-          } else if (normalization_method_m == "TFIDF") {
-            # TF-IDF adapted from Stuart et al.
-            row_sums <- rowSums(input_matrix_list[[m]])
-            idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
-            input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
-            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
-          } else if (normalization_method_m == "BinaryTFIDF") {
-            # Binarize matrix
-            input_matrix_list[[m]] <- input_matrix_list[[m]][input_matrix_list[[m]] > 0] <- 1
-            # TF-IDF adapted from Stuart et al.
-            row_sums <- rowSums(input_matrix_list[[m]])
-            idf   <- as(ncol(input_matrix_list[[m]]) / row_sums, "sparseVector")
-            input_matrix_list[[m]] <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix_list[[m]]
-            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]]*10000)
-          } else if (normalization_method_m == "ReadsInTSS") {
-            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-            # Fetch ReadsInTSS
-            reads_in_TSS <- .retrieveData(object,
-                                          key = "CHOIR",
-                                          type = "cell_metadata",
-                                          name = "ReadsInTSS")
-            names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
-            # Divide each cell's values by cell's ReadsInTSS
-            input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
-            # Multiply by scale factor 10000
-            input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
-          } else if (normalization_method_m == "LogReadsInTSS") {
-            ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-            # Fetch ReadsInTSS
-            reads_in_TSS <- .retrieveData(object,
-                                          key = "CHOIR",
-                                          type = "cell_metadata",
-                                          name = "ReadsInTSS")
-            names(reads_in_TSS) <- cell_IDs
-            reads_in_TSS <- reads_in_TSS[use_cells_subtree]
-            # Divide each cell's values by cell's ReadsInTSS
-            input_matrix_list[[m]] <- sweep(input_matrix_list[[m]], 1, reads_in_TSS, "/")
-            # Multiply by scale factor 10000
-            input_matrix_list[[m]] <- input_matrix_list[[m]]*10000
-            # Log transform
-            input_matrix_list[[m]] <- log1p(input_matrix_list[[m]])
           }
         }
         input_matrix <- do.call(rbind, input_matrix_list)
@@ -622,50 +577,6 @@ pruneTree <- function(object,
                                                                return.only.var.genes = FALSE,
                                                                seed.use = random_seed,
                                                                verbose = FALSE)@assays$SCT@scale.data)
-        } else if (normalization_method == "TFIDF") {
-          # TF-IDF adapted from Stuart et al.
-          input_matrix <- as(input_matrix, "dgCMatrix")
-          row_sums <-  Matrix::rowSums(input_matrix)
-          idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
-          input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
-          input_matrix <- log1p(input_matrix*10000)
-        } else if (normalization_method == "BinaryTFIDF") {
-          # Binarize matrix
-          input_matrix <- input_matrix[input_matrix > 0] <- 1
-          # TF-IDF adapted from Stuart et al.
-          input_matrix <- as(input_matrix, "dgCMatrix")
-          row_sums <-  Matrix::rowSums(input_matrix)
-          idf   <- as(ncol(input_matrix) / row_sums, "sparseVector")
-          input_matrix <- as(Matrix::Diagonal(x = as.vector(idf)), "sparseMatrix") %*% input_matrix
-          input_matrix <- log1p(input_matrix*10000)
-        } else if (normalization_method == "ReadsInTSS") {
-          ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-          # Fetch ReadsInTSS
-          reads_in_TSS <- .retrieveData(object,
-                                        key = "CHOIR",
-                                        type = "cell_metadata",
-                                        name = "ReadsInTSS")
-          names(reads_in_TSS) <- cell_IDs
-          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
-          # Divide each cell's values by cell's ReadsInTSS
-          input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
-          # Multiply by scale factor 10000
-          input_matrix <- input_matrix*10000
-        } else if (normalization_method == "LogReadsInTSS") {
-          ### NEED TO ADD CODE TO CHECK IF ReadsInTSS column exists in metadata
-          # Fetch ReadsInTSS
-          reads_in_TSS <- .retrieveData(object,
-                                        key = "CHOIR",
-                                        type = "cell_metadata",
-                                        name = "ReadsInTSS")
-          names(reads_in_TSS) <- cell_IDs
-          reads_in_TSS <- reads_in_TSS[use_cells_subtree]
-          # Divide each cell's values by cell's ReadsInTSS
-          input_matrix <- sweep(input_matrix, 1, reads_in_TSS, "/")
-          # Multiply by scale factor 10000
-          input_matrix <- input_matrix*10000
-          # Log transform
-          input_matrix <- log1p(input_matrix)
         }
         input_matrix <- BiocGenerics::t(input_matrix)
       }
@@ -673,7 +584,6 @@ pruneTree <- function(object,
       input_matrices[[subtree]] <- input_matrix
       # Add features to vector
       features <- unique(c(features, colnames(input_matrix)))
-
     }
     names(input_matrices) <- subtree_names_filtered
     # Clean up
@@ -769,7 +679,6 @@ pruneTree <- function(object,
                        "\n - Distance approximation: ", distance_approx,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
-                       "\n - Batch leave-one-out adjustment: ", batch_LOO,
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
@@ -788,19 +697,15 @@ pruneTree <- function(object,
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
                    'batches_used', 'batch_mean_accuracies', 'batch_var_accuracies',
-                   'batch_LOO_mean_accuracies', 'batch_LOO_var_accuracies', 'batch_LOO_mean_errors',
-                   'batch_LOO_mean_permuted_accuracies', 'batch_LOO_var_permuted_accuracies',
-                   'batch_LOO_percentile_accuracies', 'batch_LOO_percentile_variances',
                    'connectivity', 'root_distance', 'subtree_distance', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
                                     `if`(batch_correction_method == "Harmony", 20:22, NULL),
-                                    `if`(batch_LOO == TRUE, 23:29, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 30, NULL),
-                                    `if`(methods::is(distance_awareness, "numeric"), 31:32, NULL),
-                                    33:34)]
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 23, NULL),
+                                    `if`(methods::is(distance_awareness, "numeric"), 24:25, NULL),
+                                    26:27)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 
@@ -1014,7 +919,7 @@ pruneTree <- function(object,
                 tick_amount <- (1/(n_child_clusters - child1))*0.9*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
                 pb$tick(tick_amount)
                 if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                               (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                               (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
                   hour_start_time <- Sys.time()
                   pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                                     " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
@@ -1029,7 +934,7 @@ pruneTree <- function(object,
             tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
             pb$tick(tick_amount)
             if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                           (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                           (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
               hour_start_time <- Sys.time()
               pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                                 " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
@@ -1407,7 +1312,7 @@ pruneTree <- function(object,
           tick_amount <- 0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
           pb$tick(tick_amount)
           if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                         (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                         (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
             hour_start_time <- Sys.time()
             pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                               " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
@@ -1422,7 +1327,7 @@ pruneTree <- function(object,
         tick_amount <- 0.1*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
         pb$tick(tick_amount)
         if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                       (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
           hour_start_time <- Sys.time()
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                             " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
@@ -1591,7 +1496,7 @@ pruneTree <- function(object,
       tick_amount <- 0.1*level_weights[paste0("L", lvl)]
       pb$tick(tick_amount)
       if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                     (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                     (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
         hour_start_time <- Sys.time()
         pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                           " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
@@ -1668,7 +1573,6 @@ pruneTree <- function(object,
                                      batches = `if`(batch_correction_method == "Harmony",
                                                     batches[current_cell_IDs],
                                                     NULL),
-                                     batch_LOO = batch_LOO,
                                      tree_records = data.frame(tree_type = NULL,
                                                                tree_name = NULL,
                                                                num_cells = NULL,
@@ -1820,7 +1724,6 @@ pruneTree <- function(object,
                          "normalization_method" = normalization_method,
                          "batch_correction_method" = batch_correction_method,
                          "batch_labels" = batch_labels,
-                         "batch_LOO" = batch_LOO,
                          "cluster_tree_provided" = cluster_tree_provided,
                          "input_matrix_provided" = input_matrix_provided,
                          "nn_matrix_provided" = nn_matrix_provided,

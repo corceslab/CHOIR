@@ -7,78 +7,126 @@
 #' For multi-modal data, optionally supply parameter inputs as vectors/lists
 #' that sequentially specify the value for each modality.
 #'
-#' @param object An object of class 'Seurat' (any version, but v5 is recommended),
-#' 'SingleCellExperiment', or 'ArchRProject'.
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{ArchRProject}. For multi-omic data, we recommend using
+#' \code{ArchRProject} objects.
 #' @param key The name under which CHOIR-related data for this run is stored in
-#' the object. Defaults to 'CHOIR'.
-#' @param distance_approx A boolean value indicating whether or not to use
-#' approximate distance calculations. Default = TRUE will use centroid-based
-#' distances.
+#' the object. Defaults to “CHOIR”.
+#' @param distance_approx A Boolean value indicating whether or not to use
+#' approximate distance calculations. Defaults to \code{TRUE}, which will use
+#' centroid-based distances. Setting distance approximation to \code{FALSE} will
+#' substantially increase the computational time and memory required,
+#' particularly for large datasets. Using approximated distances (\code{TRUE})
+#' rather than absolute distances (\code{FALSE}) is unlikely to have a
+#' meaningful effect on the distance thresholds imposed by CHOIR.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
-#' CHOIR after normalization, except in cases when the user wishes to use
-#' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
-#' 'SCTransform'. Defaults to 'none'.
+#' CHOIR after normalization, except when the user wishes to use
+#' \code{Seurat SCTransform} normalization. Permitted values are “none” or
+#' “SCTransform”. Defaults to “none”. Because CHOIR has not been tested
+#' thoroughly with \code{SCTransform} normalization, we do not recommend this
+#' approach at this time. For multi-omic datasets, provide a vector with a value
+#' corresponding to each provided value of \code{use_assay} or
+#' \code{ArchR_matrix} in the same order.
 #' @param reduction_method A character string or vector indicating which
-#' dimensionality reduction method to use. Permitted values are 'PCA' for
-#' principal component analysis, 'LSI' for latent semantic indexing, and
-#' 'IterativeLSI' for iterative latent semantic indexing. Default = \code{NULL}
-#' will specify a method based on the input data type.
-#' @param reduction_params A list of additional parameters to be passed to
-#' the selected dimensionality reduction method.
-#' @param n_var_features A numerical value indicating how many variable
-#' features to identify. Default = \code{NULL} will use 2000 features, or 25000
-#' features for ATAC-seq data.
-#' @param batch_correction_method A character string or vector indicating which
-#' batch correction method to use. Permitted values are 'Harmony' and
-#' 'none'. Defaults to 'none'.
+#' dimensionality reduction method to use. Permitted values are “PCA” for
+#' principal component analysis, “LSI” for latent semantic indexing, and
+#' “IterativeLSI” for iterative latent semantic indexing. These three methods
+#' implement the \code{Seurat} function \code{RunPCA}, the \code{Signac}
+#' function \code{RunSVD}, and the \code{ArchR} function \code{addIterativeLSI},
+#' respectively. The default value, \code{NULL}, will select a method based on
+#' the input data type, specifically “IterativeLSI” for \code{ArchR} objects,
+#' “LSI” for \code{Seurat} or \code{SingleCellExperiment} objects when parameter
+#' \code{atac} is \code{TRUE}, and “PCA” in all other cases. For multi-omic
+#' datasets, provide a vector with a value corresponding to each provided value
+#' of \code{use_assay} or \code{ArchR_matrix} in the same order.
+#' @param reduction_params A list of additional parameters to be passed to the
+#' selected dimensionality reduction method. By default, CHOIR will use the
+#' default parameter settings of the dimensionality reduction method indicated
+#' by the input to parameter reduction_method. Input to this parameter is passed
+#' to each downstream dimensionality reduction method and will overwrite or
+#' augment those defaults. Altering the performance of the dimensionality
+#' reduction in CHOIR will affect downstream clustering results, but not in ways
+#' that are easily predictable.
+#' @param n_var_features A numerical value indicating how many variable features
+#' to identify. Defaults to 2000 features for most data inputs, or 25000
+#' features for ATAC-seq data. Increasing the number of features may increase
+#' the computational time and memory required. If the provided value is either
+#' substantially higher or lower, instances of underclustering may occur. For
+#' multi-omic datasets, provide a vector with a value corresponding to each
+#' provided value of \code{use_assay} or \code{ArchR_matrix} in the same order.
+#' @param batch_correction_method A character string indicating which batch
+#' correction method to use. Permitted values are “Harmony” and “none”. Defaults
+#' to “none”. Batch correction should only be used when the different batches
+#' are not expected to also have unique cell types or cell states. Using batch
+#' correction would ensure that clusters do not originate from a single batch,
+#' thereby making the final cluster calls more conservative.
 #' @param batch_correction_params A list of additional parameters to be passed
 #' to the selected batch correction method for each iteration. Only applicable
-#' when 'batch_correction_method' = 'Harmony'.
-#' @param batch_labels If applying batch correction, the name of the column
-#' containing the batch labels. Defaults to \code{NULL}.
+#' when \code{batch_correction_method} is “Harmony”.
+#' @param batch_labels A character string that, if applying batch correction,
+#' specifies the name of the column in the input object metadata containing the
+#' batch labels. Defaults to \code{NULL}.
 #' @param neighbor_params A list of additional parameters to be passed to
-#' \code{Seurat::FindNeighbors()} (or, in the case of multi-modal data for
-#' Seurat or SingleCellExperiment objects,
-#' \code{Seurat::FindMultiModalNeighbors()}).
+#' \code{Seurat} function \code{FindNeighbors} (or, in the case of multi-modal
+#' data for \code{Seurat} or \code{SingleCellExperiment} objects, \code{Seurat}
+#' function \code{FindMultiModalNeighbors}).
 #' @param cluster_params A list of additional parameters to be passed to
-#' Seurat::FindClusters() for clustering at each level of the tree. Note that if
-#' 'group.singletons' is set to TRUE, clusters are relabeled such that each
-#' singleton constitutes its own cluster.
-#' @param use_assay For Seurat or SingleCellExperiment objects, a character
-#' string or vector indicating the assay(s) to use in the provided object.
-#' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{log_counts} assay for SingleCellExperiment objects.
-#' @param use_slot For Seurat objects, a character string or vector indicating
-#' the slot(s) (Seurat v4) or layer(s) (Seurat v5) to use in the provided object.
-#' Default = \code{NULL} will choose a slot/layer based on the selected assay.
-#' If a non-standard assay is provided, do not leave \code{use_slot} as \code{NULL}.
-#' @param ArchR_matrix For ArchR objects, a character string or vector
-#' indicating which matri(ces) to use in the provided object. Default =
-#' \code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
-#' 'GeneExpressionMatrix' for RNA-seq data.
-#' @param ArchR_depthcol For ArchR objects, a character string or vector
-#' indicating which column to use for correlation with sequencing depth.
-#' Default = \code{NULL} will use the 'nFrags' column for ATAC-seq data or the
-#' 'Gex_nUMI' for RNA-seq data.
+#' \code{Seurat} function \code{FindClusters} for clustering at each level of
+#' the tree. By default, when the \code{Seurat::FindClusters} parameter
+#' \code{group.singletons} is set to \code{TRUE}, CHOIR relabels clusters such
+#' that each singleton constitutes its own cluster.
+#' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
+#' character string or vector indicating the assay(s) to use in the provided
+#' object. The default value, \code{NULL}, will choose the current active assay
+#' for \code{Seurat} objects and the \code{logcounts} assay for
+#' \code{SingleCellExperiment} objects.
+#' @param use_slot For \code{Seurat} objects, a character string or vector
+#' indicating the layers(s)—previously known as slot(s)—to use in the provided
+#' object. The default value, \code{NULL}, will choose a layer/slot based on the
+#' selected assay. If an assay other than "RNA", "sketch”, "SCT”, or
+#' "integrated" is provided, you must specify a value for \code{use_slot}. For
+#' multi-omic datasets, provide a vector with a value corresponding to each
+#' provided value of \code{use_assay} in the same order.
+#' @param ArchR_matrix For \code{ArchR} objects, a character string or vector
+#' indicating which matrix or matrices to use in the provided object. The
+#' default value, \code{NULL}, will use the “GeneScoreMatrix” for ATAC-seq data
+#' or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
+#' provide a vector with a value corresponding to each modality.
+#' @param ArchR_depthcol For \code{ArchR} objects, a character string or vector
+#' indicating which column to use for correlation with sequencing depth. The
+#' default value, \code{NULL}, will use the “nFrags” column for ATAC-seq data or
+#' the “Gex_nUMI” for RNA-seq data. For multi-omic datasets, provide a vector
+#' with a value corresponding to each provided value of \code{ArchR_matrix} in
+#' the same order.
 #' @param reduction An optional matrix of dimensionality reduction cell
-#' embeddings to be used for subsequent clustering steps. Defaults to
-#' \code{NULL}, whereby dimensionality reduction(s) will be calculated using
-#' method specified by 'reduction_method' as part of the \code{buildTree()}
-#' function.
-#' @param var_features An optional character vector of variable features to be
-#' used for subsequent clustering steps. Defaults to \code{NULL}, whereby
-#' variable features will be calculated as part of the \code{buildTree()}
-#' function.
-#' @param atac A boolean value or vector indicating whether the provided data is
-#' ATAC-seq data. Defaults to \code{FALSE}.
-#' @param n_cores A numeric value indicating the number of cores to use for
-#' parallelization. Default = \code{NULL} will use the number of available cores
-#' minus 2.
-#' @param random_seed A numeric value indicating the random seed to be used.
-#' @param verbose A boolean value indicating whether to use verbose output
-#' during the execution of this function. Can be set to \code{FALSE} for a
-#' cleaner output.
+#' embeddings provided by the user for subsequent clustering steps. By default,
+#' this parameter is set to \code{NULL}, and the dimensionality reduction(s)
+#' will be calculated using the method specified by the \code{reduction_method}
+#' parameter.
+#' @param var_features An optional character vector of names of variable
+#' features to be used for subsequent clustering steps. By default, this
+#' parameter is set to \code{NULL}, and variable features will be calculated as
+#' part of running CHOIR. Input to this parameter is required when a
+#' dimensionality reduction is supplied to parameter \code{reduction}. For
+#' multi-omic datasets, concatenate feature names for all modalities.
+#' @param atac A Boolean value or vector indicating whether the provided data is
+#' ATAC-seq data. For multi-omic datasets, provide a vector with a value
+#' corresponding to each provided value of \code{use_assay} or
+#' \code{ArchR_matrix} in the same order. Defaults to \code{FALSE}.
+#' @param n_cores A numerical value indicating the number of cores to use for
+#' parallelization. By default, CHOIR will use the number of available cores
+#' minus 2. CHOIR is parallelized at the computation of permutation test
+#' iterations. Therefore, any number of cores up to the number of iterations
+#' will theoretically decrease the computational time required. In practice,
+#' 8–16 cores are recommended for datasets up to 500,000 cells.
+#' @param random_seed A numerical value indicating the random seed to be used.
+#' Defaults to 1. CHOIR uses randomization throughout the generation and pruning
+#' of the clustering tree. Therefore, changing the random seed may yield slight
+#' differences in the final cluster assignments.
+#' @param verbose A Boolean value indicating whether to use verbose output
+#' during the execution of CHOIR. Defaults to \code{TRUE}, but can be set to
+#' \code{FALSE} for a cleaner output.
 #'
 #' @return Returns the object with the following added data stored under the
 #' provided key: \describe{

@@ -31,7 +31,6 @@ buildTree(
   batch_correction_method = "none",
   batch_correction_params = list(),
   batch_labels = NULL,
-  batch_LOO = FALSE,
   neighbor_params = list(),
   cluster_params = list(algorithm = 1, group.singletons = TRUE),
   use_assay = NULL,
