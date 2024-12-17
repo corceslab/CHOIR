@@ -738,35 +738,27 @@ getRecords <- function(object,
               "compiled_cluster_labels" = compiled_labels))
 }
 
-# Show ASCII CHOIR logo ---------------------------
-
-.showLogo<- function() {
-  message("
-                           ___
-                         /  /\\ \\
-                         \\  \\/ /
-    _____  __    __      . \\  /         __   _____
-  /      ||  |  |  |    /  / \\ \\       |  | |   _  \\
- |  ,----'|  |__|  |  /   /   .---.    |  | |  |_|  |
- |  |     |   __   | |   |  /  ___  \\  |  | |      /
- |  `----.|  |  |  | \\   \\  `-’   |  | |  | |  |\\  \\__.
-  \\______||__|  |__|  `.   `-._ \\/  /  |__| | _| `.___|
-                         ` ----\\ \\/
-                          /`.__/  |
-                          \\.____ /
-
-")
-}
-
 # Startup ---------------------------
 #
 # Adapted from ArchR code, Jeffrey Granja & Ryan Corces
 
 .onAttach <- function(libname, pkgname){
   # ASCII CHOIR logo
-  .showLogo()
+  packageStartupMessage("                           ___
+                         /  /\\ \\
+                         \\  \\/ /
+    _____  __    __      . \\  /         __   _____
+  /      ||  |  |  |    /  / \\ \\       |  | |   _  \\
+ |  ,----'|  |__|  |  /   /   .---.    |  | |  |_|  |
+ |  |     |   __   | |   |  /  ___  \\  |  | |      /
+ |  `----.|  |  |  | \\   \\  `-'   |  | |  | |  |\\  \\__.
+  \\______||__|  |__|  `.   `-._ \\/  /  |__| | _| `.___|
+                         ` ----\\ \\/
+                          /`.__/  |
+                          \\.____ /
+")
   # package startup
-  v <- packageVersion("CHOIR")
+  v <- utils::packageVersion("CHOIR")
   packageStartupMessage("CHOIR : Version ", v,
                         "\nFor more information see our website : www.CHOIRclustering.com\nIf you encounter a bug please report : https://github.com/CorcesLab/CHOIR/issues")
 }
