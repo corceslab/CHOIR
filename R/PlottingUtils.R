@@ -156,10 +156,11 @@ runCHOIRumap <- function(object,
 #' according to the clusters identified by CHOIR. Additionally permits plotting
 #' mean prediction accuracy scores for pairs of clusters as an overlay.
 #'
-#' @param object An object of class 'Seurat', 'SingleCellExperiment', or
-#' 'ArchRProject' that has undergone CHOIR clustering.
-#' @param key The name under which CHOIR-related data for this run is retrieved
-#' from the object. Defaults to 'CHOIR'.
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{ArchRProject} that has undergone CHOIR clustering. For multi-omic
+#' data, we recommend using \code{ArchRProject} objects.
+#' @param key The name under which CHOIR-related data for this run is stored in
+#' the object. Defaults to “CHOIR”.
 #' @param reduction A character vector indicating which CHOIR subtree
 #' dimensionality reduction to plot (e.g., 'P0_reduction_UMAP',
 #' 'P1_reduction_UMAP'). Default = \code{NULL} will plot the UMAP of the
@@ -170,13 +171,13 @@ runCHOIRumap <- function(object,
 #' @param cells Vector of cell names to plot. Default is all cells.
 #' @param highlight_cells Vector of cell names to highlight. Default =
 #' \code{NULL}.
-#' @param label A boolean value indicating whether to label groups.
+#' @param label A Boolean value indicating whether to label groups.
 #' Defaults to \code{TRUE}.
-#' @param legend A boolean value indicating whether to include a legend.
+#' @param legend A Boolean value indicating whether to include a legend.
 #' Defaults to \code{TRUE}.
-#' @param accuracy_scores A boolean value indicating whether to overlay pairwise
+#' @param accuracy_scores A Boolean value indicating whether to overlay pairwise
 #' cluster comparison accuracy scores onto UMAP. Default = \code{TRUE}.
-#' @param plot_nearest A boolean value indicating whether to only plot the
+#' @param plot_nearest A Boolean value indicating whether to only plot the
 #' accuracy score for each cluster's nearest neighboring cluster. Only relevant
 #' if \code{accuracy_scores} is \code{TRUE}. Defaults to \code{TRUE}.
 #' @param ... Extra parameters passed to \code{Seurat::DimPlot()}.

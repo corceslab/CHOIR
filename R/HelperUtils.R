@@ -2,6 +2,32 @@
 # General helper functions
 # ---------------------------------------------------------------------------
 
+#' Retrieve all CHOIR metadata
+#'
+#' Retrieve all stored CHOIR data from object
+#'
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{ArchRProject} that has undergone CHOIR clustering.
+#' @param key The name under which CHOIR-related data for this run is stored in
+#' the object. Defaults to “CHOIR”.
+#'
+#' @return Returns the data stored under the provided key.
+#'
+#' @export
+#'
+getRecords <- function(object,
+                       key = "CHOIR") {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    output_data <- object@misc[[key]]
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    output_data <- object@metadata[[key]]
+  } else if (methods::is(object, "ArchRProject")) {
+    output_data <- object@projectMetadata[[key]]
+  }
+  return(output_data)
+}
+
 # Retrieve cell IDs ---------------------------
 #
 # Extract cell IDs/names from provided object
@@ -47,7 +73,7 @@
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
 # use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getMatrix <- function(object = NULL,
                        use_matrix = NULL,
                        use_assay = NULL,
@@ -325,7 +351,7 @@
 # use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
 # use_slot -- For Seurat objects, a character string indicating the slot/layer to use
 # ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .storeMatrix <- function(object,
                          use_matrix,
                          use_assay = NULL,
@@ -712,21 +738,4 @@
               "compiled_cluster_labels" = compiled_labels))
 }
 
-# Retrieve all CHOIR metadata ---------------------------
-#
-# Retrieve all stored CHOIR data from object
-#
-# object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
-# key -- A string indicating the name under which data is stored for this run
-getRecords <- function(object,
-                       key = "CHOIR") {
-  # By object type
-  if (methods::is(object, "Seurat")) {
-    output_data <- object@misc[[key]]
-  } else if (methods::is(object, "SingleCellExperiment")) {
-    output_data <- object@metadata[[key]]
-  } else if (methods::is(object, "ArchRProject")) {
-    output_data <- object@projectMetadata[[key]]
-  }
-  return(output_data)
-}
+

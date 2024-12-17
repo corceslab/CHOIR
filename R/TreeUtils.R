@@ -25,12 +25,12 @@
 # use_slot -- For Seurat objects, a string or vector indicating the slot/layer to use in the provided object
 # ArchR_matrix -- For ArchR objects, a string or vector indicating which matrix to use in the provided object
 # ArchR_depthcol -- For ArchR objects, a string or vector indicating which column to use for correlation with sequencing depth
-# atac -- A boolean value indicating whether the provided data is ATAC-seq data
+# atac -- A Boolean value indicating whether the provided data is ATAC-seq data
 # use_cells -- A vector of cell names/IDs to subset the object by, prior to dimensionality reduction
-# return_full -- A boolean value indicating whether to return the full dimensionality reduction with all associated metadata
+# return_full -- A Boolean value indicating whether to return the full dimensionality reduction with all associated metadata
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 
 .runDimReduction <- function(object,
                              normalization_method,
@@ -564,7 +564,7 @@
 # snn_matrix -- A shared nearest neighbor adjacency matrix
 # cluster_params -- A list of additional parameters to be passed to Seurat::FindClusters()
 # random_seed -- A numeric value indicating the random seed used
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getStartingResolution <- function(snn_matrix,
                                    cluster_params = cluster_params,
                                    random_seed = 1,
@@ -962,7 +962,7 @@
 # exclude_features -- A character vector indicating features that should be excluded from the input matrix
 # n_iterations -- A numeric value indicating the number of iterations run for each random forest classifier comparison
 # n_trees -- A numeric value indicating the number of trees in each random forest
-# use_variance -- A boolean value indicating whether to use variance in permutation test
+# use_variance -- A Boolean value indicating whether to use variance in permutation test
 # min_accuracy -- A numeric value indicating the minimum accuracy below which clusters will be automatically merged
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
@@ -2157,7 +2157,7 @@
 #' (based on dimensionality reduction cell embeddings).
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings to be used for distance calculations.
-#' @param verbose A boolean value indicating whether to use verbose output
+#' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Can be set to \code{FALSE} for a
 #' cleaner output.
 #'

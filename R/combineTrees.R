@@ -472,7 +472,7 @@ combineTrees <- function(object,
           dplyr::filter(cluster1 %in% unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label),
                         cluster2 %in% unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label))
 
-        evolving_parent_IDs <- unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label)
+        compiled_cluster_labels <- unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label)
         child_IDs <- subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label
 
         if (nrow(correction_check) > 0) {
@@ -538,8 +538,9 @@ combineTrees <- function(object,
             }
             new_labels_list <- .getNewLabels(merge_groups = list(c(merge_pair$cluster1[1],
                                                                    merge_pair$cluster2[1])),
-                                                     parent_labels = evolving_parent_IDs)
-            evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+                                             level = lvl,
+                                             compiled_labels = compiled_cluster_labels)
+            compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
             merged_label <- new_labels_list[["merge_group_labels"]][[1]]
 
             child_IDs[child_IDs %in% c(merge_pair$cluster1[1], merge_pair$cluster2[1])] <- merged_label
@@ -963,11 +964,11 @@ combineTrees <- function(object,
   # Progress markers
   progress_markers <- c(10,20,30,40,50,60,70,80,90)
 
+
+
   while (complete == FALSE) {
     # Get all cluster IDs at this level
     unique_parent_IDs <- unique(parent_IDs)
-    evolving_parent_IDs <- unique_parent_IDs
-    print(length(unique_parent_IDs))
     new_clusters <- c()
 
     # For each parent cluster
@@ -1035,7 +1036,7 @@ combineTrees <- function(object,
                     } else {
                       comparison_start_time <- Sys.time()
                       # Check whether clusters have been previously compared
-                      previous_comparison <- CHOIR:::.checkComparisonRecords(cluster1_name = child1_name,
+                      previous_comparison <- .checkComparisonRecords(cluster1_name = child1_name,
                                                                              cluster1_cells = child1_cells,
                                                                              cluster2_name = child2_name,
                                                                              cluster2_cells = child2_cells,
@@ -1047,7 +1048,7 @@ combineTrees <- function(object,
                         result_matrix[child2_name, child1_name] <- previous_comparison[["result"]]
                       } else {
                         # Check whether distance between current clusters is greater than previous comparisons
-                        distance_check <- CHOIR:::.checkDistance(object = object,
+                        distance_check <- .checkDistance(object = object,
                                                                  key = key,
                                                                  cluster1_name = child1_name,
                                                                  cluster1_cells = child1_cells,
@@ -1065,7 +1066,7 @@ combineTrees <- function(object,
                           result_matrix[child2_name, child1_name] <- "split"
                         } else {
                           print(paste0(length(child1_cells), " and ", length(child2_cells), " cells"))
-                          comparison_output <- CHOIR:::.runPermutationTest(cluster1_name = child1_name,
+                          comparison_output <- .runPermutationTest(cluster1_name = child1_name,
                                                                            cluster1_cells = child1_cells,
                                                                            cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
                                                                                                         batches[child1_cells],
@@ -1100,7 +1101,7 @@ combineTrees <- function(object,
                           # If split, add distances to distance_records
                           if (comparison_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
                             rownames(distance_records) <- distance_records$cluster_name
-                            distance_records <- CHOIR:::.addDistance(cluster1_name = child1_name,
+                            distance_records <- .addDistance(cluster1_name = child1_name,
                                                                      cluster2_name = child2_name,
                                                                      P0_distance = distance_check[["P0_distance"]],
                                                                      P_i_distance = distance_check[["P_i_distance"]],
@@ -1186,7 +1187,7 @@ combineTrees <- function(object,
                         comparison1_proceed <- FALSE
                       } else {
                         # Check whether clusters have been previously compared
-                        previous_comparison <- CHOIR:::.checkComparisonRecords(cluster1_name = child_partner1_name,
+                        previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner1_name,
                                                                                cluster1_cells = child_partner1_cells,
                                                                                cluster2_name = partner2_name,
                                                                                cluster2_cells = partner2_cells,
@@ -1209,7 +1210,7 @@ combineTrees <- function(object,
                         comparison2_proceed <- FALSE
                       } else {
                         # Check whether clusters have been previously compared
-                        previous_comparison <- CHOIR:::.checkComparisonRecords(cluster1_name = child_partner2_name,
+                        previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner2_name,
                                                                                cluster1_cells = child_partner2_cells,
                                                                                cluster2_name = partner1_name,
                                                                                cluster2_cells = partner1_cells,
@@ -1229,7 +1230,7 @@ combineTrees <- function(object,
                           child_partner1_comparison_names <- c(paste0(child_name, " vs. ", partner1_name),
                                                                paste0(partner1_name, " vs. ", child_name))
                           # Get distance between clusters
-                          distance_check <- CHOIR:::.checkDistance(object = object,
+                          distance_check <- .checkDistance(object = object,
                                                                    key = key,
                                                                    cluster1_name = child_partner1_name,
                                                                    cluster1_cells = child_partner1_cells,
@@ -1242,7 +1243,7 @@ combineTrees <- function(object,
                                                                    reduction = NULL,
                                                                    distance_records = NULL)
                           # Run comparison 1
-                          comparison1_output <- CHOIR:::.runPermutationTest(cluster1_name = child_partner1_name,
+                          comparison1_output <- .runPermutationTest(cluster1_name = child_partner1_name,
                                                                             cluster1_cells = child_partner1_cells,
                                                                             cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
                                                                                                          batches[child_partner1_cells],
@@ -1274,7 +1275,7 @@ combineTrees <- function(object,
                           # If split, add distances to distance_records
                           if (comparison1_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
                             rownames(distance_records) <- distance_records$cluster_name
-                            distance_records <- CHOIR:::.addDistance(cluster1_name = child_partner1_name,
+                            distance_records <- .addDistance(cluster1_name = child_partner1_name,
                                                                      cluster2_name = partner2_name,
                                                                      P0_distance = distance_check[["P0_distance"]],
                                                                      P_i_distance = distance_check[["P_i_distance"]],
@@ -1291,7 +1292,7 @@ combineTrees <- function(object,
                           child_partner2_comparison_names <- c(paste0(child_name, " vs. ", partner2_name),
                                                                paste0(partner2_name, " vs. ", child_name))
                           # Get distance between clusters
-                          distance_check <- CHOIR:::.checkDistance(object = object,
+                          distance_check <- .checkDistance(object = object,
                                                                    key = key,
                                                                    cluster1_name = child_partner2_name,
                                                                    cluster1_cells = child_partner2_cells,
@@ -1304,7 +1305,7 @@ combineTrees <- function(object,
                                                                    reduction = NULL,
                                                                    distance_records = NULL)
                           # Run comparison 2
-                          comparison2_output <- CHOIR:::.runPermutationTest(cluster1_name = child_partner2_name,
+                          comparison2_output <- .runPermutationTest(cluster1_name = child_partner2_name,
                                                                             cluster1_cells = child_partner2_cells,
                                                                             cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
                                                                                                          batches[child_partner2_cells],
@@ -1336,7 +1337,7 @@ combineTrees <- function(object,
                           # If split, add distances to distance_records
                           if (comparison2_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
                             rownames(distance_records) <- distance_records$cluster_name
-                            distance_records <- CHOIR:::.addDistance(cluster1_name = child_partner2_name,
+                            distance_records <- .addDistance(cluster1_name = child_partner2_name,
                                                                      cluster2_name = partner1_name,
                                                                      P0_distance = distance_check[["P0_distance"]],
                                                                      P_i_distance = distance_check[["P_i_distance"]],
@@ -1365,7 +1366,7 @@ combineTrees <- function(object,
                                                                    comparison %in% child_partner2_comparison_names)$root_distance
                           # If distance has not been calculated
                           if (length(child_partner1_distance) == 0) {
-                            distance_check <- CHOIR:::.checkDistance(object = object,
+                            distance_check <- .checkDistance(object = object,
                                                                      key = key,
                                                                      cluster1_name = child_name,
                                                                      cluster1_cells = child_cells,
@@ -1380,7 +1381,7 @@ combineTrees <- function(object,
                             child_partner1_distance <- distance_check[["P0_distance"]]
                           }
                           if (length(child_partner2_distance) == 0) {
-                            distance_check <- CHOIR:::.checkDistance(object = object,
+                            distance_check <- .checkDistance(object = object,
                                                                      key = key,
                                                                      cluster1_name = child_name,
                                                                      cluster1_cells = child_cells,
@@ -1460,9 +1461,10 @@ combineTrees <- function(object,
               }
             }
             # Convert merge groups to new cluster names
-            new_labels_list <- CHOIR:::.getNewLabels(merge_groups = merge_group_list,
-                                                     parent_labels = evolving_parent_IDs)
-            evolving_parent_IDs <- new_labels_list[["evolving_parent_IDs"]]
+            new_labels_list <- .getNewLabels(merge_groups = merge_group_list,
+                                             level = lvl,
+                                             compiled_labels = compiled_cluster_labels)
+            compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
             merge_group_labels <- new_labels_list[["merge_group_labels"]]
 
             new_clusters <- c(new_clusters, unique(unlist(new_labels_list[["merge_group_labels"]]))[!(unique(unlist(new_labels_list[["merge_group_labels"]])) %in% unique(child_IDs))])
@@ -1526,7 +1528,7 @@ combineTrees <- function(object,
     # If there are new clusters, edit list of permitted comparisons
     if (length(new_clusters) > 0) {
       # Get new centroid_distances
-      centroid_distances <- CHOIR:::.getCentroidDistance(object@reductions$CHOIR_P0_reduction@cell.embeddings,
+      centroid_distances <- .getCentroidDistance(object@reductions$CHOIR_P0_reduction@cell.embeddings,
                                                          child_IDs)
       unique_child_clusters <- unique(child_IDs)
       cluster_info <- rbind(cluster_info, data.frame(Subtree_cluster = new_clusters,
@@ -1651,11 +1653,11 @@ combineTrees <- function(object,
   final_clusters <- final_clusters[cell_IDs, ]
 
   # Add to object
-  object <- CHOIR:::.storeData(object, key, "final_clusters",
+  object <- .storeData(object, key, "final_clusters",
                                data.frame(CHOIR_IDs = final_clusters[, paste0("CHOIR_clusters_", alpha)]),
                                paste0("CHOIR_clusters_", alpha))
-  object <- CHOIR:::.storeData(object, key, "clusters", final_clusters, paste0("CHOIR_clusters_", alpha))
-  object <- CHOIR:::.storeData(object, key, "clusters", stepwise_cluster_IDs, paste0("stepwise_clusters_", alpha))
+  object <- .storeData(object, key, "clusters", final_clusters, paste0("CHOIR_clusters_", alpha))
+  object <- .storeData(object, key, "clusters", stepwise_cluster_IDs, paste0("stepwise_clusters_", alpha))
 
   # -------------------------------------------------------------------------
   # Report results & warnings

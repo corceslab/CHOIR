@@ -17,11 +17,11 @@
 # alpha -- A numeric value indicating the significance level used for the permutation test
 # n_iterations A numeric value indicating the number of iterations run for each permutation test
 # n_trees A numeric value indicating the number of trees in each random forest
-# use_variance -- A boolean value indicating whether to use variance in permutation test
+# use_variance -- A Boolean value indicating whether to use variance in permutation test
 # min_accuracy -- A numeric value indicating the minimum accuracy below which clusters will be automatically merged
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
-# collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics from the random forest classifiers
+# collect_all_metrics -- A Boolean value indicating whether to collect and save additional metrics from the random forest classifiers
 # sample_max -- A numeric indicating max cells to sample for random forest
 # downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
 # min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
@@ -434,7 +434,7 @@
 # cluster2_cell_batches -- A vector indicating the batch IDs for cluster 2
 # n_trees -- A numeric value indicating the number of trees in each random forest
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
-# collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics
+# collect_all_metrics -- A Boolean value indicating whether to collect and save additional metrics
 # n_sampled -- A numeric indicating number of cells to sample for random forest
 # input_matrix -- A matrix of data, on which the random forest classifier will be trained/tested
 #
