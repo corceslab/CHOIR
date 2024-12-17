@@ -690,7 +690,7 @@ getRecords <- function(object,
   return(centroid_distances)
 }
 
-# Generate new cluster labels ---------------------------  #### CHANGE SO THAT IT CHECKS BOTH CURRENT AND ORIGINAL LEVEL, FOR NON REDUNDANCY
+# Generate new cluster labels ---------------------------
 #
 # Generate new cluster labels that are non-redundant.
 #
@@ -738,4 +738,35 @@ getRecords <- function(object,
               "compiled_cluster_labels" = compiled_labels))
 }
 
+# Show ASCII CHOIR logo ---------------------------
 
+.showLogo<- function() {
+  message("
+                           ___
+                         /  /\\ \\
+                         \\  \\/ /
+    _____  __    __      . \\  /         __   _____
+  /      ||  |  |  |    /  / \\ \\       |  | |   _  \\
+ |  ,----'|  |__|  |  /   /   .---.    |  | |  |_|  |
+ |  |     |   __   | |   |  /  ___  \\  |  | |      /
+ |  `----.|  |  |  | \\   \\  `-’   |  | |  | |  |\\  \\__.
+  \\______||__|  |__|  `.   `-._ \\/  /  |__| | _| `.___|
+                         ` ----\\ \\/
+                          /`.__/  |
+                          \\.____ /
+
+")
+}
+
+# Startup ---------------------------
+#
+# Adapted from ArchR code, Jeffrey Granja & Ryan Corces
+
+.onAttach <- function(libname, pkgname){
+  # ASCII CHOIR logo
+  .showLogo()
+  # package startup
+  v <- packageVersion("CHOIR")
+  packageStartupMessage("CHOIR : Version ", v,
+                        "\nFor more information see our website : www.CHOIRclustering.com\nIf you encounter a bug please report : https://github.com/CorcesLab/CHOIR/issues")
+}
