@@ -6,11 +6,11 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
-
+  
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>"
+collapse = TRUE,
+comment = "#>"
 )
 ```
 
@@ -69,14 +69,14 @@ CHOIR takes as input a Seurat, SingleCellExperiment, or ArchR object containing 
 This tutorial uses a Seurat object; for details related to other object types, see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#input-object-types). First, we will create a Seurat object using the read count matrix. For simplicity, here we'll just exclude cells with fewer than 100 reads and genes present in less than 5 cells.
 
 ```{r, message = FALSE, warning = FALSE, results = FALSE}
-seurat_object <- CreateSeuratObject(data_matrix, 
-                                    min.features = 100,
-                                    min.cells = 5)
+object <- CreateSeuratObject(data_matrix, 
+                             min.features = 100,
+                             min.cells = 5)
 ```
 
 We will now run log normalization.
 ```{r, message = FALSE, warning = FALSE, results = FALSE}
-seurat_object <- NormalizeData(seurat_object)
+object <- NormalizeData(object)
 ```
 
 ------
@@ -103,8 +103,8 @@ If your data has multiple batches, we highly recommend using CHOIR's built-in ba
 To use separate "count split" input matrices for building vs. pruning the clustering tree, set `countsplit = TRUE` and provide matrix suffixes to `countsplit_suffix` (see [Advanced Options](https://www.choirclustering.com/articles/CHOIR.html#count-splitting) for details).
 
 ```{r, eval = FALSE}
-seurat_object <- CHOIR(seurat_object, 
-                       n_cores = 2)
+object <- CHOIR(object, 
+                n_cores = 2)
 ```
 
 ## Step-by-step:
@@ -121,8 +121,8 @@ The user can determine which method is used for dimensionality reduction and bat
 Here, we will build the hierarchical clustering tree using default parameter settings.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-seurat_object <- buildTree(seurat_object,
-                           n_cores = 2)
+object <- buildTree(object,
+                    n_cores = 2)
 ```
 
 ### Step 2: Prune hierarchical clustering tree
@@ -133,8 +133,8 @@ In parallel, CHOIR shuffles the cluster labels and repeats the same process. Bot
 This permutation test yields a p-value that determines whether these clusters are slated to merge or remain separate. The significance threshold used can be adjusted using the `alpha` parameter. We recommend using the default value of `alpha = 0.05` with Bonferroni multiple comparison correction. For a more conservative approach, the `alpha` value could be decreased to 0.01 or 0.001.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-seurat_object <- pruneTree(seurat_object, 
-                           n_cores = 2)
+object <- pruneTree(object, 
+                    n_cores = 2)
 ```
 
 ## Plot
@@ -142,23 +142,23 @@ seurat_object <- pruneTree(seurat_object,
 Labels for the final clusters identified by CHOIR can be found in the `meta.data` slot of the Seurat object. Other CHOIR outputs are stored under the `misc` slot of the Seurat object.
 
 ```{r}
-head(seurat_object@meta.data)
+head(object@meta.data)
 ```
 
 After clustering has finished, we can generate a UMAP dimensionality reduction and use function `plotCHOIR()` to plot a visualization of the clusters.
 
 ```{r}
 # Run UMAP
-seurat_object <- runCHOIRumap(seurat_object,
-                              reduction = "P0_reduction")
+object <- runCHOIRumap(object,
+                       reduction = "P0_reduction")
 # Plot
-plotCHOIR(seurat_object)
+plotCHOIR(object)
 ```
 
 This function will also overlay the prediction accuracy scores among neighboring pairs of clusters when `accuracy_scores` is set to `TRUE`.
 
 ```{r}
-plotCHOIR(seurat_object,
+plotCHOIR(object,
           accuracy_scores = TRUE,
           plot_nearest = FALSE)
 ```
@@ -210,9 +210,9 @@ Use caution in applying this method if your groups of interest (e.g., disease vs
 
 Below is an example command to run CHOIR with batch correction:
 ```{r, eval = FALSE}
-seurat_object <- CHOIR(seurat_object, 
-                       batch_correction_method = "Harmony",
-                       batch_labels = "Batch") # Change 'Batch' to corresponding cell metadata column for your data
+object <- CHOIR(object, 
+                batch_correction_method = "Harmony",
+                batch_labels = "Batch") # Change 'Batch' to corresponding cell metadata column for your data
 ```
 
 ### Significance level & multiple comparison correction
@@ -285,16 +285,16 @@ Count splitting is a method developed by Neufeld et al. ([paper](https://doi.org
 We can take our Seurat object and run count splitting using the following code, which will extract our existing count matrix, run function `countsplit::countsplit`, and store the resulting matrices back in our object with added suffixes (default is "_1" and "_2"). Use parameter `normalization_method` to apply normalization and store the normalized count split matrices.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-seurat_object <- runCountSplit(seurat_object)
+object <- runCountSplit(object)
 ```
 
 CHOIR can then be run using the resulting matrices.
 
 ```{r, message = TRUE, warning = FALSE, results = "hide"}
-seurat_object <- CHOIR(seurat_object, 
-                       use_slot = "counts_log", 
-                       countsplit = TRUE, 
-                       n_cores = 2)
+object <- CHOIR(object, 
+                use_slot = "counts_log", 
+                countsplit = TRUE, 
+                n_cores = 2)
 ```
 
 Alternately, users can provide their own count split matrices. They must share a prefix, which is provided to `use_slot` for Seurat objects or `use_assay` for SingleCellExperiment objects. The unique suffixes should be provided to `countsplit_suffix` as a character vector.

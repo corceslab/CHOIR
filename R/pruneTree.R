@@ -1706,7 +1706,7 @@ pruneTree <- function(object,
   # Record parameters used and add to original object
   parameter_list <- list("subtree_names" = names(input_matrices),
                          "alpha" = alpha,
-                         "p_adjust_method" = p_adjust,
+                         "p_adjust" = p_adjust,
                          "adjusted_alpha" = adjusted_alpha,
                          "feature_set" = feature_set,
                          "exclude_features" = exclude_features,

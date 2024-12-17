@@ -256,7 +256,7 @@ combineTrees <- function(object,
   # Retrieve parameter values from buildParentTree and subtree pruneTree records
   # If things don't match up, throw an error
   parameter_names <- c("alpha",
-                       "p_adjust_method",
+                       "p_adjust",
                        "feature_set",
                        "exclude_features",
                        "n_iterations",
@@ -329,7 +329,7 @@ combineTrees <- function(object,
 
     # Set parameters
     if ("alpha" %in% parameters_to_check) alpha <- subtree_pruneTree_parameters$alpha
-    if ("p_adjust_method" %in% parameters_to_check) p_adjust <- subtree_pruneTree_parameters$p_adjust_method
+    if ("p_adjust" %in% parameters_to_check) p_adjust <- subtree_pruneTree_parameters$p_adjust
     if ("feature_set" %in% parameters_to_check) feature_set <- subtree_pruneTree_parameters$feature_set
     if ("exclude_features" %in% parameters_to_check) exclude_features <- subtree_pruneTree_parameters$exclude_features
     if ("n_iterations" %in% parameters_to_check) n_iterations <- subtree_pruneTree_parameters$n_iterations
@@ -1694,7 +1694,7 @@ combineTrees <- function(object,
   # Record parameters used and add to original object
   parameter_list <- list("subtree_names" = names(input_matrices),
                          "alpha" = alpha,
-                         "p_adjust_method" = p_adjust,
+                         "p_adjust" = p_adjust,
                          "adjusted_alpha" = adjusted_alpha,
                          "feature_set" = feature_set,
                          "exclude_features" = exclude_features,

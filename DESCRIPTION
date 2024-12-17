@@ -36,7 +36,7 @@ Imports:
     progress,
     ranger,
     Seurat,
-    spatstat.explore,
+    spatstat.univar,
     stringr,
     tidyr
 Remotes:

@@ -91,20 +91,22 @@ provided by 'countsplit_suffix'.</p>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>object</dt>
-<dd><p>An object of class 'Seurat', 'SingleCellExperiment', or
-'ArchRProject'.</p></dd>
+<dd><p>An object of class <code>Seurat</code>, <code>SingleCellExperiment</code>,
+or <code>ArchRProject</code>. For multi-omic data, we recommend using
+<code>ArchRProject</code> objects.</p></dd>
 
 
 <dt>key</dt>
 <dd><p>The name under which CHOIR-related data for this run is stored in
-the object. Defaults to 'CHOIR'.</p></dd>
+the object. Defaults to “CHOIR”.</p></dd>
 
 
 <dt>use_assay</dt>
-<dd><p>For Seurat or SingleCellExperiment objects, a character
-string or vector indicating the assay(s) to use in the provided object.
-Default = <code>NULL</code> will choose the current active assay for Seurat objects
-and the <code>counts</code> assay for SingleCellExperiment objects.</p></dd>
+<dd><p>For <code>Seurat</code> or <code>SingleCellExperiment</code> objects, a
+character string or vector indicating the assay(s) to use in the provided
+object. The default value, <code>NULL</code>, will choose the current active assay
+for <code>Seurat</code> objects and the <code>logcounts</code> assay for
+<code>SingleCellExperiment</code> objects.</p></dd>
 
 
 <dt>use_slot</dt>
@@ -114,18 +116,20 @@ Default = <code>NULL</code> will use the 'counts' slot.</p></dd>
 
 
 <dt>ArchR_matrix</dt>
-<dd><p>For ArchR objects, a character string or vector
-indicating which matri(ces) to use in the provided object. Default =
-<code>NULL</code> will use the 'TileMatrix' for ATAC-seq data or the
-'GeneExpressionMatrix' for RNA-seq data.</p></dd>
+<dd><p>For <code>ArchR</code> objects, a character string or vector
+indicating which matrix or matrices to use in the provided object. The
+default value, <code>NULL</code>, will use the “GeneScoreMatrix” for ATAC-seq data
+or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
+provide a vector with a value corresponding to each modality.</p></dd>
 
 
 <dt>countsplit_suffix</dt>
-<dd><p>A character vector indicating the suffixes
-that distinguish the two countsplit matrices to be used. Suffixes are
-appended onto input string/vector for <code>use_slot</code> for Seurat objects,
-<code>use_assay</code> for SingleCellExperiment objects, or <code>ArchR_matrix</code> for
-ArchR objects. Defaults to suffixes "_1" and "_2".</p></dd>
+<dd><p>A character vector indicating the suffixes that
+distinguish the two count split matrices to be used. Suffixes are appended
+onto the input string/vector for parameter <code>use_slot</code> for <code>Seurat</code>
+objects, <code>use_assay</code> for <code>SingleCellExperiment</code> objects, or
+<code>ArchR_matrix</code> for <code>ArchR</code> objects. Default value <code>NULL</code> uses
+suffixes "_1" and "_2".</p></dd>
 
 
 <dt>countsplit_params</dt>
@@ -136,13 +140,15 @@ ArchR objects. Defaults to suffixes "_1" and "_2".</p></dd>
 <dt>normalization_method</dt>
 <dd><p>A character string or vector indicating which
 normalization method to apply after countsplitting. Permitted values are
-'none', 'log', or 'tfidf'. Defaults to 'log'.</p></dd>
+'none', 'log', or 'tfidf'. Defaults to 'log'. For multi-omic datasets,
+provide a vector with a value corresponding to each provided value of
+<code>use_assay</code> or <code>ArchR_matrix</code> in the same order.</p></dd>
 
 
 <dt>verbose</dt>
-<dd><p>A boolean value indicating whether to use verbose output
-during the execution of this function. Can be set to <code>FALSE</code> for a
-cleaner output.</p></dd>
+<dd><p>A Boolean value indicating whether to use verbose output
+during the execution of CHOIR. Defaults to <code>TRUE</code>, but can be set to
+<code>FALSE</code> for a cleaner output.</p></dd>
 
 </dl></div>
     <div class="section level2">
@@ -161,7 +167,7 @@ and the following added data stored under the provided key:</p><dl><dt>parameter
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Cathrine Petersen.</p>
+  <p></p><p>Developed by Cathrine Sant.</p>
 </div>
 
 <div class="pkgdown-footer-right">

@@ -711,3 +711,22 @@
   return(list("merge_group_labels" = merge_group_labels,
               "compiled_cluster_labels" = compiled_labels))
 }
+
+# Retrieve all CHOIR metadata ---------------------------
+#
+# Retrieve all stored CHOIR data from object
+#
+# object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# key -- A string indicating the name under which data is stored for this run
+getRecords <- function(object,
+                       key = "CHOIR") {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    output_data <- object@misc[[key]]
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    output_data <- object@metadata[[key]]
+  } else if (methods::is(object, "ArchRProject")) {
+    output_data <- object@projectMetadata[[key]]
+  }
+  return(output_data)
+}
