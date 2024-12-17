@@ -19,11 +19,12 @@ plotCHOIR(
 )
 }
 \arguments{
-\item{object}{An object of class 'Seurat', 'SingleCellExperiment', or
-'ArchRProject' that has undergone CHOIR clustering.}
+\item{object}{An object of class \code{Seurat}, \code{SingleCellExperiment},
+or \code{ArchRProject} that has undergone CHOIR clustering. For multi-omic
+data, we recommend using \code{ArchRProject} objects.}
 
-\item{key}{The name under which CHOIR-related data for this run is retrieved
-from the object. Defaults to 'CHOIR'.}
+\item{key}{The name under which CHOIR-related data for this run is stored in
+the object. Defaults to “CHOIR”.}
 
 \item{reduction}{A character vector indicating which CHOIR subtree
 dimensionality reduction to plot (e.g., 'P0_reduction_UMAP',
@@ -39,16 +40,16 @@ identified by CHOIR.}
 \item{highlight_cells}{Vector of cell names to highlight. Default =
 \code{NULL}.}
 
-\item{label}{A boolean value indicating whether to label groups.
+\item{label}{A Boolean value indicating whether to label groups.
 Defaults to \code{TRUE}.}
 
-\item{legend}{A boolean value indicating whether to include a legend.
+\item{legend}{A Boolean value indicating whether to include a legend.
 Defaults to \code{TRUE}.}
 
-\item{accuracy_scores}{A boolean value indicating whether to overlay pairwise
+\item{accuracy_scores}{A Boolean value indicating whether to overlay pairwise
 cluster comparison accuracy scores onto UMAP. Default = \code{TRUE}.}
 
-\item{plot_nearest}{A boolean value indicating whether to only plot the
+\item{plot_nearest}{A Boolean value indicating whether to only plot the
 accuracy score for each cluster's nearest neighboring cluster. Only relevant
 if \code{accuracy_scores} is \code{TRUE}. Defaults to \code{TRUE}.}
 

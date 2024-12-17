@@ -218,7 +218,7 @@ buildParentTree <- function(object,
   .validInput(reduction_method, "reduction_method", list(object, n_modalities))
   .validInput(reduction_params, "reduction_params", list(object, ArchR_matrix, use_assay, reduction_method))
   .validInput(n_var_features, "n_var_features", n_modalities)
-  .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, reduction_method))
+  .validInput(batch_correction_method, "batch_correction_method", n_modalities)
   .validInput(batch_correction_params, "batch_correction_params", list(object, ArchR_matrix, use_assay, batch_correction_method))
   .validInput(batch_labels, "batch_labels", object)
   .validInput(neighbor_params, "neighbor_params", list(object, n_modalities))

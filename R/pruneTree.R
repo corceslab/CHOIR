@@ -459,7 +459,7 @@ pruneTree <- function(object,
     features <- colnames(input_matrix)
     # Clean up
     rm(input_matrix)
-    # Number of modalities & object type
+    # Object type
     if (methods::is(object, "ArchRProject")) {
       object_type <- "ArchRProject"
       .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
@@ -473,7 +473,7 @@ pruneTree <- function(object,
     }
     # Need n_modalities to validate some inputs
     .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
-    .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, "pruneTree"))
+    .validInput(batch_correction_method, "batch_correction_method", n_modalities)
     .validInput(batch_labels, "batch_labels", object)
     .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object_type, n_modalities))
   } else if (!is.null(buildTree_parameters)) {
@@ -504,7 +504,7 @@ pruneTree <- function(object,
     }
     # Need n_modalities to validate some inputs
     .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
-    .validInput(batch_correction_method, "batch_correction_method", list(n_modalities, "pruneTree"))
+    .validInput(batch_correction_method, "batch_correction_method", n_modalities)
     .validInput(batch_labels, "batch_labels", object)
     .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object_type, n_modalities))
 

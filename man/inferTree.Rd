@@ -16,7 +16,7 @@ to cell IDs.}
 \item{reduction}{An optional matrix of dimensionality reduction cell
 embeddings to be used for distance calculations.}
 
-\item{verbose}{A boolean value indicating whether to use verbose output
+\item{verbose}{A Boolean value indicating whether to use verbose output
 during the execution of this function. Can be set to \code{FALSE} for a
 cleaner output.}
 }
