@@ -488,7 +488,7 @@ combineTrees <- function(object,
     colnames(comparison_records) <- selected_metrics
 
     # Collect all subtree cluster labels
-    subtree_cluster_ids <- data.frame(Cell_ID = NULL, Subtree_cluster = NULL, Parent_cluster = NULL)
+    all_cluster_ids <- data.frame(Cell_ID = NULL, Subtree_cluster = NULL, Parent_cluster = NULL)
 
     for (s in 1:n_subtrees) {
       subtree_s <- subtree_list[[s]]
