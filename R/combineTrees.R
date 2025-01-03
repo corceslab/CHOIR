@@ -1591,9 +1591,8 @@ combineTrees <- function(object,
                                                      intra_parent_neighbor = NA,
                                                      intra_parent_neighbor_distance = NA))
       # Add new permitted comparisons for new clusters
-      pb2 <- progress::progress_bar$new(format = "Compiling additional permitted comparisons..        [:bar] (:percent) in :elapsedfull",
-                                        total = length(new_clusters), clear = FALSE)
-      pb2$tick(0)
+      if (verbose) pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                     " : Compiling additional permitted comparisons.."))
       for (cluster_i in new_clusters) {
         other_clusters <- unique_child_clusters[unique_child_clusters != cluster_i]
         distances <- centroid_distances[cluster_i, other_clusters]
@@ -1609,7 +1608,6 @@ combineTrees <- function(object,
         if (length(permitted_comparisons) > 0) {
           cluster_i_cells <- cell_IDs[child_IDs == cluster_i]
           for (p in permitted_comparisons) {
-            pb2$tick(1/length(permitted_comparisons))
             p_cells <- cell_IDs[child_IDs == p]
             adjacent <- sum(object@misc$CHOIR$graph$P0_graph_nn[cluster_i_cells, p_cells]) +      ### MODIFY TO WORK WITH NON-SEURAT
               sum(object@misc$CHOIR$graph$P0_graph_nn[p_cells, cluster_i_cells])
@@ -1618,7 +1616,6 @@ combineTrees <- function(object,
             }
           }
         } else {
-          pb2$tick(1)
         }
         if (length(retained_permitted_comparisons) > 0) {
           permitted_comparison_df <- rbind(permitted_comparison_df,
@@ -1684,6 +1681,7 @@ combineTrees <- function(object,
     }
     # Increment level
     lvl <- lvl - 1
+    print("Level increment")
   }
 
   # Finalize cluster IDs
