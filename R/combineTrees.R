@@ -490,6 +490,7 @@ combineTrees <- function(object,
     # Collect all subtree cluster labels
     all_cluster_ids <- data.frame(Cell_ID = NULL, Subtree_cluster = NULL, Parent_cluster = NULL)
 
+
     for (s in 1:n_subtrees) {
       subtree_s <- subtree_list[[s]]
       # Check if this subtree has more than 1 cluster
@@ -604,7 +605,7 @@ combineTrees <- function(object,
           condensed_records$cluster2[r] <- cluster2_new_label
           condensed_records$comparison[r] <- paste0(condensed_records$cluster1[r], " vs. ", condensed_records$cluster2[r])
         }
-        all_records <- rbind(all_records, condensed_records[,-c(1,2)])
+        comparison_records <- rbind(comparison_records, condensed_records[,-c(1,2)])
       } else {
         # Provide new cluster labels
         child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
@@ -639,7 +640,7 @@ combineTrees <- function(object,
         condensed_records$cluster2[r] <- cluster2_new_label
         condensed_records$comparison[r] <- paste0(condensed_records$cluster1[r], " vs. ", condensed_records$cluster2[r])
       }
-      all_records <- rbind(all_records, condensed_records[,-c(1,2)])
+      comparison_records <- rbind(comparison_records, condensed_records[,-c(1,2)])
     }
   }
 
