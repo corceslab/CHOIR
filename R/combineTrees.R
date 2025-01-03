@@ -369,29 +369,29 @@ combineTrees <- function(object,
     if ("normalization_method" %in% parameters_to_check) normalization_method <- subtree_pruneTree_parameters$normalization_method
     if ("batch_correction_method" %in% parameters_to_check) batch_correction_method <- subtree_pruneTree_parameters$batch_correction_method
     if ("batch_labels" %in% parameters_to_check) batch_labels <- subtree_pruneTree_parameters$batch_labels
-    if ("use_assay" %in% parameters_to_check) use_assay <- subtree_pruneTree_parameters$use_assay
+    if ("use_assay" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_assay
     if ("countsplit" %in% parameters_to_check) countsplit <- subtree_pruneTree_parameters$countsplit
     if ("countsplit_suffix" %in% parameters_to_check) countsplit_suffix <- subtree_pruneTree_parameters$countsplit_suffix
     if ("random_seed" %in% parameters_to_check) random_seed <- subtree_pruneTree_parameters$random_seed
   }
 
-  print(alpha)
-  print(p_adjust)
-  print(feature_set)
-  print(exclude_features)
-  print(n_iterations)
-  print(n_trees)
-  print(use_variance)
-  print(min_accuracy)
-  print(min_connections)
-  print(max_repeat_errors)
-  print(sample_max)
-  print(downsampling_rate)
+  #print(alpha)
+  #print(p_adjust)
+  #print(feature_set)
+  #print(exclude_features)
+  #print(n_iterations)
+  #print(n_trees)
+  #print(use_variance)
+  #print(min_accuracy)
+  #print(min_connections)
+  #print(max_repeat_errors)
+  #print(sample_max)
+  #print(downsampling_rate)
   print(min_reads)
   print(use_assay)
   print(countsplit)
   print(countsplit_suffix)
-  print(random_seed)
+  #print(random_seed)
 
   # Verify parameter validity
   .validInput(alpha, "alpha")
