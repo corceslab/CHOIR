@@ -410,29 +410,17 @@
         } else {
           # Extract GeneScoreMatrix ### FIX LATER ###
           feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
-          print("check1")
           feature_names <- feature_matrix@elementMetadata$name
-          print("check2")
           feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
-          print("check3")
           rownames(feature_matrix) <- feature_names
-          print("check4")
           # Subset to current cells
           if (!is.null(use_cells)) {
-            print(use_cells[1:5])
-            print(colnames(feature_matrix)[1:5])
             feature_matrix <- feature_matrix[,use_cells]
           }
-          print("check5")
           feature_matrix <- as.matrix(feature_matrix)
-          print(feature_matrix[1:5,1:5])
-          print("check6")
           # Find variable features
           var_features <-  Seurat:::FindVariableFeatures.V3Matrix(feature_matrix, verbose = TRUE)
-          print("check7")
-          print(head(var_features))
           var_features <- data.frame(var_features)
-          print("check8")
           if ("vst.variance.standardized" %in% colnames(var_features)) {
             var_features <- var_features %>%
               dplyr::arrange(-vst.variance.standardized) %>%
@@ -444,7 +432,6 @@
               utils::head(n_var_features) %>%
               rownames()
           }
-          print("check9")
         }
 
         # Harmony batch correction

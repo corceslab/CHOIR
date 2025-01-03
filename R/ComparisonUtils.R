@@ -215,7 +215,7 @@
     var_permutation_acc = stats::var(permutation_accuracies)
 
     # Percentile of permuted mean via kernel density estimator
-    percentile_acc <- 1 - spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_acc)
+    percentile_acc <- 1 - suppressPackageStartupMessages(spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_acc))
     # Percentile of permuted variance via bootstrap
     boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
                                   function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))

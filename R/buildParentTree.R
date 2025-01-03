@@ -479,6 +479,12 @@ buildParentTree <- function(object,
   # Add parent tree to original object
   object <- .storeData(object, key, "clusters", P0_tree, "P0_tree")
 
+  # Add parent clusters to cell metadata
+  parent_clusters <- sub("P\\d*_L\\d*_", "P", P0_tree[,ncol(P0_tree)])
+  object <- .storeData(object, key, "final_clusters",
+                       data.frame(CHOIR_IDs = parent_clusters),
+                       "CHOIR_parent_clusters")
+
   # Add tree records to object
   object <- .storeData(object, key, "records", tree_records, "buildTree_records")
 

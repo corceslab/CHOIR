@@ -35,23 +35,28 @@ On the full dataset, run the CHOIR function `buildParentTree`. This function run
 object <- buildParentTree(object)
 ```
 
-If any of these resulting “parent clusters” are above 450,000 cells, a minimal number of further subdivisions are run on that parent cluster until the resulting subclusters are all under 450,000 cells.
-
-```{r, eval = FALSE}
-
-```
-
-For example, 25 parent clusters resulted from the Siletti et al. 2023 human brain atlas data. Three of those were above 450,000 cells, and were split further prior to step 2.
-
-<IMAGE!!>
-
-# Step 2: Run CHOIR on each subsetted parent cluster
+# Step 2: Subset each parent cluster
 
 Subset each parent cluster and save it as a separate object.
 
 ```{r, eval = FALSE}
-
+# For example
+subtree_s <- subset(obj, subset = CHOIR_parent_cluster == "P1")
 ```
+
+If any of these resulting “parent clusters” are above 450,000 cells, a minimal number of further subdivisions are run on that parent cluster until the resulting subclusters are all under 450,000 cells.
+
+```{r, eval = FALSE}
+if (ncol(subtree_s) > 450000) {
+  #
+}
+```
+
+For example, 25 parent clusters resulted from the Siletti et al. 2023 human brain atlas data. Three of those were above 450,000 cells, and were split further prior to step 3.
+
+<IMAGE!!>
+
+# Step 3: Run CHOIR on each subsetted parent cluster
 
 For *each* subsetted object:
 

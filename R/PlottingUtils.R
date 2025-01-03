@@ -111,20 +111,16 @@ runCHOIRumap <- function(object,
   if (verbose == TRUE) {
     message("Calculating UMAP embeddings for ",
             length(reduction), " dimensionality reductions..")
-    # Progress bar
-    pb <- progress::progress_bar$new(format = "Calculating UMAP embeddings.. [:bar] :percent in :elapsedfull",
-                                     total = length(reduction), clear = FALSE)
-    pb$tick(0)
   }
   for (r in 1:length(reduction)) {
-    if (verbose == TRUE) pb$tick()
+    if (verbose == TRUE) message ("(", r, "/", length(reduction), ") ")
     # Retrieve reduction
     extracted_reduction <- .retrieveData(object = object,
                                          key = key,
                                          type = "reduction",
                                          name = reduction[r])
     # Run UMAP
-    try(CHOIR_UMAP <- suppressMessages(invisible(Seurat::RunUMAP(extracted_reduction))))
+    try(CHOIR_UMAP <- Seurat::RunUMAP(extracted_reduction))
     if (exists("CHOIR_UMAP")) {
       # Store embeddings
       object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
