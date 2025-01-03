@@ -375,24 +375,6 @@ combineTrees <- function(object,
     if ("random_seed" %in% parameters_to_check) random_seed <- subtree_pruneTree_parameters$random_seed
   }
 
-  #print(alpha)
-  #print(p_adjust)
-  #print(feature_set)
-  #print(exclude_features)
-  #print(n_iterations)
-  #print(n_trees)
-  #print(use_variance)
-  #print(min_accuracy)
-  #print(min_connections)
-  #print(max_repeat_errors)
-  #print(sample_max)
-  #print(downsampling_rate)
-  print(min_reads)
-  print(use_assay)
-  print(countsplit)
-  print(countsplit_suffix)
-  #print(random_seed)
-
   # Verify parameter validity
   .validInput(alpha, "alpha")
   .validInput(p_adjust, "p_adjust")
@@ -511,7 +493,7 @@ combineTrees <- function(object,
     for (s in 1:n_subtrees) {
       subtree_s <- subtree_list[[s]]
       # Check if this subtree has more than 1 cluster
-      if (dplyr::n_distinct(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]) > 1) {
+      if (dplyr::n_distinct(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]][,paste0("CHOIR_clusters_", alpha)]) > 1) {
         # If so, check for necessary merges
         correction_check <- subtree_s$records$comparison_records %>%
           dplyr::mutate(correct = ifelse(decision == "split" &
@@ -522,11 +504,11 @@ combineTrees <- function(object,
                                                      percentile_modified_variance >= adjusted_alpha), TRUE, FALSE))) %>%
           dplyr::filter(correct == TRUE) %>%
           tidyr::separate_wider_delim(comparison, delim = " vs. ", names = c("cluster1", "cluster2")) %>%
-          dplyr::filter(cluster1 %in% unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label),
-                        cluster2 %in% unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label))
+          dplyr::filter(cluster1 %in% unique(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label),
+                        cluster2 %in% unique(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label))
 
-        compiled_cluster_labels <- unique(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label)
-        child_IDs <- subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label
+        compiled_cluster_labels <- unique(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label)
+        child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
 
         if (nrow(correction_check) > 0) {
           # Check whether comparisons should remain unmerged, from bottom up
@@ -612,7 +594,7 @@ combineTrees <- function(object,
 
         # Provide new cluster labels
         new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
-        all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$CellID,
+        all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
                                                              Subtree_cluster = new_cluster_labels,
                                                              Parent_cluster = s))
         for (r in 1:nrow(condensed_records)) {
@@ -625,9 +607,9 @@ combineTrees <- function(object,
         all_records <- rbind(all_records, condensed_records[,-c(1,2)])
       } else {
         # Provide new cluster labels
-        child_IDs <- subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label
+        child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
         new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
-        all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$CellID,
+        all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
                                                              Subtree_cluster = new_cluster_labels,
                                                              Parent_cluster = s))
       }
@@ -637,13 +619,13 @@ combineTrees <- function(object,
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/5) Standardize cluster labels and compile records..")
 
     # Provide new cluster labels
-    child_IDs <- subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$Record_cluster_label
+    child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
     new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
-    all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]$CellID,
+    all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
                                                          Subtree_cluster = new_cluster_labels,
                                                          Parent_cluster = s))
     # If more than 1 cluster
-    if (dplyr::n_distinct(subtree_s$clusters[, paste0("CHOIR_clusters_", alpha)]) > 1) {
+    if (dplyr::n_distinct(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]][,paste0("CHOIR_clusters_", alpha)]) > 1) {
       # Filter records
       condensed_records <- subtree_s$records$comparison_records %>% data.frame() %>%
         tidyr::separate_wider_delim(comparison, delim = " vs. ", names = c("cluster1", "cluster2"),
