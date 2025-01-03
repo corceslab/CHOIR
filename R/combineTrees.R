@@ -375,6 +375,24 @@ combineTrees <- function(object,
     if ("random_seed" %in% parameters_to_check) random_seed <- subtree_pruneTree_parameters$random_seed
   }
 
+  print(alpha)
+  print(p_adjust)
+  print(feature_set)
+  print(exclude_features)
+  print(n_iterations)
+  print(n_trees)
+  print(use_variance)
+  print(min_accuracy)
+  print(min_connections)
+  print(max_repeat_errors)
+  print(sample_max)
+  print(downsampling_rate)
+  print(min_reads)
+  print(use_assay)
+  print(countsplit)
+  print(countsplit_suffix)
+  print(random_seed)
+
   # Verify parameter validity
   .validInput(alpha, "alpha")
   .validInput(p_adjust, "p_adjust")
