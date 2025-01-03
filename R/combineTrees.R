@@ -714,8 +714,6 @@ combineTrees <- function(object,
     }
   }
 
-  print("check1")
-
   # Create new clustering tree
   # Retrieve parent tree
   cluster_tree <- .retrieveData(object,
@@ -723,10 +721,8 @@ combineTrees <- function(object,
                                 "clusters",
                                 "P0_tree")
   # Add new level with current set of clusters and number this new level
-  cluster_tree$L_new <- all_cluster_ids$Cluster_label
+  cluster_tree$L_new <- all_cluster_ids$Subtree_cluster
   colnames(cluster_tree)[ncol(cluster_tree)] <- paste0("L", ncol(cluster_tree))
-
-  print("check2")
   # Rename clusters in accordance with usual naming pattern, and create a key between the new & old names
   cluster_tree <- .checkClusterLabels(cluster_tree)
   cluster_key <- data.frame(old = all_cluster_ids$Subtree_cluster,
@@ -737,23 +733,17 @@ combineTrees <- function(object,
   permitted_comparison_df$cluster1_new <- cluster_key[permitted_comparison_df$cluster1,]$new
   permitted_comparison_df$cluster2_new <- cluster_key[permitted_comparison_df$cluster2,]$new
   original_permitted_comparison_df <- permitted_comparison_df
-
-  print("check3")
   # Rename clusters in cluster info
   print(head(cluster_info))
   print(head(cluster_key))
-  cluster_info$Cluster_label <- cluster_key[cluster_info$Cluster_label,]$new
-  print("check3.5")
-  rownames(cluster_info) <- cluster_info$Cluster_label
-
-  print("check4")
+  cluster_info$Subtree_cluster <- cluster_key[cluster_info$Subtree_cluster,]$new
+  rownames(cluster_info) <- cluster_info$Subtree_cluster
   # Set distance records
-  distance_records <- data.frame(cluster_name = cluster_info$Cluster_label,
+  distance_records <- data.frame(cluster_name = cluster_info$Subtree_cluster,
                                  min_root_distance = cluster_info$intra_parent_neighbor_distance,
                                  min_subtree_distance = NA,
                                  max_pval = NA)
   distance_records <- dplyr::filter(distance_records, !is.na(min_root_distance))
-  print("check5")
 
   # -------------------------------------------------------------------------
   # Prepare compiled tree for pruning
