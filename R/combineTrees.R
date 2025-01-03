@@ -328,12 +328,17 @@ combineTrees <- function(object,
                                                                        parameters_to_check)]
     # Retrieve parameter values from buildParentTree and subtree pruneTree records
     subtree_pruneTree_parameters <- subtree_list[[1]]$parameters$pruneTree_parameters
-    subtree_pruneTree_parameters <- subtree_pruneTree_parameters[parameters_to_check]
+    subtree_pruneTree_parameters <- subtree_pruneTree_parameters[intersect(names(subtree_pruneTree_parameters),
+                                                                           parameters_to_check)]
 
-    if (identical(buildParentTree_parameters, subtree_pruneTree_parameters[names(buildParentTree_parameters)])) {
+    if (identical(buildParentTree_parameters[intersect(names(subtree_pruneTree_parameters),
+                                                       names(buildParentTree_parameters))],
+                  subtree_pruneTree_parameters[intersect(names(subtree_pruneTree_parameters),
+                                                         names(buildParentTree_parameters))])) {
       for (s in 2:n_subtrees) {
         subtree_pruneTree_parameters_s <- subtree_list[[s]]$parameters$pruneTree_parameters
-        subtree_pruneTree_parameters_s <- subtree_pruneTree_parameters_s[parameters_to_check]
+        subtree_pruneTree_parameters_s <- subtree_pruneTree_parameters_s[intersect(names(subtree_pruneTree_parameters_s),
+                                                                                   parameters_to_check)]
         if (!identical(subtree_pruneTree_parameters, subtree_pruneTree_parameters_s)) {
           stop(paste0("Parameter records for all provided subtrees must be identical. Otherwise, please supply input to relevant parameters: ",
                       paste(parameters_to_check, collapse = ", ")))

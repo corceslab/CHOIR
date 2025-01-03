@@ -64,6 +64,7 @@ a. Run the standard CHOIR method, but retain the parameter settings used in `bui
 
 ```{r, eval = FALSE}
 subtree_s <- CHOIR(subtree_s,
+                   key = "CHOIR_subtree",
                    downsampling_rate = object@misc$CHOIR$parameters$buildParentTree_parameters$downsampling_rate)
 ```
 
@@ -71,12 +72,12 @@ If any parent clusters cannot be subclustered further, instead run the following
 
 ```{r, eval = FALSE}
 # Add cluster labels for a single cluster
-subtree_x@misc$CHOIR$clusters <- data.frame(CellID = colnames(subtree_x),
+subtree_x@misc$CHOIR_subtree$clusters <- data.frame(CellID = colnames(subtree_x),
                                             CHOIR_clusters_0.05 = 1,
                                             Record_cluster_label = "P0_L0_1")
 
 # Add parameter records matching remaining subtrees
-subtree_x@misc$CHOIR$parameters <- subtree_s@misc$CHOIR$parameters
+subtree_x@misc$CHOIR_subtree$parameters <- subtree_s@misc$CHOIR$parameters
 ```
 
 For example, parent cluster P## from the Siletti et al. 2023 human brain atlas data was composed of ### cells from a single batch, and did not require further subclustering.
@@ -88,7 +89,7 @@ b. Extract the resulting clusters, clustering trees, and comparison records usin
 ```{r, eval = FALSE}
 subtree_records_list <- vector(mode = "list", length = n_subtrees)
 for (s in 1:n_subtrees) {
-  subtree_records_list[[s]] <- getRecords(subtree_objects_list[[s]])
+  subtree_records_list[[s]] <- getRecords(subtree_objects_list[[s]], key = "CHOIR_subtree")
 }
 ```
 
