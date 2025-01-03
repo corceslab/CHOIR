@@ -1709,7 +1709,6 @@ combineTrees <- function(object,
     }
     # Increment level
     lvl <- lvl - 1
-    print("Level increment")
   }
 
   # Finalize cluster IDs

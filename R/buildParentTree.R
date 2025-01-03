@@ -199,9 +199,9 @@ buildParentTree <- function(object,
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
-  .validInput(ArchR_matrix, "ArchR_matrix", object)
+  .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
+  .validInput(use_slot, "use_slot", list(object, use_assay, countsplit, countsplit_suffix))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, countsplit, countsplit_suffix))
 
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
