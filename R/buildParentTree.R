@@ -19,6 +19,16 @@
 #' particularly for large datasets. Using approximated distances (\code{TRUE})
 #' rather than absolute distances (\code{FALSE}) is unlikely to have a
 #' meaningful effect on the distance thresholds imposed by CHOIR.
+#' @param downsampling_rate A numerical value indicating the proportion of cells
+#' to be sampled per cluster to train/test each random forest classifier. For
+#' efficiency, the default value, "auto", sets the downsampling rate according
+#' to the dataset size. Decreasing this parameter may decrease the computational
+#' time required, but may also make the final cluster calls more conservative.
+#' If input is provided to both \code{downsampling_rate} and
+#' \code{sample_max parameters}, the minimum resulting cell number is calculated
+#' and used for each comparison. Note that the \code{downsampling_rate} is set
+#' in the \code{buildParentTree} function so that it can be retrieved in later
+#' steps when running CHOIR on atlas-scale data.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except when the user wishes to use
@@ -141,28 +151,29 @@
 #' @export
 #'
 buildParentTree <- function(object,
-                      key = "CHOIR",
-                      distance_approx = TRUE,
-                      normalization_method = "none",
-                      reduction_method = NULL,
-                      reduction_params = list(),
-                      n_var_features = NULL,
-                      batch_correction_method = "none",
-                      batch_correction_params = list(),
-                      batch_labels = NULL,
-                      neighbor_params = list(),
-                      cluster_params = list(algorithm = 1,
-                                            group.singletons = TRUE),
-                      use_assay = NULL,
-                      use_slot = NULL,
-                      ArchR_matrix = NULL,
-                      ArchR_depthcol = NULL,
-                      reduction = NULL,
-                      var_features = NULL,
-                      atac = FALSE,
-                      n_cores = NULL,
-                      random_seed = 1,
-                      verbose = TRUE) {
+                            key = "CHOIR",
+                            distance_approx = TRUE,
+                            downsampling_rate = "auto",
+                            normalization_method = "none",
+                            reduction_method = NULL,
+                            reduction_params = list(),
+                            n_var_features = NULL,
+                            batch_correction_method = "none",
+                            batch_correction_params = list(),
+                            batch_labels = NULL,
+                            neighbor_params = list(),
+                            cluster_params = list(algorithm = 1,
+                                                  group.singletons = TRUE),
+                            use_assay = NULL,
+                            use_slot = NULL,
+                            ArchR_matrix = NULL,
+                            ArchR_depthcol = NULL,
+                            reduction = NULL,
+                            var_features = NULL,
+                            atac = FALSE,
+                            n_cores = NULL,
+                            random_seed = 1,
+                            verbose = TRUE) {
 
   # ---------------------------------------------------------------------------
   # Check input validity
@@ -170,9 +181,11 @@ buildParentTree <- function(object,
 
   .validInput(object, "object", "buildTree")
   .validInput(key, "key", list("buildTree", object))
+  .validInput(downsampling_rate, "downsampling_rate")
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
   .validInput(ArchR_matrix, "ArchR_matrix", object)
+
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
@@ -244,6 +257,13 @@ buildParentTree <- function(object,
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
+  }
+  # Set downsampling rate
+  if (downsampling_rate == "auto") {
+    downsampling_rate <- min(1, (1/2)^(log10(length(cell_IDs)/5000)))
+    if (batch_correction_method == "none") {
+      downsampling_rate <- downsampling_rate*0.5
+    }
   }
   # Random seed reproducibility
   if (n_cores > 1) {
@@ -489,7 +509,8 @@ buildParentTree <- function(object,
   object <- .storeData(object, key, "records", tree_records, "buildTree_records")
 
   # Record parameters used and add to original object
-  parameter_list <- list("distance_approx"  = distance_approx,
+  parameter_list <- list("downsampling_rate" = downsampling_rate,
+                         "distance_approx"  = distance_approx,
                          "normalization_method" = normalization_method,
                          "reduction_method" = reduction_method,
                          "reduction_params" = reduction_params,

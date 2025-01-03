@@ -41,7 +41,7 @@ Subset each parent cluster and save it as a separate object.
 
 ```{r, eval = FALSE}
 # For example
-subtree_s <- subset(obj, subset = CHOIR_parent_cluster == "P1")
+subtree_s <- subset(obj, subset = CHOIR_parent_clusters == "P1")
 ```
 
 If any of these resulting “parent clusters” are above 450,000 cells, a minimal number of further subdivisions are run on that parent cluster until the resulting subclusters are all under 450,000 cells.
@@ -64,7 +64,7 @@ a. Run the standard CHOIR method, but retain the parameter settings used in `bui
 
 ```{r, eval = FALSE}
 subtree_s <- CHOIR(subtree_s,
-                   downsampling_rate = object@misc$CHOIR$parameters$buildParentTree$downsampling_rate)
+                   downsampling_rate = object@misc$CHOIR$parameters$buildParentTree_parameters$downsampling_rate)
 ```
 
 If any parent clusters cannot be subclustered further, instead run the following code:
