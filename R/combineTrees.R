@@ -657,7 +657,7 @@ combineTrees <- function(object,
                                              all_cluster_ids$Subtree_cluster)
 
   # Within each parent cluster, find the nearest neighbor distance for each cluster
-  cluster_info <- all_cluster_ids %>% dplyr::group_by(Subtree_cluster, Parent_cluster) %>% dplyr::summarise(n = n()) %>% data.frame()
+  cluster_info <- all_cluster_ids %>% dplyr::group_by(Subtree_cluster, Parent_cluster) %>% dplyr::summarise(n = dplyr::n()) %>% data.frame()
   cluster_info$intra_parent_neighbor <- NA
   cluster_info$intra_parent_neighbor_distance <- NA
   for (i in 1:nrow(cluster_info)) {
@@ -714,11 +714,13 @@ combineTrees <- function(object,
     }
   }
 
+  print("check1")
   # Create new clustering tree
   cluster_tree <- object@misc[[key]]$clusters$P0_tree                             ### MODIFY TO WORK WITH NON-SEURAT
   cluster_tree$L_new <- all_cluster_ids$Cluster_label
   colnames(cluster_tree)[ncol(cluster_tree)] <- paste0("L", ncol(cluster_tree))
 
+  print("check2")
   cluster_tree <- .checkClusterLabels(cluster_tree)
   cluster_key <- data.frame(old = all_cluster_ids$Subtree_cluster,
                             new = cluster_tree[,ncol(cluster_tree)])
@@ -729,16 +731,19 @@ combineTrees <- function(object,
   permitted_comparison_df$cluster2_new <- cluster_key[permitted_comparison_df$cluster2,]$new
   original_permitted_comparison_df <- permitted_comparison_df
 
+  print("check3")
   # Rename clusters in cluster info
   cluster_info$Cluster_label <- cluster_key[cluster_info$Cluster_label,]$new
   rownames(cluster_info) <- cluster_info$Cluster_label
 
+  print("check4")
   # Set distance records
   distance_records <- data.frame(cluster_name = cluster_info$Cluster_label,
                                  min_root_distance = cluster_info$intra_parent_neighbor_distance,
                                  min_subtree_distance = NA,
                                  max_pval = NA)
   distance_records <- dplyr::filter(distance_records, !is.na(min_root_distance))
+  print("check5")
 
   # -------------------------------------------------------------------------
   # Prepare compiled tree for pruning
