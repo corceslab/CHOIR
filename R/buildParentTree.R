@@ -335,14 +335,18 @@ buildParentTree <- function(object,
         }
       }
       # Set new values
-      use_slot <- paste0(use_slot, countsplit_suffix[1])
-      ArchR_matrix <- NULL
+      use_assay_build <- use_assay
+      use_assay_prune <- use_assay
+      use_slot_build <- paste0(use_slot, countsplit_suffix[1])
+      use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
       countsplit_text <- paste0("\n - Assay: ", use_assay,
                                 "\n - ",
                                 ifelse(seurat_version == "v5", "Layer", "Slot"),
                                 ifelse(n_modalities == 1, " ", "s "),
                                 "used to build tree: ",
-                                paste(use_slot, collapse = " "))
+                                paste(use_slot_build, collapse = " "))
     } else if (methods::is(object, "SingleCellExperiment")) {
       # SingleCellExperiment object
       # Set value of 'use_assay' if necessary
@@ -350,12 +354,16 @@ buildParentTree <- function(object,
         use_assay <- "logcounts"
       }
       # Set new values
-      use_assay <- paste0(use_assay, countsplit_suffix[1])
-      ArchR_matrix <- NULL
+      use_assay_build <- paste0(use_assay, countsplit_suffix[1])
+      use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
       countsplit_text <- paste0("\n - Assay",
                                 ifelse(n_modalities == 1, " ", "s "),
                                 "used to build tree: ",
-                                paste(use_assay, collapse = " "))
+                                paste(use_assay_build, collapse = " "))
     } else if (methods::is(object, "ArchRProject")) {
       # ArchR object
       # Set value of 'ArchR_matrix' if necessary
@@ -364,11 +372,16 @@ buildParentTree <- function(object,
         warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
       }
       # Set new values
-      ArchR_matrix <- paste0(ArchR_matrix, countsplit_suffix[1])
+      use_assay_build <- NULL
+      use_assay_prune <- NULL
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
+      ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[2])
       countsplit_text <- paste0("\n - Matri",
                                 ifelse(n_modalities == 1, "x ", "ces "),
                                 "used to build tree: ",
-                                paste(ArchR_matrix, collapse = " "))
+                                paste(ArchR_matrix_build, collapse = " "))
     }
   } else {
     # No countsplitting, use same matrix to build & prune tree
@@ -409,9 +422,9 @@ buildParentTree <- function(object,
                                          batch_correction_method = batch_correction_method,
                                          batch_correction_params = batch_correction_params,
                                          batch_labels = batch_labels,
-                                         use_assay = use_assay,
-                                         use_slot = use_slot,
-                                         ArchR_matrix = ArchR_matrix,
+                                         use_assay = use_assay_build,
+                                         use_slot = use_slot_build,
+                                         ArchR_matrix = ArchR_matrix_build,
                                          ArchR_depthcol = ArchR_depthcol,
                                          atac = atac,
                                          return_full = methods::is(object, "ArchRProject"),
@@ -439,7 +452,7 @@ buildParentTree <- function(object,
                          input_data = P0_dim_reduction[["reduction_coords"]],
                          name = "CHOIR_P0_reduction",
                          reduction_method = reduction_method,
-                         use_assay = use_assay)
+                         use_assay = use_assay_build)
   }
   # Clean up
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL
@@ -471,15 +484,15 @@ buildParentTree <- function(object,
     colnames(tmp) <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
     rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
     tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
-    dim_list = vector("list", length = length(use_assay))
-    for (i in 1:length(use_assay)) {
+    dim_list = vector("list", length = length(use_assay_build))
+    for (i in 1:length(use_assay_build)) {
       tmp_seurat[[paste0("DR_", i)]] <- Seurat::CreateDimReducObject(embeddings = P0_dim_reduction[["reduction_coords"]][[i]],
                                                                      key = paste0("DR_", i, "_"), assay = 'tmp')
       dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
     }
     # Find neighbors
     P0_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
-                                                                            "reduction.list" = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                                            "reduction.list" = list(paste0("DR_", seq(1, length(use_assay_build)))),
                                                                             "dim.list" = dim_list,
                                                                             "knn.graph.name" = "nn",
                                                                             "snn.graph.name" = "snn"),
@@ -487,7 +500,7 @@ buildParentTree <- function(object,
     # Dimensionality reduction distance matrix
     if (distance_approx == FALSE) {
       P0_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                  reduction_list = list(paste0("DR_", seq(1, length(use_assay)))),
+                                                  reduction_list = list(paste0("DR_", seq(1, length(use_assay_build)))),
                                                   dim_list = dim_list)
       object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
     }
@@ -610,9 +623,12 @@ buildParentTree <- function(object,
                          "ArchR_depthcol" = ArchR_depthcol,
                          "countsplit" = countsplit,
                          "countsplit_suffix" = countsplit_suffix,
-                         "use_assay_build" = use_assay,
-                         "use_slot_build" = use_slot,
-                         "ArchR_matrix_build" = ArchR_matrix,
+                         "use_assay_build" = use_assay_build,
+                         "use_assay_prune" = use_assay_prune,
+                         "use_slot_build" = use_slot_build,
+                         "use_slot_prune" = use_slot_prune,
+                         "ArchR_matrix_build" = ArchR_matrix_build,
+                         "ArchR_matrix_prune" = ArchR_matrix_prune,
                          "countsplit_text" = countsplit_text,
                          "reduction_provided" = !is.null(reduction),
                          "atac" = atac,
