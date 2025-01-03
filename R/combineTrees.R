@@ -1746,8 +1746,7 @@ combineTrees <- function(object,
   }
 
   # Record parameters used and add to original object
-  parameter_list <- list("subtree_names" = names(input_matrices),
-                         "alpha" = alpha,
+  parameter_list <- list("alpha" = alpha,
                          "p_adjust" = p_adjust,
                          "adjusted_alpha" = adjusted_alpha,
                          "feature_set" = feature_set,
