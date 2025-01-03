@@ -715,12 +715,19 @@ combineTrees <- function(object,
   }
 
   print("check1")
+
   # Create new clustering tree
-  cluster_tree <- object@misc[[key]]$clusters$P0_tree                             ### MODIFY TO WORK WITH NON-SEURAT
+  # Retrieve parent tree
+  cluster_tree <- .retrieveData(object,
+                                key,
+                                "clusters",
+                                "P0_tree")
+  # Add new level with current set of clusters and number this new level
   cluster_tree$L_new <- all_cluster_ids$Cluster_label
   colnames(cluster_tree)[ncol(cluster_tree)] <- paste0("L", ncol(cluster_tree))
 
   print("check2")
+  # Rename clusters in accordance with usual naming pattern, and create a key between the new & old names
   cluster_tree <- .checkClusterLabels(cluster_tree)
   cluster_key <- data.frame(old = all_cluster_ids$Subtree_cluster,
                             new = cluster_tree[,ncol(cluster_tree)])
@@ -733,7 +740,10 @@ combineTrees <- function(object,
 
   print("check3")
   # Rename clusters in cluster info
+  print(head(cluster_info))
+  print(head(cluster_key))
   cluster_info$Cluster_label <- cluster_key[cluster_info$Cluster_label,]$new
+  print("check3.5")
   rownames(cluster_info) <- cluster_info$Cluster_label
 
   print("check4")
