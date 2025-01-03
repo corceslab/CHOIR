@@ -1051,7 +1051,20 @@ combineTrees <- function(object,
           check_identical <- FALSE
         }
         if (dplyr::n_distinct(cluster_tree[parent_inds, lvl+1]) == 1 & check_identical == TRUE) {
-          # Skip
+          # Progress
+          if (lvl >= 0) {
+            tick_amount <- 0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+            pb$tick(tick_amount)
+            if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                           (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+            }
+            percent_done <- percent_done + tick_amount
+          }
         } else {
           # Create matrix for comparison results
           result_matrix <- matrix(NA, n_child_clusters, n_child_clusters)
@@ -1186,6 +1199,7 @@ combineTrees <- function(object,
                   }
                 }
               }
+              # Progress
               if (lvl >= 0) {
                 tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
                 pb$tick(tick_amount)
@@ -1204,6 +1218,20 @@ combineTrees <- function(object,
               result_matrix[child1_name, ] <- "split"
               result_matrix[, child1_name] <- "split"
               result_matrix[child1_name, child1_name] <- NA
+              # Progress
+              if (lvl >= 0) {
+                tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                pb$tick(tick_amount)
+                if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                               (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
+                percent_done <- percent_done + tick_amount
+              }
             }
           }
 
