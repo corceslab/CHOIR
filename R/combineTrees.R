@@ -724,7 +724,7 @@ combineTrees <- function(object,
   cluster_tree$L_new <- all_cluster_ids$Subtree_cluster
   colnames(cluster_tree)[ncol(cluster_tree)] <- paste0("L", ncol(cluster_tree))
   # Rename clusters in accordance with usual naming pattern, and create a key between the new & old names
-  cluster_tree <- .checkClusterLabels(cluster_tree)
+  cluster_tree <- suppressWarnings(.checkClusterLabels(cluster_tree))
   cluster_key <- data.frame(old = all_cluster_ids$Subtree_cluster,
                             new = cluster_tree[,ncol(cluster_tree)])
   cluster_key <- cluster_key %>% dplyr::distinct(old, new)
@@ -885,7 +885,7 @@ combineTrees <- function(object,
   # Extract nearest neighbor matrix/matrices
   if (!is.null(nn_matrix)) {
     nn_matrix_provided <- TRUE
-  } else if (!is.null(buildTree_parameters)) {
+  } else if (!is.null(buildParentTree_parameters)) {
     nn_matrix_provided <- FALSE
     # For each subtree
     nn_matrix <- .retrieveData(object, key, "graph", "P0_graph_nn")
