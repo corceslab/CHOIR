@@ -734,8 +734,6 @@ combineTrees <- function(object,
   permitted_comparison_df$cluster2_new <- cluster_key[permitted_comparison_df$cluster2,]$new
   original_permitted_comparison_df <- permitted_comparison_df
   # Rename clusters in cluster info
-  print(head(cluster_info))
-  print(head(cluster_key))
   cluster_info$Subtree_cluster <- cluster_key[cluster_info$Subtree_cluster,]$new
   rownames(cluster_info) <- cluster_info$Subtree_cluster
   # Set distance records
@@ -931,8 +929,7 @@ combineTrees <- function(object,
                        "\n - # of subtrees: ", n_subtrees,
                        "\n - # of levels: ", n_levels,
                        "\n - # of starting clusters: ", n_starting_clusters,
-                       "\n - Countsplitting: ", countsplit,
-                       countsplit_text)
+                       "\n - Countsplitting: ", countsplit)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Alpha: ", alpha,
