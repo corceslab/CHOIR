@@ -109,6 +109,19 @@
 #' the “Gex_nUMI” for RNA-seq data. For multi-omic datasets, provide a vector
 #' with a value corresponding to each provided value of \code{ArchR_matrix} in
 #' the same order.
+#' @param countsplit A Boolean value indicating whether or not to use count
+#' split input data (see \code{countsplit} package), such that one matrix of
+#' counts is used for clustering tree generation and a separate matrix is used
+#' for all random forest classifier permutation testing. Defaults to
+#' \code{FALSE}. Enabling count splitting is likely to result in more
+#' conservative final cluster calls and is likely to perform best in datasets
+#' with high read depths.
+#' @param countsplit_suffix A character vector indicating the suffixes that
+#' distinguish the two count split matrices to be used. Suffixes are appended
+#' onto the input string/vector for parameter \code{use_slot} for \code{Seurat}
+#' objects, \code{use_assay} for \code{SingleCellExperiment} objects, or
+#' \code{ArchR_matrix} for \code{ArchR} objects. When count splitting is
+#' enabled, the default value \code{NULL} uses suffixes "_1" and "_2".
 #' @param reduction An optional matrix of dimensionality reduction cell
 #' embeddings provided by the user for subsequent clustering steps. By default,
 #' this parameter is set to \code{NULL}, and the dimensionality reduction(s)
@@ -168,6 +181,8 @@ buildParentTree <- function(object,
                             use_slot = NULL,
                             ArchR_matrix = NULL,
                             ArchR_depthcol = NULL,
+                            countsplit = FALSE,
+                            countsplit_suffix = NULL,
                             reduction = NULL,
                             var_features = NULL,
                             atac = FALSE,
@@ -182,6 +197,8 @@ buildParentTree <- function(object,
   .validInput(object, "object", "buildTree")
   .validInput(key, "key", list("buildTree", object))
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(countsplit, "countsplit")
+  .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(use_assay, "use_assay", object)
   .validInput(use_slot, "use_slot", list(object, use_assay))
   .validInput(ArchR_matrix, "ArchR_matrix", object)
@@ -190,7 +207,7 @@ buildParentTree <- function(object,
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
     object_type <- "ArchRProject"
-    .requirePackage("ArchR")
+    .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
   } else {
     n_modalities <- max(length(use_assay), 1)
     if (methods::is(object, "Seurat")) {
@@ -294,6 +311,71 @@ buildParentTree <- function(object,
   }
 
   # ---------------------------------------------------------------------------
+  # Set values for countsplitting (if enabled)
+  # ---------------------------------------------------------------------------
+
+  if (countsplit == TRUE) {
+    if (is.null(countsplit_suffix)) {
+      countsplit_suffix <- c("_1", "_2")
+    }
+    # Set new values
+    if (methods::is(object, "Seurat")) {
+      # Seurat object
+      # Set values of 'use_assay' and 'use_slot' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- Seurat::DefaultAssay(object)
+      }
+      if (is.null(use_slot)) {
+        if (use_assay %in% c("RNA", "sketch")) {
+          use_slot <- "data"
+        } else if (use_assay == "SCT" | use_assay == "integrated") {
+          use_slot <- "scale.data"
+        } else {
+          stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+        }
+      }
+      # Set new values
+      use_slot <- paste0(use_slot, countsplit_suffix[1])
+      ArchR_matrix <- NULL
+      countsplit_text <- paste0("\n - Assay: ", use_assay,
+                                "\n - ",
+                                ifelse(seurat_version == "v5", "Layer", "Slot"),
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_slot, collapse = " "))
+    } else if (methods::is(object, "SingleCellExperiment")) {
+      # SingleCellExperiment object
+      # Set value of 'use_assay' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- "logcounts"
+      }
+      # Set new values
+      use_assay <- paste0(use_assay, countsplit_suffix[1])
+      ArchR_matrix <- NULL
+      countsplit_text <- paste0("\n - Assay",
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_assay, collapse = " "))
+    } else if (methods::is(object, "ArchRProject")) {
+      # ArchR object
+      # Set value of 'ArchR_matrix' if necessary
+      if (is.null(ArchR_matrix)) {
+        ArchR_matrix <- "GeneScoreMatrix"
+        warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
+      }
+      # Set new values
+      ArchR_matrix <- paste0(ArchR_matrix, countsplit_suffix[1])
+      countsplit_text <- paste0("\n - Matri",
+                                ifelse(n_modalities == 1, "x ", "ces "),
+                                "used to build tree: ",
+                                paste(ArchR_matrix, collapse = " "))
+    }
+  } else {
+    # No countsplitting, use same matrix to build & prune tree
+    countsplit_text <- ""
+  }
+
+  # ---------------------------------------------------------------------------
   # Step 1: Initial dimensionality reduction
   # ---------------------------------------------------------------------------
 
@@ -301,7 +383,9 @@ buildParentTree <- function(object,
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
                        "\n - # of cells: ", length(cell_IDs),
-                       "\n - # of modalities: ", n_modalities)
+                       "\n - # of modalities: ", n_modalities,
+                       "\n - Countsplitting: ", countsplit,
+                       countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Normalization method: ", normalization_method,
@@ -524,6 +608,12 @@ buildParentTree <- function(object,
                          "use_slot" = use_slot,
                          "ArchR_matrix" = ArchR_matrix,
                          "ArchR_depthcol" = ArchR_depthcol,
+                         "countsplit" = countsplit,
+                         "countsplit_suffix" = countsplit_suffix,
+                         "use_assay_build" = use_assay,
+                         "use_slot_build" = use_slot,
+                         "ArchR_matrix_build" = ArchR_matrix,
+                         "countsplit_text" = countsplit_text,
                          "reduction_provided" = !is.null(reduction),
                          "atac" = atac,
                          "random_seed" = random_seed)
