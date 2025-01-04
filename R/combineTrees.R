@@ -235,6 +235,8 @@ combineTrees <- function(object,
                          batch_correction_method = NULL,
                          batch_labels = NULL,
                          use_assay = NULL,
+                         use_slot = NULL,
+                         ArchR_matrix = NULL,
                          countsplit = NULL,
                          countsplit_suffix = NULL,
                          input_matrix = NULL,
@@ -290,6 +292,8 @@ combineTrees <- function(object,
                        "batch_correction_method",
                        "batch_labels",
                        "use_assay",
+                       "use_slot",
+                       "ArchR_matrix",
                        "countsplit",
                        "countsplit_suffix",
                        "random_seed")
@@ -313,6 +317,8 @@ combineTrees <- function(object,
                         batch_correction_method,
                         batch_labels,
                         use_assay,
+                        use_slot,
+                        ArchR_matrix,
                         countsplit,
                         countsplit_suffix,
                         random_seed)
@@ -370,6 +376,8 @@ combineTrees <- function(object,
     if ("batch_correction_method" %in% parameters_to_check) batch_correction_method <- subtree_pruneTree_parameters$batch_correction_method
     if ("batch_labels" %in% parameters_to_check) batch_labels <- subtree_pruneTree_parameters$batch_labels
     if ("use_assay" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_assay
+    if ("use_slot" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_slot
+    if ("ArchR_matrix" %in% parameters_to_check) use_assay <- buildParentTree_parameters$ArchR_matrix
     if ("countsplit" %in% parameters_to_check) countsplit <- subtree_pruneTree_parameters$countsplit
     if ("countsplit_suffix" %in% parameters_to_check) countsplit_suffix <- subtree_pruneTree_parameters$countsplit_suffix
     if ("random_seed" %in% parameters_to_check) random_seed <- subtree_pruneTree_parameters$random_seed
@@ -389,9 +397,11 @@ combineTrees <- function(object,
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(min_reads, "min_reads")
-  .validInput(use_assay, "use_assay", object)
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
+  .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
+  .validInput(use_slot, "use_slot", list(object, use_assay, countsplit, countsplit_suffix))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, countsplit, countsplit_suffix))
   .validInput(random_seed, "random_seed")
 
   # Extract cell IDs
@@ -750,6 +760,92 @@ combineTrees <- function(object,
   # Track progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/5) Prepare compiled tree for pruning..")
 
+  if (countsplit == TRUE) {
+    if (is.null(countsplit_suffix)) {
+      countsplit_suffix <- c("_1", "_2")
+    }
+    # Set new values
+    if (methods::is(object, "Seurat")) {
+      # Seurat object
+      # Set values of 'use_assay' and 'use_slot' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- Seurat::DefaultAssay(object)
+      }
+      if (is.null(use_slot)) {
+        if (use_assay %in% c("RNA", "sketch")) {
+          use_slot <- "data"
+        } else if (use_assay == "SCT" | use_assay == "integrated") {
+          use_slot <- "scale.data"
+        } else {
+          stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+        }
+      }
+      # Set new values
+      use_assay_build <- use_assay
+      use_assay_prune <- use_assay
+      use_slot_build <- paste0(use_slot, countsplit_suffix[1])
+      use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
+      countsplit_text <- paste0("\n - Assay: ", use_assay,
+                                "\n - ",
+                                ifelse(seurat_version == "v5", "Layer", "Slot"),
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_slot_build, collapse = " "),
+                                "\n - ",
+                                ifelse(seurat_version == "v5", "Layer", "Slot"),
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to prune tree: ",
+                                paste(use_slot_prune, collapse = " "))
+    } else if (methods::is(object, "SingleCellExperiment")) {
+      # SingleCellExperiment object
+      # Set value of 'use_assay' if necessary
+      if (is.null(use_assay)) {
+        use_assay <- "logcounts"
+      }
+      # Set new values
+      use_assay_build <- paste0(use_assay, countsplit_suffix[1])
+      use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- NULL
+      ArchR_matrix_prune <- NULL
+      countsplit_text <- paste0("\n - Assay",
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to build tree: ",
+                                paste(use_assay_build, collapse = " "),
+                                "\n - Assay",
+                                ifelse(n_modalities == 1, " ", "s "),
+                                "used to prune tree: ",
+                                paste(use_assay_prune, collapse = " "))
+    } else if (methods::is(object, "ArchRProject")) {
+      # ArchR object
+      # Set value of 'ArchR_matrix' if necessary
+      if (is.null(ArchR_matrix)) {
+        ArchR_matrix <- "GeneScoreMatrix"
+        warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
+      }
+      # Set new values
+      use_assay_build <- NULL
+      use_assay_prune <- NULL
+      use_slot_build <- NULL
+      use_slot_prune <- NULL
+      ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
+      ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
+      countsplit_text <- ""
+    }
+  } else {
+    # No countsplitting, use same matrix to build & prune tree
+    use_assay_build <- use_assay
+    use_assay_prune <- use_assay
+    use_slot_build <- use_slot
+    use_slot_prune <- use_slot
+    ArchR_matrix_build <- ArchR_matrix
+    ArchR_matrix_prune <- ArchR_matrix
+    countsplit_text <- ""
+  }
+
   # Extract input matrix
   if (!is.null(input_matrix)) {
     input_matrix_provided <- TRUE
@@ -781,17 +877,6 @@ combineTrees <- function(object,
     .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object_type, n_modalities))
   } else if (!is.null(buildParentTree_parameters)) {
     input_matrix_provided <- FALSE
-    # Parameters for extracting matrices
-    use_assay <- buildParentTree_parameters[["use_assay"]]
-    use_slot <- buildParentTree_parameters[["use_slot"]]
-    ArchR_matrix <- buildParentTree_parameters[["ArchR_matrix"]]
-    use_assay_build <- buildParentTree_parameters[["use_assay_build"]]
-    use_assay_prune <- buildParentTree_parameters[["use_assay_prune"]]
-    use_slot_build <- buildParentTree_parameters[["use_slot_build"]]
-    use_slot_prune <- buildParentTree_parameters[["use_slot_prune"]]
-    print(use_slot_prune)
-    ArchR_matrix_build <- buildParentTree_parameters[["ArchR_matrix_build"]]
-    ArchR_matrix_prune <- buildParentTree_parameters[["ArchR_matrix_prune"]]
     # Number of modalities & object type
     if (methods::is(object, "ArchRProject")) {
       n_modalities <- max(length(ArchR_matrix), 1)
@@ -931,7 +1016,8 @@ combineTrees <- function(object,
                        "\n - # of subtrees: ", n_subtrees,
                        "\n - # of levels: ", n_levels,
                        "\n - # of starting clusters: ", n_starting_clusters,
-                       "\n - Countsplitting: ", countsplit)
+                       "\n - Countsplitting: ", countsplit,
+                       countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Alpha: ", alpha,
