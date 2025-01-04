@@ -377,6 +377,8 @@ combineTrees <- function(object,
     if ("batch_labels" %in% parameters_to_check) batch_labels <- subtree_pruneTree_parameters$batch_labels
     if ("use_assay" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_assay
     if ("use_slot" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_slot
+    print(use_slot)
+    print(parameters_to_check)
     if ("ArchR_matrix" %in% parameters_to_check) use_assay <- buildParentTree_parameters$ArchR_matrix
     if ("countsplit" %in% parameters_to_check) countsplit <- subtree_pruneTree_parameters$countsplit
     if ("countsplit_suffix" %in% parameters_to_check) countsplit_suffix <- subtree_pruneTree_parameters$countsplit_suffix
