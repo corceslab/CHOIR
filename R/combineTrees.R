@@ -574,7 +574,7 @@ combineTrees <- function(object,
             }
             new_labels_list <- .getNewLabels(merge_groups = list(c(merge_pair$cluster1[1],
                                                                    merge_pair$cluster2[1])),
-                                             level = lvl,
+                                             level = 0,
                                              compiled_labels = compiled_cluster_labels)
             compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
             merged_label <- new_labels_list[["merge_group_labels"]][[1]]
