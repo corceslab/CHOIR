@@ -141,9 +141,9 @@ getRecords <- function(object,
       } else {
         stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
       }
+      # Check that selected slot is present within selected assay in object
+      .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     }
-    # Check that selected slot is present within selected assay in object
-    .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     # Extract matrix
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
