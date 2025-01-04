@@ -764,6 +764,15 @@ combineTrees <- function(object,
     if (is.null(countsplit_suffix)) {
       countsplit_suffix <- c("_1", "_2")
     }
+    if (!is.null(input_matrix)) {
+      n_modalities <- 1
+    } else {
+      if (methods::is(object, "ArchRProject")) {
+        n_modalities <- max(length(ArchR_matrix), 1)
+      } else {
+        n_modalities <- max(length(use_assay), 1)
+      }
+    }
     # Set new values
     if (methods::is(object, "Seurat")) {
       # Seurat object
