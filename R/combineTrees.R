@@ -789,6 +789,7 @@ combineTrees <- function(object,
     use_assay_prune <- buildParentTree_parameters[["use_assay_prune"]]
     use_slot_build <- buildParentTree_parameters[["use_slot_build"]]
     use_slot_prune <- buildParentTree_parameters[["use_slot_prune"]]
+    print(use_slot_prune)
     ArchR_matrix_build <- buildParentTree_parameters[["ArchR_matrix_build"]]
     ArchR_matrix_prune <- buildParentTree_parameters[["ArchR_matrix_prune"]]
     # Number of modalities & object type
@@ -856,6 +857,7 @@ combineTrees <- function(object,
       # Clean up
       rm(use_features_m)
     } else {
+      print(use_slot_prune)
       input_matrix <- .getMatrix(object = object,
                                  use_assay = use_assay_prune,
                                  use_slot = use_slot_prune,
