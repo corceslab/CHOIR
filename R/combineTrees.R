@@ -767,6 +767,25 @@ combineTrees <- function(object,
     # Set new values
     if (methods::is(object, "Seurat")) {
       # Seurat object
+      if (is.null(use_assay)) {
+        if ("Assay5" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
+          seurat_version <- "v5"
+        } else if ("Assay" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
+          seurat_version <- "v4"
+        } else {
+          stop("Assay '", Seurat::DefaultAssay(object),
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+        }
+      } else {
+        if ("Assay5" %in% methods::is(object[[use_assay[1]]])) {
+          seurat_version <- "v5"
+        } else if ("Assay" %in% methods::is(object[[use_assay[1]]])) {
+          seurat_version <- "v4"
+        } else {
+          stop("Assay '", use_assay[1],
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+        }
+      }
       # Set values of 'use_assay' and 'use_slot' if necessary
       if (is.null(use_assay)) {
         use_assay <- Seurat::DefaultAssay(object)
