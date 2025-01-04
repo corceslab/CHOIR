@@ -376,10 +376,8 @@ combineTrees <- function(object,
     if ("batch_correction_method" %in% parameters_to_check) batch_correction_method <- subtree_pruneTree_parameters$batch_correction_method
     if ("batch_labels" %in% parameters_to_check) batch_labels <- subtree_pruneTree_parameters$batch_labels
     if ("use_assay" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_assay
-    if ("use_slot" %in% parameters_to_check) use_assay <- buildParentTree_parameters$use_slot
-    print(use_slot)
-    print(parameters_to_check)
-    if ("ArchR_matrix" %in% parameters_to_check) use_assay <- buildParentTree_parameters$ArchR_matrix
+    if ("use_slot" %in% parameters_to_check) use_slot <- buildParentTree_parameters$use_slot
+    if ("ArchR_matrix" %in% parameters_to_check) ArchR_matrix <- buildParentTree_parameters$ArchR_matrix
     if ("countsplit" %in% parameters_to_check) countsplit <- subtree_pruneTree_parameters$countsplit
     if ("countsplit_suffix" %in% parameters_to_check) countsplit_suffix <- subtree_pruneTree_parameters$countsplit_suffix
     if ("random_seed" %in% parameters_to_check) random_seed <- subtree_pruneTree_parameters$random_seed
