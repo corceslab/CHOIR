@@ -662,8 +662,16 @@ combineTrees <- function(object,
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/5) Create compiled clustering tree and identify remaining comparisons..")
 
   rownames(all_cluster_ids) <- all_cluster_ids$CellID
-  all_cluster_ids <- all_cluster_ids[rownames(object@misc[[key]]$clusters$P0_tree),]                ## MODIFY TO WORK WITH NON-SEURAT
-  centroid_distances <- .getCentroidDistance(object@reductions$CHOIR_P0_reduction@cell.embeddings,  ## MODIFY TO WORK WITH NON-SEURAT
+  P0_tree <- .retrieveData(object,
+                           key,
+                           "clusters",
+                           "P0_tree")
+  all_cluster_ids <- all_cluster_ids[rownames(P0_tree),]
+  CHOIR_P0_reduction <- .retrieveData(object,
+                                      key,
+                                      "reductions",
+                                      "CHOIR_P0_reduction")
+  centroid_distances <- .getCentroidDistance(CHOIR_P0_reduction,
                                              all_cluster_ids$Subtree_cluster)
 
   # Within each parent cluster, find the nearest neighbor distance for each cluster
