@@ -467,6 +467,17 @@ combineTrees <- function(object,
     adjusted_alpha <- alpha
   }
 
+  # Extract nearest neighbor matrix/matrices
+  if (!is.null(nn_matrix)) {
+    nn_matrix_provided <- TRUE
+  } else if (!is.null(buildParentTree_parameters)) {
+    nn_matrix_provided <- FALSE
+    nn_matrix <- .retrieveData(object, key, "graph", "P0_graph_nn")
+  } else {
+    stop("No nearest neighbor adjacency matrix provided.")
+  }
+
+
   # ---------------------------------------------------------------------------
   # Merge clusters at new adjusted alpha and compile results
   # ---------------------------------------------------------------------------
@@ -716,8 +727,8 @@ combineTrees <- function(object,
       for (p in permitted_comparisons) {
         pb2$tick(1/length(permitted_comparisons))
         p_cells <- dplyr::filter(all_cluster_ids, Subtree_cluster == p)$CellID
-        adjacent <- sum(object@misc[[key]]$graph$P0_graph_nn[cluster_i_cells, p_cells]) +     ### MODIFY TO WORK WITH NON-SEURAT
-          sum(object@misc[[key]]$graph$P0_graph_nn[p_cells, cluster_i_cells])
+        adjacent <- sum(nn_matrix[cluster_i_cells, p_cells]) +
+          sum(nn_matrix[p_cells, cluster_i_cells])
         if (adjacent >= min_connections) {
           retained_permitted_comparisons <- c(retained_permitted_comparisons, p)
         }
@@ -1000,17 +1011,6 @@ combineTrees <- function(object,
     rm(use_features)
   } else {
     stop("No 'input_matrix' supplied. Please supply valid input!")
-  }
-
-  # Extract nearest neighbor matrix/matrices
-  if (!is.null(nn_matrix)) {
-    nn_matrix_provided <- TRUE
-  } else if (!is.null(buildParentTree_parameters)) {
-    nn_matrix_provided <- FALSE
-    # For each subtree
-    nn_matrix <- .retrieveData(object, key, "graph", "P0_graph_nn")
-  } else {
-    stop("No nearest neighbor adjacency matrix provided.")
   }
 
   # Reduction
@@ -1760,8 +1760,8 @@ combineTrees <- function(object,
           cluster_i_cells <- cell_IDs[child_IDs == cluster_i]
           for (p in permitted_comparisons) {
             p_cells <- cell_IDs[child_IDs == p]
-            adjacent <- sum(object@misc$CHOIR$graph$P0_graph_nn[cluster_i_cells, p_cells]) +      ### MODIFY TO WORK WITH NON-SEURAT
-              sum(object@misc$CHOIR$graph$P0_graph_nn[p_cells, cluster_i_cells])
+            adjacent <- sum(nn_matrix[cluster_i_cells, p_cells]) +
+              sum(nn_matrix[p_cells, cluster_i_cells])
             if (adjacent >= min_connections) {
               retained_permitted_comparisons <- c(retained_permitted_comparisons, p)
             }
