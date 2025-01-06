@@ -186,7 +186,7 @@ Labels for the final clusters identified by CHOIR can be found in the `meta.data
 
 ### SingleCellExperiment
 
-For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to "logcounts".
+For SingleCellExperiment objects, only the `use_assay` parameter is needed. If not provided, it is set to "logcounts". Please ensure that the relevant assay matrix includes both row and column names.
 
 The default dimensionality reduction method for SingleCellExperiment objects is "PCA", except in the case of ATAC-seq data, where it is "LSI".
 

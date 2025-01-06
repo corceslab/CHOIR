@@ -970,7 +970,6 @@ combineTrees <- function(object,
       # Clean up
       rm(use_features_m)
     } else {
-      print(use_slot_prune)
       input_matrix <- .getMatrix(object = object,
                                  use_assay = use_assay_prune,
                                  use_slot = use_slot_prune,

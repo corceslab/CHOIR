@@ -386,6 +386,12 @@ buildParentTree <- function(object,
   } else {
     # No countsplitting, use same matrix to build & prune tree
     countsplit_text <- ""
+    use_assay_build <- use_assay
+    use_assay_prune <- use_assay
+    use_slot_build <- use_slot
+    use_slot_prune <- use_slot
+    ArchR_matrix_build <- ArchR_matrix
+    ArchR_matrix_prune <- ArchR_matrix
   }
 
   # ---------------------------------------------------------------------------
