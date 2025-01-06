@@ -667,11 +667,11 @@ combineTrees <- function(object,
                            "clusters",
                            "P0_tree")
   all_cluster_ids <- all_cluster_ids[rownames(P0_tree),]
-  CHOIR_P0_reduction <- .retrieveData(object,
-                                      key,
-                                      "reductions",
-                                      "CHOIR_P0_reduction")
-  centroid_distances <- .getCentroidDistance(CHOIR_P0_reduction,
+  P0_reduction <- .retrieveData(object,
+                                key,
+                                "reduction",
+                                "P0_reduction")
+  centroid_distances <- .getCentroidDistance(P0_reduction,
                                              all_cluster_ids$Subtree_cluster)
 
   # Within each parent cluster, find the nearest neighbor distance for each cluster
