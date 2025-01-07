@@ -243,7 +243,7 @@ plotCHOIR <- function(object,
   } else if (methods::is(object, "SingleCellExperiment")) {
     tmp_seurat@meta.data <- data.frame(object@colData[cells, ])
   } else if (methods::is(object, "ArchRProject")) {
-    tmp_seurat@meta.data <- object@cellColData[cells, ]
+    tmp_seurat@meta.data <- data.frame(object@cellColData[cells, ])
   }
 
   # Check if grouping by CHOIR clusters or alt

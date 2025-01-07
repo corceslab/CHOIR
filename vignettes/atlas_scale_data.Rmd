@@ -113,7 +113,7 @@ for (s in 1:n_subtrees) {
 }
 ```
 
-# Step 3: Combine subtrees and standardize significance thresholds
+# Step 4: Combine subtrees and standardize significance thresholds
 
 Run the CHOIR function `combineTrees` on the complete set of records extracted in step 2. In doing so, the significance threshold will be standardized across all clustering trees, yielding a final set of clusters.
 
