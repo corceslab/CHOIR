@@ -28,12 +28,16 @@ mean prediction accuracy scores for pairs of clusters as an overlay."><meta prop
      
   </a>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../articles/CHOIR.html">
+<li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown--tutorials">
     <span class="fa fa-graduation-cap"></span>
      
-    Quick Tutorial
+    Tutorials
   </a>
+  <div class="dropdown-menu" aria-labelledby="dropdown--tutorials">
+    <a class="dropdown-item" href="../articles/CHOIR.html">Quick start</a>
+    <a class="dropdown-item" href="../articles/atlas_scale_data.html">Atlas-scale data</a>
+  </div>
 </li>
 <li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">
@@ -90,13 +94,14 @@ mean prediction accuracy scores for pairs of clusters as an overlay.</p>
     <div class="section level2">
     <h2 id="arguments">Arguments<a class="anchor" aria-label="anchor" href="#arguments"></a></h2>
     <dl><dt>object</dt>
-<dd><p>An object of class 'Seurat', 'SingleCellExperiment', or
-'ArchRProject' that has undergone CHOIR clustering.</p></dd>
+<dd><p>An object of class <code>Seurat</code>, <code>SingleCellExperiment</code>,
+or <code>ArchRProject</code> that has undergone CHOIR clustering. For multi-omic
+data, we recommend using <code>ArchRProject</code> objects.</p></dd>
 
 
 <dt>key</dt>
-<dd><p>The name under which CHOIR-related data for this run is retrieved
-from the object. Defaults to 'CHOIR'.</p></dd>
+<dd><p>The name under which CHOIR-related data for this run is stored in
+the object. Defaults to “CHOIR”.</p></dd>
 
 
 <dt>reduction</dt>
@@ -122,22 +127,22 @@ identified by CHOIR.</p></dd>
 
 
 <dt>label</dt>
-<dd><p>A boolean value indicating whether to label groups.
+<dd><p>A Boolean value indicating whether to label groups.
 Defaults to <code>TRUE</code>.</p></dd>
 
 
 <dt>legend</dt>
-<dd><p>A boolean value indicating whether to include a legend.
+<dd><p>A Boolean value indicating whether to include a legend.
 Defaults to <code>TRUE</code>.</p></dd>
 
 
 <dt>accuracy_scores</dt>
-<dd><p>A boolean value indicating whether to overlay pairwise
+<dd><p>A Boolean value indicating whether to overlay pairwise
 cluster comparison accuracy scores onto UMAP. Default = <code>TRUE</code>.</p></dd>
 
 
 <dt>plot_nearest</dt>
-<dd><p>A boolean value indicating whether to only plot the
+<dd><p>A Boolean value indicating whether to only plot the
 accuracy score for each cluster's nearest neighboring cluster. Only relevant
 if <code>accuracy_scores</code> is <code>TRUE</code>. Defaults to <code>TRUE</code>.</p></dd>
 

@@ -2,7 +2,7 @@
 % Please edit documentation in R/TreeUtils.R
 \name{inferTree}
 \alias{inferTree}
-\title{Infer clustering tree ---------------------------}
+\title{Infer clustering tree from pre-generated clusters}
 \usage{
 inferTree(cluster_labels, dist_matrix = NULL, reduction = NULL, verbose = TRUE)
 }

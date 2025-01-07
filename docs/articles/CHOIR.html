@@ -48,12 +48,16 @@
      
   </a>
 </li>
-<li class="active nav-item">
-  <a class="nav-link" href="../articles/CHOIR.html">
+<li class="active nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown--tutorials">
     <span class="fa fa-graduation-cap"></span>
      
-    Quick Tutorial
+    Tutorials
   </a>
+  <div class="dropdown-menu" aria-labelledby="dropdown--tutorials">
+    <a class="dropdown-item" href="../articles/CHOIR.html">Quick start</a>
+    <a class="dropdown-item" href="../articles/atlas_scale_data.html">Atlas-scale data</a>
+  </div>
 </li>
 <li class="nav-item">
   <a class="nav-link" href="../reference/index.html">
@@ -176,12 +180,12 @@ Options</a>. First, we will create a Seurat object using the read count
 matrix. For simplicity, here we’ll just exclude cells with fewer than
 100 reads and genes present in less than 5 cells.</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">data_matrix</span>, </span>
-<span>                                    min.features <span class="op">=</span> <span class="fl">100</span>,</span>
-<span>                                    min.cells <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/SeuratObject/man/CreateSeuratObject.html" class="external-link">CreateSeuratObject</a></span><span class="op">(</span><span class="va">data_matrix</span>, </span>
+<span>                             min.features <span class="op">=</span> <span class="fl">100</span>,</span>
+<span>                             min.cells <span class="op">=</span> <span class="fl">5</span><span class="op">)</span></span></code></pre></div>
 <p>We will now run log normalization.</p>
 <div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/NormalizeData.html" class="external-link">NormalizeData</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
 <hr>
 </div>
 </div>
@@ -222,8 +226,8 @@ the clustering tree, set <code>countsplit = TRUE</code> and provide
 matrix suffixes to <code>countsplit_suffix</code> (see <a href="https://www.choirclustering.com/articles/CHOIR.html#count-splitting" class="external-link">Advanced
 Options</a> for details).</p>
 <div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
-<span>                       n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">object</span>, </span>
+<span>                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level3">
 <h3 id="step-by-step">Step-by-step:<a class="anchor" aria-label="anchor" href="#step-by-step"></a>
@@ -261,9 +265,9 @@ Options</a>).</p>
 <p>Here, we will build the hierarchical clustering tree using default
 parameter settings.</p>
 <div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildTree.html">buildTree</a></span><span class="op">(</span><span class="va">seurat_object</span>,</span>
-<span>                           n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 1/7) Checking inputs and preparing object..</span></span>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildTree.html">buildTree</a></span><span class="op">(</span><span class="va">object</span>,</span>
+<span>                    n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:13 : (Step 1/7) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat (v5)</span></span>
@@ -296,27 +300,27 @@ parameter settings.</p>
 <span><span class="co">#&gt;  - Minimum reads: &gt;0 reads</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 2/7) Running initial dimensionality reduction..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : Preparing matrix using 'RNA' assay and 'data' slot..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : Running PCA with 2000 variable features..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 4/7) Identify starting clustering resolution..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:13 : (Step 2/7) Running initial dimensionality reduction..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:13 : Preparing matrix using 'RNA' assay and 'data' slot..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:13 : Running PCA with 2000 variable features..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:14 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:14 : (Step 4/7) Identify starting clustering resolution..</span></span>
 <span><span class="co">#&gt;                       Starting resolution: 0.4</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 5/7) Building root clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:14 : (Step 5/7) Building root clustering tree..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Identified 3 clusters in root tree.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:40 : (Step 6/7) Subclustering root tree..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:41 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:42 : 44% (Subtree 1/3, 112 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:42 : 50% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:42 : 51% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:43 : 79% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:43 : 81% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:43 : 83% (Subtree 3/3, 47 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : 99% (Subtree 3/3, 47 cells), 11 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:14 : (Step 6/7) Subclustering root tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:15 : 5% (Subtree 1/3, 112 cells), 3 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:15 : 44% (Subtree 1/3, 112 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:16 : 50% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:16 : 51% (Subtree 2/3, 84 cells), 5 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:16 : 79% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:16 : 81% (Subtree 2/3, 84 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:17 : 83% (Subtree 3/3, 47 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : 99% (Subtree 3/3, 47 cells), 11 total clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : (Step 7/7) Compiling full clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : (Step 7/7) Compiling full clustering tree..</span></span>
 <span><span class="co">#&gt;                       Full tree has 6 levels and 8 clusters.</span></span></code></pre></div>
 </div>
 <div class="section level4">
@@ -343,9 +347,9 @@ Bonferroni multiple comparison correction. For a more conservative
 approach, the <code>alpha</code> value could be decreased to 0.01 or
 0.001.</p>
 <div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
-<span>                           n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : (Step 1/2) Checking inputs and preparing object..</span></span>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/pruneTree.html">pruneTree</a></span><span class="op">(</span><span class="va">object</span>, </span>
+<span>                    n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : (Step 1/2) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat</span></span>
@@ -374,20 +378,20 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : (Step 2/2) Iterating through clustering tree..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : 10% (1/6 levels) in 0 min. 8 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:44 : 20% (2/6 levels) in 0 min. 7 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:45 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:46 : 40% (3/6 levels) in 0.03 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:46 : 52% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:46 : 61% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:49 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:49 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:49 : 92% (6/6 levels) in 0.08 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:49 : Completed: all clusters compared.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : (Step 2/2) Iterating through clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : 10% (1/6 levels) in 0 min. 8 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:18 : 20% (2/6 levels) in 0 min. 7 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:19 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:20 : 40% (3/6 levels) in 0.02 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:20 : 52% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:20 : 61% (4/6 levels) in 0.03 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:22 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:22 : 80% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:22 : 92% (6/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:22 : Completed: all clusters compared.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:49 : Identified 4 clusters.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-01-06 17:44:23 : Identified 4 clusters.</span></span></code></pre></div>
 </div>
 </div>
 <div class="section level3">
@@ -397,7 +401,7 @@ approach, the <code>alpha</code> value could be decreased to 0.01 or
 <code>meta.data</code> slot of the Seurat object. Other CHOIR outputs
 are stored under the <code>misc</code> slot of the Seurat object.</p>
 <div class="sourceCode" id="cb11"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="fu"><a href="https://rdrr.io/r/utils/head.html" class="external-link">head</a></span><span class="op">(</span><span class="va">object</span><span class="op">@</span><span class="va">meta.data</span><span class="op">)</span></span>
 <span><span class="co">#&gt;      orig.ident nCount_RNA nFeature_RNA CHOIR_clusters_0.05</span></span>
 <span><span class="co">#&gt; 1 SeuratProject       7826         3314                   1</span></span>
 <span><span class="co">#&gt; 2 SeuratProject       3294         1895                   2</span></span>
@@ -410,22 +414,41 @@ reduction and use function <code><a href="../reference/plotCHOIR.html">plotCHOIR
 visualization of the clusters.</p>
 <div class="sourceCode" id="cb12"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Run UMAP</span></span>
-<span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCHOIRumap.html">runCHOIRumap</a></span><span class="op">(</span><span class="va">seurat_object</span>,</span>
-<span>                              reduction <span class="op">=</span> <span class="st">"P0_reduction"</span><span class="op">)</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCHOIRumap.html">runCHOIRumap</a></span><span class="op">(</span><span class="va">object</span>,</span>
+<span>                       reduction <span class="op">=</span> <span class="st">"P0_reduction"</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Calculating UMAP embeddings for 1 dimensionality reductions..</span></span>
+<span><span class="co">#&gt; (1/1)</span></span>
 <span><span class="co">#&gt; Warning: The default method for RunUMAP has changed from calling Python UMAP via reticulate to the R-native UWOT using the cosine metric</span></span>
 <span><span class="co">#&gt; To use Python UMAP via reticulate, set umap.method to 'umap-learn' and metric to 'correlation'</span></span>
 <span><span class="co">#&gt; This message will be shown once per session</span></span>
+<span><span class="co">#&gt; 17:44:23 UMAP embedding parameters a = 0.9922 b = 1.112</span></span>
+<span><span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'BiocGenerics'</span></span>
+<span><span class="co">#&gt; Also defined by 'spam'</span></span>
+<span><span class="co">#&gt; 17:44:23 Read 243 rows and found 50 numeric columns</span></span>
+<span><span class="co">#&gt; 17:44:23 Using Annoy for neighbor search, n_neighbors = 30</span></span>
+<span><span class="co">#&gt; Found more than one class "dist" in cache; using the first, from namespace 'BiocGenerics'</span></span>
+<span><span class="co">#&gt; Also defined by 'spam'</span></span>
+<span><span class="co">#&gt; 17:44:23 Building Annoy index with metric = cosine, n_trees = 50</span></span>
+<span><span class="co">#&gt; 0%   10   20   30   40   50   60   70   80   90   100%</span></span>
+<span><span class="co">#&gt; [----|----|----|----|----|----|----|----|----|----|</span></span>
+<span><span class="co">#&gt; **************************************************|</span></span>
+<span><span class="co">#&gt; 17:44:23 Writing NN index file to temp file /var/folders/ty/d3bmlyq53cv_6t3v60wkfr980000gr/T//RtmpahyQvc/file16bfb589c2e7d</span></span>
+<span><span class="co">#&gt; 17:44:23 Searching Annoy index using 1 thread, search_k = 3000</span></span>
+<span><span class="co">#&gt; 17:44:23 Annoy recall = 100%</span></span>
+<span><span class="co">#&gt; 17:44:23 Commencing smooth kNN distance calibration using 1 thread with target n_neighbors = 30</span></span>
+<span><span class="co">#&gt; 17:44:24 Initializing from normalized Laplacian + noise (using RSpectra)</span></span>
+<span><span class="co">#&gt; 17:44:24 Commencing optimization for 500 epochs, with 9286 positive edges</span></span>
+<span><span class="co">#&gt; 17:44:24 Optimization finished</span></span>
 <span><span class="co">#&gt; Warning: No assay specified, setting assay as RNA by default.</span></span>
 <span><span class="co"># Plot</span></span>
-<span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Data is of class matrix. Coercing to dgCMatrix.</span></span></code></pre></div>
 <p><img src="CHOIR_files/figure-html/unnamed-chunk-13-1.png" width="700"></p>
 <p>This function will also overlay the prediction accuracy scores among
 neighboring pairs of clusters when <code>accuracy_scores</code> is set
 to <code>TRUE</code>.</p>
 <div class="sourceCode" id="cb13"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>,</span>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">object</span>,</span>
 <span>          accuracy_scores <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>          plot_nearest <span class="op">=</span> <span class="cn">FALSE</span><span class="op">)</span></span>
 <span><span class="co">#&gt; Warning: Data is of class matrix. Coercing to dgCMatrix.</span></span></code></pre></div>
@@ -471,7 +494,9 @@ are stored under the <code>misc</code> slot of the Seurat object.</p>
 <h4 id="singlecellexperiment">SingleCellExperiment<a class="anchor" aria-label="anchor" href="#singlecellexperiment"></a>
 </h4>
 <p>For SingleCellExperiment objects, only the <code>use_assay</code>
-parameter is needed. If not provided, it is set to “logcounts”.</p>
+parameter is needed. If not provided, it is set to “logcounts”. Please
+ensure that the relevant assay matrix includes both row and column
+names.</p>
 <p>The default dimensionality reduction method for SingleCellExperiment
 objects is “PCA”, except in the case of ATAC-seq data, where it is
 “LSI”.</p>
@@ -510,9 +535,9 @@ disease vs. control) are batch-confounded AND you expect cell types
 unique to each of these groups.</p>
 <p>Below is an example command to run CHOIR with batch correction:</p>
 <div class="sourceCode" id="cb14"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
-<span>                       batch_correction_method <span class="op">=</span> <span class="st">"Harmony"</span>,</span>
-<span>                       batch_labels <span class="op">=</span> <span class="st">"Batch"</span><span class="op">)</span> <span class="co"># Change 'Batch' to corresponding cell metadata column for your data</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">object</span>, </span>
+<span>                batch_correction_method <span class="op">=</span> <span class="st">"Harmony"</span>,</span>
+<span>                batch_labels <span class="op">=</span> <span class="st">"Batch"</span><span class="op">)</span> <span class="co"># Change 'Batch' to corresponding cell metadata column for your data</span></span></code></pre></div>
 </div>
 <div class="section level4">
 <h4 id="significance-level-multiple-comparison-correction">Significance level &amp; multiple comparison correction<a class="anchor" aria-label="anchor" href="#significance-level-multiple-comparison-correction"></a>
@@ -665,29 +690,29 @@ matrices back in our object with added suffixes (default is “_1” and
 “_2”). Use parameter <code>normalization_method</code> to apply
 normalization and store the normalized count split matrices.</p>
 <div class="sourceCode" id="cb17"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCountSplit.html">runCountSplit</a></span><span class="op">(</span><span class="va">seurat_object</span><span class="op">)</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:51 : Checking inputs and preparing object..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:51 : Fetching matrix 1 of 1..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:51 : Preparing matrix using 'RNA' assay and 'counts' slot..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:51 : Countsplitting matrix..</span></span>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCountSplit.html">runCountSplit</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Fetching matrix 1 of 1..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Preparing matrix using 'RNA' assay and 'counts' slot..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Countsplitting matrix..</span></span>
 <span><span class="co">#&gt; As no overdispersion parameters were provided, Poisson count splitting will be performed.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing layer 'counts_1' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing layer 'counts_2' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Running log normalization on countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing normalized countsplit matrices..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing layer 'counts_log_1' under assay 'RNA' in Seurat object.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Storing layer 'counts_log_2' under assay 'RNA' in Seurat object.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Storing countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Storing layer 'counts_1' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Storing layer 'counts_2' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:25 : Running log normalization on countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : Storing normalized countsplit matrices..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : Storing layer 'counts_log_1' under assay 'RNA' in Seurat object.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : Storing layer 'counts_log_2' under assay 'RNA' in Seurat object.</span></span></code></pre></div>
 <p>CHOIR can then be run using the resulting matrices.</p>
 <div class="sourceCode" id="cb18"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="va">seurat_object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">seurat_object</span>, </span>
-<span>                       use_slot <span class="op">=</span> <span class="st">"counts_log"</span>, </span>
-<span>                       countsplit <span class="op">=</span> <span class="cn">TRUE</span>, </span>
-<span>                       n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">object</span>, </span>
+<span>                use_slot <span class="op">=</span> <span class="st">"counts_log"</span>, </span>
+<span>                countsplit <span class="op">=</span> <span class="cn">TRUE</span>, </span>
+<span>                n_cores <span class="op">=</span> <span class="fl">2</span><span class="op">)</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
 <span><span class="co">#&gt; - CHOIR - Part 1: Build clustering tree</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : (Step 1/7) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : (Step 1/7) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat (v5)</span></span>
@@ -723,33 +748,33 @@ normalization and store the normalized count split matrices.</p>
 <span><span class="co">#&gt;  - Minimum reads: &gt;0 reads</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : (Step 2/7) Running initial dimensionality reduction..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Preparing matrix using 'RNA' assay and 'counts_log_1' slot..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:52 : Running PCA with 2000 variable features..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : (Step 4/7) Identify starting clustering resolution..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : (Step 2/7) Running initial dimensionality reduction..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : Preparing matrix using 'RNA' assay and 'counts_log_1' slot..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:26 : Running PCA with 2000 variable features..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : (Step 3/7) Generating initial nearest neighbors graph..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : (Step 4/7) Identify starting clustering resolution..</span></span>
 <span><span class="co">#&gt;                       Starting resolution: 0.4</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : (Step 5/7) Building root clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : (Step 5/7) Building root clustering tree..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;                       Identified 3 clusters in root tree.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : (Step 6/7) Subclustering root tree..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : 6% (Subtree 1/3, 136 cells), 3 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:53 : 11% (Subtree 1/3, 136 cells), 4 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:55 : 53% (Subtree 1/3, 136 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:55 : 59% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:55 : 61% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : 88% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : 90% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : 91% (Subtree 3/3, 24 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : (Step 6/7) Subclustering root tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : 6% (Subtree 1/3, 136 cells), 3 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:27 : 11% (Subtree 1/3, 136 cells), 4 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:31 : 53% (Subtree 1/3, 136 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:32 : 59% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:32 : 61% (Subtree 2/3, 83 cells), 7 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:32 : 88% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:32 : 90% (Subtree 2/3, 83 cells), 9 total clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : 91% (Subtree 3/3, 24 cells), 9 total clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : (Step 7/7) Compiling full clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : (Step 7/7) Compiling full clustering tree..</span></span>
 <span><span class="co">#&gt;                       Full tree has 6 levels and 7 clusters.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
 <span><span class="co">#&gt; - CHOIR - Part 2: Prune clustering tree</span></span>
 <span><span class="co">#&gt; ----------------------------------------</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : (Step 1/2) Checking inputs and preparing object..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : (Step 1/2) Checking inputs and preparing object..</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt; Input data:</span></span>
 <span><span class="co">#&gt;  - Object type: Seurat</span></span>
@@ -781,23 +806,23 @@ normalization and store the normalized count split matrices.</p>
 <span><span class="co">#&gt;  - Downsampling rate: 0.5</span></span>
 <span><span class="co">#&gt;  - # of cores: 2</span></span>
 <span><span class="co">#&gt;  - Random seed: 1</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : (Step 2/2) Iterating through clustering tree..</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : 12% (1/6 levels) in 0 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:56 : 21% (2/6 levels) in 0 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:57 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:58 : 40% (3/6 levels) in 0.03 min. 5 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:58 : 51% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:12:58 : 61% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:00 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:00 : 80% (6/6 levels) in 0.08 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:00 : 92% (6/6 levels) in 0.08 min. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:00 : Checking for underclustering in 2 clusters.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:01 : Additional comparisons necessary. 4 clusters remaining.</span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:01 : Completed: all clusters compared.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : (Step 2/2) Iterating through clustering tree..</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : 12% (1/6 levels) in 0 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : 21% (2/6 levels) in 0 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:33 : 30% (2/6 levels) in 0.01 min. 6 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:35 : 40% (3/6 levels) in 0.03 min. 5 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:35 : 51% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:35 : 61% (4/6 levels) in 0.04 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:37 : 71% (5/6 levels) in 0.07 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:37 : 80% (6/6 levels) in 0.08 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:37 : 92% (6/6 levels) in 0.08 min. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:38 : Checking for underclustering in 2 clusters.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:38 : Additional comparisons necessary. 4 clusters remaining.</span></span>
+<span><span class="co">#&gt; 2025-01-06 17:44:38 : Completed: all clusters compared.</span></span>
 <span><span class="co">#&gt; </span></span>
 <span><span class="co">#&gt;  - In 1 comparisons, clusters were split due to the minimum number of nearest neighbor connections.</span></span>
 <span><span class="co">#&gt; </span></span>
-<span><span class="co">#&gt; 2024-12-10 17:13:01 : Identified 4 clusters.</span></span></code></pre></div>
+<span><span class="co">#&gt; 2025-01-06 17:44:38 : Identified 4 clusters.</span></span></code></pre></div>
 <p>Alternately, users can provide their own count split matrices. They
 must share a prefix, which is provided to <code>use_slot</code> for
 Seurat objects or <code>use_assay</code> for SingleCellExperiment

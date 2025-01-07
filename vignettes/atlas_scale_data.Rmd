@@ -5,6 +5,10 @@ vignette: >
   %\VignetteIndexEntry{atlas_scale_data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+resource_files:
+  - images/ExtendedDataFig2a.png
+  - images/ExtendedDataFig2b.png
+  - images/ExtendedDataFig2c_h.png
 ---
 
 ```{r, include = FALSE}
@@ -25,6 +29,7 @@ To use CHOIR on atlas-scale data, we recommend a three-step approach that partit
 You’ll need the following packages:
 ```{r, eval = FALSE}
 library(CHOIR)
+library(Seurat)
 ```
 
 # Step 1: Generate parent clusters
@@ -48,19 +53,36 @@ If any of these resulting “parent clusters” are above 450,000 cells, a minim
 
 ```{r, eval = FALSE}
 if (ncol(subtree_s) > 450000) {
-  #
+  # Get nearest neighbors
+  subtree_s <- subtree_s %>% 
+    FindVariableFeatures() %>%
+    ScaleData() %>% 
+    RunPCA() %>% 
+    FindNeighbors()
+  # Find starting resolution
+  starting_resolution <- CHOIR:::.getStartingResolution(subtree_s@graphs$RNA_snn,
+                                                        cluster_params = list(algorithm = 1,
+                                                                              group.singletons = TRUE),
+                                                        random_seed = 1,
+                                                        verbose = TRUE)
+  # Get clusters at starting resolution
+  subtree_s <- FindClusters(subtree_s, resolution = starting_resolution[["starting_resolution"]])
+  # Further subset each resulting cluster
+  subtree_s_0 <- subset(subtree_s, subset = seurat_clusters == 0)
+  subtree_s_1 <- subset(subtree_s, subset = seurat_clusters == 1)
+  # Etc..
 }
 ```
 
 For example, 25 parent clusters resulted from the Siletti et al. 2023 human brain atlas data. Three of those were above 450,000 cells, and were split further prior to step 3.
 
-<IMAGE!!>
+<p align="left"><img src="images/ExtendedDataFig2a.png" alt="" width="800"></a></p>
 
 # Step 3: Run CHOIR on each subsetted parent cluster
 
 For *each* subsetted object:
 
-a. Run the standard CHOIR method, but retain the parameter settings used in `buildParentTree`, including the `downsampling_rate`. This can be done most efficiently using parallel jobs submitted to an HPC, one per subsetted object.
+First, run the standard CHOIR method, but retain the parameter settings used in `buildParentTree`, including the `downsampling_rate`. This can be done most efficiently using parallel jobs submitted to an HPC, one per subsetted object.
 
 ```{r, eval = FALSE}
 subtree_s <- CHOIR(subtree_s,
@@ -82,9 +104,7 @@ subtree_x@misc$CHOIR_subtree$parameters <- subtree_s@misc$CHOIR$parameters
 
 For example, parent cluster P## from the Siletti et al. 2023 human brain atlas data was composed of ### cells from a single batch, and did not require further subclustering.
 
-<IMAGE!!>
-
-b. Extract the resulting clusters, clustering trees, and comparison records using the CHOIR function `getRecords`.
+Then, extract the resulting clusters, clustering trees, and comparison records using the CHOIR function `getRecords`.
 
 ```{r, eval = FALSE}
 subtree_records_list <- vector(mode = "list", length = n_subtrees)
@@ -116,7 +136,7 @@ plotCHOIR(object)
 
 Here is an example using human brain atlas data from Siletti et al. 2023.
 
-<IMAGE!!>
+<p align="left"><img src="images/ExtendedDataFig2b.png" alt="" width="800"></a></p>
 
 For more granularity, subsets of clusters can be visualized using each subtree dimensionality reduction.
 
@@ -130,4 +150,5 @@ plotCHOIR(object, reduction = "P24_reduction_UMAP")
 
 This example shows parent cluster P24 from the human brain atlas data from Siletti et al. 2023, which includes clusters corresponding to macrophages, microglia, fibroblasts, and pericytes, among other cell types.
 
-<IMAGE!!>
+<p align="left"><img src="images/ExtendedDataFig2c_h.png" alt="" width="800"></a></p>
+

@@ -303,7 +303,7 @@ getRecords <- function(object,
   if (is.null(use_matrix)) {
     # Matrix to pull from
     if (is.null(ArchR_matrix)) {
-      ArchR_matrix <- "TileMatrix"
+      ArchR_matrix <- "GeneScoreMatrix"
     }
     if (ArchR_matrix == "GeneScoreMatrix") {
       gene_score_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")

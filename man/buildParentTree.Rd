@@ -8,6 +8,7 @@ buildParentTree(
   object,
   key = "CHOIR",
   distance_approx = TRUE,
+  downsampling_rate = "auto",
   normalization_method = "none",
   reduction_method = NULL,
   reduction_params = list(),
@@ -21,6 +22,8 @@ buildParentTree(
   use_slot = NULL,
   ArchR_matrix = NULL,
   ArchR_depthcol = NULL,
+  countsplit = FALSE,
+  countsplit_suffix = NULL,
   reduction = NULL,
   var_features = NULL,
   atac = FALSE,
@@ -44,6 +47,17 @@ substantially increase the computational time and memory required,
 particularly for large datasets. Using approximated distances (\code{TRUE})
 rather than absolute distances (\code{FALSE}) is unlikely to have a
 meaningful effect on the distance thresholds imposed by CHOIR.}
+
+\item{downsampling_rate}{A numerical value indicating the proportion of cells
+to be sampled per cluster to train/test each random forest classifier. For
+efficiency, the default value, "auto", sets the downsampling rate according
+to the dataset size. Decreasing this parameter may decrease the computational
+time required, but may also make the final cluster calls more conservative.
+If input is provided to both \code{downsampling_rate} and
+\code{sample_max parameters}, the minimum resulting cell number is calculated
+and used for each comparison. Note that the \code{downsampling_rate} is set
+in the \code{buildParentTree} function so that it can be retrieved in later
+steps when running CHOIR on atlas-scale data.}
 
 \item{normalization_method}{A character string or vector indicating which
 normalization method to use. In general, input data should be supplied to
@@ -137,6 +151,21 @@ default value, \code{NULL}, will use the “nFrags” column for ATAC-seq data o
 the “Gex_nUMI” for RNA-seq data. For multi-omic datasets, provide a vector
 with a value corresponding to each provided value of \code{ArchR_matrix} in
 the same order.}
+
+\item{countsplit}{A Boolean value indicating whether or not to use count
+split input data (see \code{countsplit} package), such that one matrix of
+counts is used for clustering tree generation and a separate matrix is used
+for all random forest classifier permutation testing. Defaults to
+\code{FALSE}. Enabling count splitting is likely to result in more
+conservative final cluster calls and is likely to perform best in datasets
+with high read depths.}
+
+\item{countsplit_suffix}{A character vector indicating the suffixes that
+distinguish the two count split matrices to be used. Suffixes are appended
+onto the input string/vector for parameter \code{use_slot} for \code{Seurat}
+objects, \code{use_assay} for \code{SingleCellExperiment} objects, or
+\code{ArchR_matrix} for \code{ArchR} objects. When count splitting is
+enabled, the default value \code{NULL} uses suffixes "_1" and "_2".}
 
 \item{reduction}{An optional matrix of dimensionality reduction cell
 embeddings provided by the user for subsequent clustering steps. By default,

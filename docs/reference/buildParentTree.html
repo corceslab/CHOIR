@@ -28,12 +28,16 @@ subtrees can be generated with subsequent steps outside of this function."><meta
      
   </a>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../articles/CHOIR.html">
+<li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown--tutorials">
     <span class="fa fa-graduation-cap"></span>
      
-    Quick Tutorial
+    Tutorials
   </a>
+  <div class="dropdown-menu" aria-labelledby="dropdown--tutorials">
+    <a class="dropdown-item" href="../articles/CHOIR.html">Quick start</a>
+    <a class="dropdown-item" href="../articles/atlas_scale_data.html">Atlas-scale data</a>
+  </div>
 </li>
 <li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">
@@ -76,6 +80,7 @@ subtrees can be generated with subsequent steps outside of this function.</p>
 <span>  <span class="va">object</span>,</span>
 <span>  key <span class="op">=</span> <span class="st">"CHOIR"</span>,</span>
 <span>  distance_approx <span class="op">=</span> <span class="cn">TRUE</span>,</span>
+<span>  downsampling_rate <span class="op">=</span> <span class="st">"auto"</span>,</span>
 <span>  normalization_method <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  reduction_method <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reduction_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
@@ -89,6 +94,8 @@ subtrees can be generated with subsequent steps outside of this function.</p>
 <span>  use_slot <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ArchR_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  ArchR_depthcol <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  countsplit <span class="op">=</span> <span class="cn">FALSE</span>,</span>
+<span>  countsplit_suffix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  var_features <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  atac <span class="op">=</span> <span class="cn">FALSE</span>,</span>
@@ -119,6 +126,19 @@ substantially increase the computational time and memory required,
 particularly for large datasets. Using approximated distances (<code>TRUE</code>)
 rather than absolute distances (<code>FALSE</code>) is unlikely to have a
 meaningful effect on the distance thresholds imposed by CHOIR.</p></dd>
+
+
+<dt>downsampling_rate</dt>
+<dd><p>A numerical value indicating the proportion of cells
+to be sampled per cluster to train/test each random forest classifier. For
+efficiency, the default value, "auto", sets the downsampling rate according
+to the dataset size. Decreasing this parameter may decrease the computational
+time required, but may also make the final cluster calls more conservative.
+If input is provided to both <code>downsampling_rate</code> and
+<code>sample_max parameters</code>, the minimum resulting cell number is calculated
+and used for each comparison. Note that the <code>downsampling_rate</code> is set
+in the <code>buildParentTree</code> function so that it can be retrieved in later
+steps when running CHOIR on atlas-scale data.</p></dd>
 
 
 <dt>normalization_method</dt>
@@ -238,6 +258,25 @@ default value, <code>NULL</code>, will use the “nFrags” column for ATAC-seq 
 the “Gex_nUMI” for RNA-seq data. For multi-omic datasets, provide a vector
 with a value corresponding to each provided value of <code>ArchR_matrix</code> in
 the same order.</p></dd>
+
+
+<dt>countsplit</dt>
+<dd><p>A Boolean value indicating whether or not to use count
+split input data (see <code>countsplit</code> package), such that one matrix of
+counts is used for clustering tree generation and a separate matrix is used
+for all random forest classifier permutation testing. Defaults to
+<code>FALSE</code>. Enabling count splitting is likely to result in more
+conservative final cluster calls and is likely to perform best in datasets
+with high read depths.</p></dd>
+
+
+<dt>countsplit_suffix</dt>
+<dd><p>A character vector indicating the suffixes that
+distinguish the two count split matrices to be used. Suffixes are appended
+onto the input string/vector for parameter <code>use_slot</code> for <code>Seurat</code>
+objects, <code>use_assay</code> for <code>SingleCellExperiment</code> objects, or
+<code>ArchR_matrix</code> for <code>ArchR</code> objects. When count splitting is
+enabled, the default value <code>NULL</code> uses suffixes "_1" and "_2".</p></dd>
 
 
 <dt>reduction</dt>

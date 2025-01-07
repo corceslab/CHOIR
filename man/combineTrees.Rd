@@ -28,6 +28,8 @@ combineTrees(
   batch_correction_method = NULL,
   batch_labels = NULL,
   use_assay = NULL,
+  use_slot = NULL,
+  ArchR_matrix = NULL,
   countsplit = NULL,
   countsplit_suffix = NULL,
   input_matrix = NULL,
@@ -212,6 +214,20 @@ character string or vector indicating the assay(s) to use in the provided
 object. The default value, \code{NULL}, will choose the current active assay
 for \code{Seurat} objects and the \code{logcounts} assay for
 \code{SingleCellExperiment} objects.}
+
+\item{use_slot}{For \code{Seurat} objects, a character string or vector
+indicating the layers(s)—previously known as slot(s)—to use in the provided
+object. The default value, \code{NULL}, will choose a layer/slot based on the
+selected assay. If an assay other than "RNA", "sketch”, "SCT”, or
+"integrated" is provided, you must specify a value for \code{use_slot}. For
+multi-omic datasets, provide a vector with a value corresponding to each
+provided value of \code{use_assay} in the same order.}
+
+\item{ArchR_matrix}{For \code{ArchR} objects, a character string or vector
+indicating which matrix or matrices to use in the provided object. The
+default value, \code{NULL}, will use the “GeneScoreMatrix” for ATAC-seq data
+or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
+provide a vector with a value corresponding to each modality.}
 
 \item{countsplit}{A Boolean value indicating whether or not to use count
 split input data (see \code{countsplit} package), such that one matrix of

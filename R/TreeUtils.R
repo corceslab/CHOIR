@@ -343,7 +343,7 @@
         }
       } else if (atac == TRUE) {
         if (is.null(ArchR_matrix)) {
-          ArchR_matrix <- "TileMatrix"
+          ArchR_matrix <- "GeneScoreMatrix"
         }
         if (is.null(ArchR_depthcol)) {
           ArchR_depthcol <- "nFrags"
@@ -2131,7 +2131,7 @@
               "tree_records" = tree_records))
 }
 
-#' Infer clustering tree ---------------------------
+#' Infer clustering tree from pre-generated clusters
 #'
 #' Generate clustering tree from provided, pre-generated clusters. Provide a set
 #' of cluster labels and either a dimensionality reduction or distance matrix.

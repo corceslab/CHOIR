@@ -48,12 +48,16 @@
      
   </a>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../articles/CHOIR.html">
+<li class="active nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown--tutorials">
     <span class="fa fa-graduation-cap"></span>
      
-    Quick Tutorial
+    Tutorials
   </a>
+  <div class="dropdown-menu" aria-labelledby="dropdown--tutorials">
+    <a class="dropdown-item" href="../articles/CHOIR.html">Quick start</a>
+    <a class="dropdown-item" href="../articles/atlas_scale_data.html">Atlas-scale data</a>
+  </div>
 </li>
 <li class="nav-item">
   <a class="nav-link" href="../reference/index.html">
@@ -100,7 +104,9 @@
 <h2 id="introduction">Introduction<a class="anchor" aria-label="anchor" href="#introduction"></a>
 </h2>
 <p>This vignette provides a basic example of how to run CHOIR on
-atlas-scale data.</p>
+atlas-scale data. Throughout this vignette, sample results will be shown
+that use human brain atlas data from Siletti et al. 2023 (<a href="https://doi.org/10.1126/science.add7046" class="external-link uri">https://doi.org/10.1126/science.add7046</a>), consisting of
+~3.3M cells.</p>
 <p>Using CHOIR “straight out of the box” works best on datasets with
 under 500,000 cells. While some larger datasets up to 1 million cells
 may also run smoothly, other datasets of this size or larger may
@@ -116,44 +122,124 @@ the decisions made by CHOIR. Specifically, for each cluster, including
 those that were merged along the way, CHOIR stores the features found to
 be most important for the cluster (e.g., marker genes) and the reasoning
 behind why CHOIR merged or did not merge that cluster. These records can
-be found in CHOIR→records→feature_importance_records and
-CHOIR→records→comparison_records.</p>
+be found in <code>CHOIR → records → feature_importance_records</code>
+and <code>CHOIR → records → comparison_records</code>.</p>
 <p>To use CHOIR on atlas-scale data, we recommend a three-step approach
 that partitions the dataset into smaller relevant chunks (step 1), runs
 CHOIR in parallel on those smaller chunks (step 2), and then stitches
-the results back together to provide a final set of clusters (step 3). A
-detailed tutorial for how to accomplish this is available on the CHOIR
-website (<a href="https://www.CHOIRclustering.com" class="external-link uri">https://www.CHOIRclustering.com</a>) and we encourage users
-to reference that documentation, as it will be maintained over time.</p>
+the results back together to provide a final set of clusters (step
+3).</p>
+<p>You’ll need the following packages:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CHOIR</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-1-generate-parent-clusters">Step 1: Generate parent clusters<a class="anchor" aria-label="anchor" href="#step-1-generate-parent-clusters"></a>
 </h2>
-<p>On the full dataset, run the CHOIR function buildParentTree. This
-function runs the initial dimensionality reduction, optional batch
-correction, and subsequent steps to generate the “parent” clustering
-tree. This clustering tree extends from a single cluster encompassing
-all cells to the cluster level at which the silhouette score is
-maximized. If any of these resulting “parent clusters” are above 450,000
-cells, a minimal number of further subdivisions are run on that parent
-cluster until the resulting subclusters are all under 450,000 cells.</p>
+<p>On the full dataset, run the CHOIR function
+<code>buildParentTree</code>. This function runs the initial
+dimensionality reduction, optional batch correction, and subsequent
+steps to generate the “parent” clustering tree. This clustering tree
+extends from a single cluster encompassing all cells to the cluster
+level at which the silhouette score is maximized.</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/buildParentTree.html">buildParentTree</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-2-run-choir-on-each-subsetted-parent-cluster">Step 2: Run CHOIR on each subsetted parent cluster<a class="anchor" aria-label="anchor" href="#step-2-run-choir-on-each-subsetted-parent-cluster"></a>
+<h2 id="step-2-subset-each-parent-cluster">Step 2: Subset each parent cluster<a class="anchor" aria-label="anchor" href="#step-2-subset-each-parent-cluster"></a>
 </h2>
-<p>Subset each parent cluster and save it as a separate object. Run the
-standard CHOIR method on each of these objects. Extract the final
-clusters, clustering trees, and comparison records from each object
-using the CHOIR function getRecords.</p>
+<p>Subset each parent cluster and save it as a separate object.</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># For example</span></span>
+<span><span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">obj</span>, subset <span class="op">=</span> <span class="va">CHOIR_parent_clusters</span> <span class="op">==</span> <span class="st">"P1"</span><span class="op">)</span></span></code></pre></div>
+<p>If any of these resulting “parent clusters” are above 450,000 cells,
+a minimal number of further subdivisions are run on that parent cluster
+until the resulting subclusters are all under 450,000 cells.</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">subtree_s</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">450000</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="co">#</span></span>
+<span><span class="op">}</span></span></code></pre></div>
+<p>For example, 25 parent clusters resulted from the Siletti et al. 2023
+human brain atlas data. Three of those were above 450,000 cells, and
+were split further prior to step 3.</p>
+<p align="left">
+<img src="images/ExtendedDataFig2a.png" alt="" width="800"></p>
+</div>
+<div class="section level2">
+<h2 id="step-3-run-choir-on-each-subsetted-parent-cluster">Step 3: Run CHOIR on each subsetted parent cluster<a class="anchor" aria-label="anchor" href="#step-3-run-choir-on-each-subsetted-parent-cluster"></a>
+</h2>
+<p>For <em>each</em> subsetted object:</p>
+<p>First, run the standard CHOIR method, but retain the parameter
+settings used in <code>buildParentTree</code>, including the
+<code>downsampling_rate</code>. This can be done most efficiently using
+parallel jobs submitted to an HPC, one per subsetted object.</p>
+<div class="sourceCode" id="cb5"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/CHOIR.html">CHOIR</a></span><span class="op">(</span><span class="va">subtree_s</span>,</span>
+<span>                   key <span class="op">=</span> <span class="st">"CHOIR_subtree"</span>,</span>
+<span>                   downsampling_rate <span class="op">=</span> <span class="va">object</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR</span><span class="op">$</span><span class="va">parameters</span><span class="op">$</span><span class="va">buildParentTree_parameters</span><span class="op">$</span><span class="va">downsampling_rate</span><span class="op">)</span></span></code></pre></div>
+<p>If any parent clusters cannot be subclustered further, instead run
+the following code:</p>
+<div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Add cluster labels for a single cluster</span></span>
+<span><span class="va">subtree_x</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR_subtree</span><span class="op">$</span><span class="va">clusters</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>CellID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">subtree_x</span><span class="op">)</span>,</span>
+<span>                                            CHOIR_clusters_0.05 <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                            Record_cluster_label <span class="op">=</span> <span class="st">"P0_L0_1"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Add parameter records matching remaining subtrees</span></span>
+<span><span class="va">subtree_x</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR_subtree</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="va">subtree_s</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR</span><span class="op">$</span><span class="va">parameters</span></span></code></pre></div>
+<p>For example, parent cluster P## from the Siletti et al. 2023 human
+brain atlas data was composed of ### cells from a single batch, and did
+not require further subclustering.</p>
+<p>Then, extract the resulting clusters, clustering trees, and
+comparison records using the CHOIR function <code>getRecords</code>.</p>
+<div class="sourceCode" id="cb7"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">subtree_records_list</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/vector.html" class="external-link">vector</a></span><span class="op">(</span>mode <span class="op">=</span> <span class="st">"list"</span>, length <span class="op">=</span> <span class="va">n_subtrees</span><span class="op">)</span></span>
+<span><span class="kw">for</span> <span class="op">(</span><span class="va">s</span> <span class="kw">in</span> <span class="fl">1</span><span class="op">:</span><span class="va">n_subtrees</span><span class="op">)</span> <span class="op">{</span></span>
+<span>  <span class="va">subtree_records_list</span><span class="op">[[</span><span class="va">s</span><span class="op">]</span><span class="op">]</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/getRecords.html">getRecords</a></span><span class="op">(</span><span class="va">subtree_objects_list</span><span class="op">[[</span><span class="va">s</span><span class="op">]</span><span class="op">]</span>, key <span class="op">=</span> <span class="st">"CHOIR_subtree"</span><span class="op">)</span></span>
+<span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-3-combine-subtrees-and-standardize-significance-thresholds">Step 3: Combine subtrees and standardize significance
 thresholds<a class="anchor" aria-label="anchor" href="#step-3-combine-subtrees-and-standardize-significance-thresholds"></a>
 </h2>
-<p>Run the CHOIR function combineTrees on the complete set of records
-extracted in step 2. In doing so, the significance threshold will be
-standardized across all clustering trees, yielding a final set of
-clusters.</p>
+<p>Run the CHOIR function <code>combineTrees</code> on the complete set
+of records extracted in step 2. In doing so, the significance threshold
+will be standardized across all clustering trees, yielding a final set
+of clusters.</p>
+<div class="sourceCode" id="cb8"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/combineTrees.html">combineTrees</a></span><span class="op">(</span><span class="va">object</span>,</span>
+<span>                       subtree_list <span class="op">=</span> <span class="va">subtree_records_list</span><span class="op">)</span></span></code></pre></div>
+</div>
+<div class="section level2">
+<h2 id="plot">Plot<a class="anchor" aria-label="anchor" href="#plot"></a>
+</h2>
+<p>After clustering has finished, we can generate a UMAP dimensionality
+reduction and use function <code>plotCHOIR</code> to plot a
+visualization of the clusters.</p>
+<div class="sourceCode" id="cb9"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run UMAP</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCHOIRumap.html">runCHOIRumap</a></span><span class="op">(</span><span class="va">object</span>,</span>
+<span>                       reduction <span class="op">=</span> <span class="st">"P0_reduction"</span><span class="op">)</span></span>
+<span><span class="co"># Plot</span></span>
+<span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">object</span><span class="op">)</span></span></code></pre></div>
+<p>Here is an example using human brain atlas data from Siletti et
+al. 2023.</p>
+<p align="left">
+<img src="images/ExtendedDataFig2b.png" alt="" width="800"></p>
+<p>For more granularity, subsets of clusters can be visualized using
+each subtree dimensionality reduction.</p>
+<div class="sourceCode" id="cb10"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Run UMAP</span></span>
+<span><span class="va">object</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/runCHOIRumap.html">runCHOIRumap</a></span><span class="op">(</span><span class="va">object</span>,</span>
+<span>                       reduction <span class="op">=</span> <span class="st">"P24_reduction"</span><span class="op">)</span></span>
+<span><span class="co"># Plot</span></span>
+<span><span class="fu"><a href="../reference/plotCHOIR.html">plotCHOIR</a></span><span class="op">(</span><span class="va">object</span>, reduction <span class="op">=</span> <span class="st">"P24_reduction_UMAP"</span><span class="op">)</span></span></code></pre></div>
+<p>This example shows parent cluster P24 from the human brain atlas data
+from Siletti et al. 2023, which includes clusters corresponding to
+macrophages, microglia, fibroblasts, and pericytes, among other cell
+types.</p>
+<p align="left">
+<img src="images/ExtendedDataFig2c_h.png" alt="" width="800"></p>
 </div>
   </main><aside class="col-md-3"><nav id="toc"><h2>On this page</h2>
     </nav></aside>
