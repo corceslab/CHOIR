@@ -1290,18 +1290,21 @@ pruneTree <- function(object,
           if (all_merge == TRUE) {
             child_IDs[parent_inds] <- parent_IDs[parent_inds]
           } else {
-            # For each cell
-            for (cell in 1:length(child_IDs)) {
-              # If in the current parent branch
-              if (cell %in% parent_inds) {
-                # Check if cell is in any of the merge groups
-                for (child in 1:n_child_clusters) {
-                  if (child_IDs[cell] %in% merge_group_list[[child]]) {
-                    child_IDs[cell] <- merge_group_labels[[child]]
-                  }
-                }
+            # Make key
+            merge_group_key <- data.frame(old = unique_child_IDs,
+                                          new = unique_child_IDs)
+            rownames(merge_group_key) <- merge_group_key$old
+            for (m_g in 1:length(merge_group_list)) {
+              if (!is.null(merge_group_list[[m_g]])) {
+                merge_group_key[merge_group_list[[m_g]],"new"] <- merge_group_labels[[m_g]]
               }
             }
+
+            new_cluster_labels <- child_IDs[parent_inds]
+            for (child in 1:n_child_clusters) {
+              new_cluster_labels[new_cluster_labels == unique_child_IDs[child]] <- merge_group_key[unique_child_IDs[child], "new"][1]
+            }
+            child_IDs[parent_inds] <- new_cluster_labels
           }
         }
       } else {
