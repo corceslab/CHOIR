@@ -1931,7 +1931,7 @@ combineTrees <- function(object,
                          "reduction_provided" = reduction_provided,
                          "random_seed" = random_seed)
 
-  object <- .storeData(object, key, "parameters", parameter_list, "compileTrees_parameters")
+  object <- .storeData(object, key, "parameters", parameter_list, "combineTrees_parameters")
 
   # Add records to object
   object <- .storeData(object, key, "records", comparison_records, "comparison_records")

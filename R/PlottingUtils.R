@@ -253,6 +253,15 @@ plotCHOIR <- function(object,
                            key = key,
                            type = "parameters",
                            name = "pruneTree_parameters")$alpha
+    if (is.null(alpha)) {
+      alpha <- .retrieveData(object = object,
+                             key = key,
+                             type = "parameters",
+                             name = "combineTrees_parameters")$alpha
+    }
+    if (is.null(alpha)) {
+      stop("Cannot find alpha value in stored CHOIR parameters, please supply input to 'group_by'.")
+    }
     group_by <- paste0("CHOIR_clusters_", alpha)
     color_label <- "CHOIR clusters"
     title <- paste0("CHOIR clusters (\u03b1 = ", alpha, ")")
