@@ -274,7 +274,10 @@ provided value of \code{use_assay} in the same order.}
 indicating which matrix or matrices to use in the provided object. The
 default value, \code{NULL}, will use the “GeneScoreMatrix” for ATAC-seq data
 or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
-provide a vector with a value corresponding to each modality.}
+provide a vector with a value corresponding to each modality. When
+"GeneScoreMatrix" is provided, the "GeneScoreMatrix" will be used as input
+to the random forest classifiers, but the "TileMatrix" will be used for the
+initial dimensionality reduction(s).}
 
 \item{ArchR_depthcol}{For \code{ArchR} objects, a character string or vector
 indicating which column to use for correlation with sequencing depth. The

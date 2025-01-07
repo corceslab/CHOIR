@@ -131,7 +131,8 @@ the results back together to provide a final set of clusters (step
 3).</p>
 <p>You’ll need the following packages:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CHOIR</span><span class="op">)</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">CHOIR</span><span class="op">)</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://satijalab.org/seurat" class="external-link">Seurat</a></span><span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="step-1-generate-parent-clusters">Step 1: Generate parent clusters<a class="anchor" aria-label="anchor" href="#step-1-generate-parent-clusters"></a>
@@ -157,7 +158,24 @@ a minimal number of further subdivisions are run on that parent cluster
 until the resulting subclusters are all under 450,000 cells.</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw">if</span> <span class="op">(</span><span class="fu"><a href="https://rdrr.io/r/base/nrow.html" class="external-link">ncol</a></span><span class="op">(</span><span class="va">subtree_s</span><span class="op">)</span> <span class="op">&gt;</span> <span class="fl">450000</span><span class="op">)</span> <span class="op">{</span></span>
-<span>  <span class="co">#</span></span>
+<span>  <span class="co"># Get nearest neighbors</span></span>
+<span>  <span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="va">subtree_s</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> </span>
+<span>    <span class="fu"><a href="https://satijalab.org/seurat/reference/FindVariableFeatures.html" class="external-link">FindVariableFeatures</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span></span>
+<span>    <span class="fu"><a href="https://satijalab.org/seurat/reference/ScaleData.html" class="external-link">ScaleData</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> </span>
+<span>    <span class="fu"><a href="https://satijalab.org/seurat/reference/RunPCA.html" class="external-link">RunPCA</a></span><span class="op">(</span><span class="op">)</span> <span class="op"><a href="../reference/pipe.html">%&gt;%</a></span> </span>
+<span>    <span class="fu"><a href="https://satijalab.org/seurat/reference/FindNeighbors.html" class="external-link">FindNeighbors</a></span><span class="op">(</span><span class="op">)</span></span>
+<span>  <span class="co"># Find starting resolution</span></span>
+<span>  <span class="va">starting_resolution</span> <span class="op">&lt;-</span> <span class="fu">CHOIR</span><span class="fu">:::</span><span class="fu">.getStartingResolution</span><span class="op">(</span><span class="va">subtree_s</span><span class="op">@</span><span class="va">graphs</span><span class="op">$</span><span class="va">RNA_snn</span>,</span>
+<span>                                                        cluster_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>algorithm <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                                                              group.singletons <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
+<span>                                                        random_seed <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                                        verbose <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span></span>
+<span>  <span class="co"># Get clusters at starting resolution</span></span>
+<span>  <span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">FindClusters</a></span><span class="op">(</span><span class="va">subtree_s</span>, resolution <span class="op">=</span> <span class="va">starting_resolution</span><span class="op">[[</span><span class="st">"starting_resolution"</span><span class="op">]</span><span class="op">]</span><span class="op">)</span></span>
+<span>  <span class="co"># Further subset each resulting cluster</span></span>
+<span>  <span class="va">subtree_s_0</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">subtree_s</span>, subset <span class="op">=</span> <span class="va">seurat_clusters</span> <span class="op">==</span> <span class="fl">0</span><span class="op">)</span></span>
+<span>  <span class="va">subtree_s_1</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">subtree_s</span>, subset <span class="op">=</span> <span class="va">seurat_clusters</span> <span class="op">==</span> <span class="fl">1</span><span class="op">)</span></span>
+<span>  <span class="co"># Etc..</span></span>
 <span><span class="op">}</span></span></code></pre></div>
 <p>For example, 25 parent clusters resulted from the Siletti et al. 2023
 human brain atlas data. Three of those were above 450,000 cells, and
