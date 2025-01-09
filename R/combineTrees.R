@@ -791,118 +791,128 @@ combineTrees <- function(object,
   # Track progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/5) Prepare compiled tree for pruning..")
 
+
+  # ---------------------------------------------------------------------------
+  # Set values for countsplitting
+  # ---------------------------------------------------------------------------
+
   if (countsplit == TRUE) {
     if (is.null(countsplit_suffix)) {
       countsplit_suffix <- c("_1", "_2")
-    }
-    if (!is.null(input_matrix)) {
-      n_modalities <- 1
     } else {
-      if (methods::is(object, "ArchRProject")) {
-        n_modalities <- max(length(ArchR_matrix), 1)
+      countsplit_suffix <- c("", "")
+    }
+  }
+  if (!is.null(input_matrix)) {
+    n_modalities <- 1
+  } else {
+    if (methods::is(object, "ArchRProject")) {
+      n_modalities <- max(length(ArchR_matrix), 1)
+    } else {
+      n_modalities <- max(length(use_assay), 1)
+    }
+  }
+  # Set new values
+  if (methods::is(object, "Seurat")) {
+    # Seurat object
+    if (is.null(use_assay)) {
+      if ("Assay5" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
+        seurat_version <- "v5"
+      } else if ("Assay" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
+        seurat_version <- "v4"
       } else {
-        n_modalities <- max(length(use_assay), 1)
+        stop("Assay '", Seurat::DefaultAssay(object),
+             "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+      }
+    } else {
+      if ("Assay5" %in% methods::is(object[[use_assay[1]]])) {
+        seurat_version <- "v5"
+      } else if ("Assay" %in% methods::is(object[[use_assay[1]]])) {
+        seurat_version <- "v4"
+      } else {
+        stop("Assay '", use_assay[1],
+             "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+      }
+    }
+    # Set values of 'use_assay' and 'use_slot' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- Seurat::DefaultAssay(object)
+    }
+    if (is.null(use_slot)) {
+      if (use_assay %in% c("RNA", "sketch")) {
+        use_slot <- "data"
+      } else if (use_assay == "SCT" | use_assay == "integrated") {
+        use_slot <- "scale.data"
+      } else {
+        stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
       }
     }
     # Set new values
-    if (methods::is(object, "Seurat")) {
-      # Seurat object
-      if (is.null(use_assay)) {
-        if ("Assay5" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
-          seurat_version <- "v5"
-        } else if ("Assay" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
-          seurat_version <- "v4"
-        } else {
-          stop("Assay '", Seurat::DefaultAssay(object),
-               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
-        }
-      } else {
-        if ("Assay5" %in% methods::is(object[[use_assay[1]]])) {
-          seurat_version <- "v5"
-        } else if ("Assay" %in% methods::is(object[[use_assay[1]]])) {
-          seurat_version <- "v4"
-        } else {
-          stop("Assay '", use_assay[1],
-               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
-        }
-      }
-      # Set values of 'use_assay' and 'use_slot' if necessary
-      if (is.null(use_assay)) {
-        use_assay <- Seurat::DefaultAssay(object)
-      }
-      if (is.null(use_slot)) {
-        if (use_assay %in% c("RNA", "sketch")) {
-          use_slot <- "data"
-        } else if (use_assay == "SCT" | use_assay == "integrated") {
-          use_slot <- "scale.data"
-        } else {
-          stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
-        }
-      }
-      # Set new values
-      use_assay_build <- use_assay
-      use_assay_prune <- use_assay
-      use_slot_build <- paste0(use_slot, countsplit_suffix[1])
-      use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
-      ArchR_matrix_build <- NULL
-      ArchR_matrix_prune <- NULL
-      countsplit_text <- paste0("\n - Assay: ", use_assay,
-                                "\n - ",
-                                ifelse(seurat_version == "v5", "Layer", "Slot"),
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to build tree: ",
-                                paste(use_slot_build, collapse = " "),
-                                "\n - ",
-                                ifelse(seurat_version == "v5", "Layer", "Slot"),
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to prune tree: ",
-                                paste(use_slot_prune, collapse = " "))
-    } else if (methods::is(object, "SingleCellExperiment")) {
-      # SingleCellExperiment object
-      # Set value of 'use_assay' if necessary
-      if (is.null(use_assay)) {
-        use_assay <- "logcounts"
-      }
-      # Set new values
-      use_assay_build <- paste0(use_assay, countsplit_suffix[1])
-      use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
-      use_slot_build <- NULL
-      use_slot_prune <- NULL
-      ArchR_matrix_build <- NULL
-      ArchR_matrix_prune <- NULL
-      countsplit_text <- paste0("\n - Assay",
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to build tree: ",
-                                paste(use_assay_build, collapse = " "),
-                                "\n - Assay",
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to prune tree: ",
-                                paste(use_assay_prune, collapse = " "))
-    } else if (methods::is(object, "ArchRProject")) {
-      # ArchR object
-      # Set value of 'ArchR_matrix' if necessary
-      if (is.null(ArchR_matrix)) {
-        ArchR_matrix <- "GeneScoreMatrix"
-        warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
-      }
-      # Set new values
-      use_assay_build <- NULL
-      use_assay_prune <- NULL
-      use_slot_build <- NULL
-      use_slot_prune <- NULL
-      ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
-      ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
-      countsplit_text <- ""
-    }
-  } else {
-    # No countsplitting, use same matrix to build & prune tree
     use_assay_build <- use_assay
     use_assay_prune <- use_assay
-    use_slot_build <- use_slot
-    use_slot_prune <- use_slot
-    ArchR_matrix_build <- ArchR_matrix
-    ArchR_matrix_prune <- ArchR_matrix
-    countsplit_text <- ""
+    use_slot_build <- paste0(use_slot, countsplit_suffix[1])
+    use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
+    ArchR_matrix_build <- NULL
+    ArchR_matrix_prune <- NULL
+    countsplit_text <- paste0("\n - Assay: ", use_assay,
+                              "\n - ",
+                              ifelse(seurat_version == "v5", "Layer", "Slot"),
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to build tree: ",
+                              paste(use_slot_build, collapse = " "),
+                              "\n - ",
+                              ifelse(seurat_version == "v5", "Layer", "Slot"),
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to prune tree: ",
+                              paste(use_slot_prune, collapse = " "))
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    # SingleCellExperiment object
+    # Set value of 'use_assay' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- "logcounts"
+    }
+    # Set new values
+    use_assay_build <- paste0(use_assay, countsplit_suffix[1])
+    use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+    use_slot_build <- NULL
+    use_slot_prune <- NULL
+    ArchR_matrix_build <- NULL
+    ArchR_matrix_prune <- NULL
+    countsplit_text <- paste0("\n - Assay",
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to build tree: ",
+                              paste(use_assay_build, collapse = " "),
+                              "\n - Assay",
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to prune tree: ",
+                              paste(use_assay_prune, collapse = " "))
+  } else if (methods::is(object, "ArchRProject")) {
+    # ArchR object
+    # Set value of 'ArchR_matrix' if necessary
+    if (is.null(ArchR_matrix)) {
+      ArchR_matrix <- "GeneScoreMatrix"
+    }
+    if (countsplit == TRUE) {
+      warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
+    }
+    # Set new values
+    use_assay_build <- NULL
+    use_assay_prune <- NULL
+    use_slot_build <- NULL
+    use_slot_prune <- NULL
+    ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
+    ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
+    countsplit_text <- paste0("\n - ArchR matri",
+                              ifelse(n_modalities == 1, "x ", "ces "),
+                              "used to build tree: ",
+                              paste(use_assay_build, collapse = " "),
+                              "\n - ArchR matri",
+                              ifelse(n_modalities == 1,  "x ", "ces "),
+                              "used to prune tree: ",
+                              paste(use_assay_prune, collapse = " "),
+                              "\n - ArchR depth column",
+                              ifelse(n_modalities == 1, ": ", "s: "),
+                              ArchR_depthcol)
   }
 
   # Extract input matrix
@@ -1055,6 +1065,14 @@ combineTrees <- function(object,
   # Number of levels in cluster tree
   n_levels <- ncol(cluster_tree)
 
+  # Provided input
+  provided_input <- c(
+    if (input_matrix_provided) "input_matrix",
+    if (nn_matrix_provided) "nn_matrix",
+    if (dist_matrix_provided) "dist_matrix",
+    if (reduction_provided) "reduction"
+  )
+
   # Report object & parameter details
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", object_type,
@@ -1077,10 +1095,20 @@ combineTrees <- function(object,
                        "\n - Minimum accuracy: ", min_accuracy,
                        "\n - Minimum connections: ", min_connections,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
-                       "\n - Distance awareness: ", distance_awareness,
                        "\n - Distance approximation: ", distance_approx,
+                       "\n - Distance awareness: ", distance_awareness,
+                       "\n - All metrics collected: ", collect_all_metrics,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
+                       "\n - Normalization method: ", normalization_method,
+                       "\n - Batch correction method: ", batch_correction_method,
+                       `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
+                                                                     paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
+                                                                                                       cluster_params),
+                                                                                                collapse = "\n     - "))),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")

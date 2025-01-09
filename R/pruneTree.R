@@ -653,10 +653,22 @@ pruneTree <- function(object,
     }
   }
 
+  # Provided input
+  provided_input <- c(
+    if (cluster_tree_provided) "cluster_tree",
+    if (input_matrix_provided) "input_matrix",
+    if (nn_matrix_provided) "nn_matrix",
+    if (snn_matrix_provided) "snn_matrix",
+    if (dist_matrix_provided) "dist_matrix",
+    if (reduction_provided) "reduction"
+  )
+
   # Report object & parameter details
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", object_type,
+                       `if`(length(provided_items) > 0, paste0("\n - Provided inputs: ", paste(provided_input, collapse = ", ")), ""),
                        "\n - # of cells: ", length(cell_IDs),
+                       "\n - # of batches: ", `if`(batch_correction_method == "none", 1, dplyr::n_distinct(batches)),
                        "\n - # of modalities: ", n_modalities,
                        "\n - # of subtrees: ", n_subtrees,
                        "\n - # of levels: ", n_levels,
@@ -675,10 +687,20 @@ pruneTree <- function(object,
                        "\n - Minimum accuracy: ", min_accuracy,
                        "\n - Minimum connections: ", min_connections,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
-                       "\n - Distance awareness: ", distance_awareness,
                        "\n - Distance approximation: ", distance_approx,
+                       "\n - Distance awareness: ", distance_awareness,
+                       "\n - All metrics collected: ", collect_all_metrics,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
+                       "\n - Normalization method: ", normalization_method,
+                       "\n - Batch correction method: ", batch_correction_method,
+                       `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
+                                                                     paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
+                                                                                                       cluster_params),
+                                                                                                collapse = "\n     - "))),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")

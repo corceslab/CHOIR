@@ -314,87 +314,98 @@ buildParentTree <- function(object,
   }
 
   # ---------------------------------------------------------------------------
-  # Set values for countsplitting (if enabled)
+  # Set values for countsplitting
   # ---------------------------------------------------------------------------
 
   if (countsplit == TRUE) {
     if (is.null(countsplit_suffix)) {
       countsplit_suffix <- c("_1", "_2")
+    } else {
+      countsplit_suffix <- c("", "")
+    }
+  }
+  # Set new values
+  if (methods::is(object, "Seurat")) {
+    # Seurat object
+    # Set values of 'use_assay' and 'use_slot' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- Seurat::DefaultAssay(object)
+    }
+    if (is.null(use_slot)) {
+      if (use_assay %in% c("RNA", "sketch")) {
+        use_slot <- "data"
+      } else if (use_assay == "SCT" | use_assay == "integrated") {
+        use_slot <- "scale.data"
+      } else {
+        stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+      }
     }
     # Set new values
-    if (methods::is(object, "Seurat")) {
-      # Seurat object
-      # Set values of 'use_assay' and 'use_slot' if necessary
-      if (is.null(use_assay)) {
-        use_assay <- Seurat::DefaultAssay(object)
-      }
-      if (is.null(use_slot)) {
-        if (use_assay %in% c("RNA", "sketch")) {
-          use_slot <- "data"
-        } else if (use_assay == "SCT" | use_assay == "integrated") {
-          use_slot <- "scale.data"
-        } else {
-          stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
-        }
-      }
-      # Set new values
-      use_assay_build <- use_assay
-      use_assay_prune <- use_assay
-      use_slot_build <- paste0(use_slot, countsplit_suffix[1])
-      use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
-      ArchR_matrix_build <- NULL
-      ArchR_matrix_prune <- NULL
-      countsplit_text <- paste0("\n - Assay: ", use_assay,
-                                "\n - ",
-                                ifelse(seurat_version == "v5", "Layer", "Slot"),
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to build tree: ",
-                                paste(use_slot_build, collapse = " "))
-    } else if (methods::is(object, "SingleCellExperiment")) {
-      # SingleCellExperiment object
-      # Set value of 'use_assay' if necessary
-      if (is.null(use_assay)) {
-        use_assay <- "logcounts"
-      }
-      # Set new values
-      use_assay_build <- paste0(use_assay, countsplit_suffix[1])
-      use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
-      use_slot_build <- NULL
-      use_slot_prune <- NULL
-      ArchR_matrix_build <- NULL
-      ArchR_matrix_prune <- NULL
-      countsplit_text <- paste0("\n - Assay",
-                                ifelse(n_modalities == 1, " ", "s "),
-                                "used to build tree: ",
-                                paste(use_assay_build, collapse = " "))
-    } else if (methods::is(object, "ArchRProject")) {
-      # ArchR object
-      # Set value of 'ArchR_matrix' if necessary
-      if (is.null(ArchR_matrix)) {
-        ArchR_matrix <- "GeneScoreMatrix"
-        warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
-      }
-      # Set new values
-      use_assay_build <- NULL
-      use_assay_prune <- NULL
-      use_slot_build <- NULL
-      use_slot_prune <- NULL
-      ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
-      ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[2])
-      countsplit_text <- paste0("\n - Matri",
-                                ifelse(n_modalities == 1, "x ", "ces "),
-                                "used to build tree: ",
-                                paste(ArchR_matrix_build, collapse = " "))
-    }
-  } else {
-    # No countsplitting, use same matrix to build & prune tree
-    countsplit_text <- ""
     use_assay_build <- use_assay
     use_assay_prune <- use_assay
-    use_slot_build <- use_slot
-    use_slot_prune <- use_slot
-    ArchR_matrix_build <- ArchR_matrix
-    ArchR_matrix_prune <- ArchR_matrix
+    use_slot_build <- paste0(use_slot, countsplit_suffix[1])
+    use_slot_prune <- paste0(use_slot, countsplit_suffix[2])
+    ArchR_matrix_build <- NULL
+    ArchR_matrix_prune <- NULL
+    countsplit_text <- paste0("\n - Assay: ", use_assay,
+                              "\n - ",
+                              ifelse(seurat_version == "v5", "Layer", "Slot"),
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to build tree: ",
+                              paste(use_slot_build, collapse = " "),
+                              "\n - ",
+                              ifelse(seurat_version == "v5", "Layer", "Slot"),
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to prune tree: ",
+                              paste(use_slot_prune, collapse = " "))
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    # SingleCellExperiment object
+    # Set value of 'use_assay' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- "logcounts"
+    }
+    # Set new values
+    use_assay_build <- paste0(use_assay, countsplit_suffix[1])
+    use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+    use_slot_build <- NULL
+    use_slot_prune <- NULL
+    ArchR_matrix_build <- NULL
+    ArchR_matrix_prune <- NULL
+    countsplit_text <- paste0("\n - Assay",
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to build tree: ",
+                              paste(use_assay_build, collapse = " "),
+                              "\n - Assay",
+                              ifelse(n_modalities == 1, " ", "s "),
+                              "used to prune tree: ",
+                              paste(use_assay_prune, collapse = " "))
+  } else if (methods::is(object, "ArchRProject")) {
+    # ArchR object
+    # Set value of 'ArchR_matrix' if necessary
+    if (is.null(ArchR_matrix)) {
+      ArchR_matrix <- "GeneScoreMatrix"
+    }
+    if (countsplit == TRUE) {
+      warning("Count splitting has not been tested thoroughly outside the context of RNA-seq data.")
+    }
+    # Set new values
+    use_assay_build <- NULL
+    use_assay_prune <- NULL
+    use_slot_build <- NULL
+    use_slot_prune <- NULL
+    ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
+    ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
+    countsplit_text <- paste0("\n - ArchR matri",
+                              ifelse(n_modalities == 1, "x ", "ces "),
+                              "used to build tree: ",
+                              paste(use_assay_build, collapse = " "),
+                              "\n - ArchR matri",
+                              ifelse(n_modalities == 1,  "x ", "ces "),
+                              "used to prune tree: ",
+                              paste(use_assay_prune, collapse = " "),
+                              "\n - ArchR depth column",
+                              ifelse(n_modalities == 1, ": ", "s: "),
+                              ArchR_depthcol)
   }
 
   # ---------------------------------------------------------------------------
@@ -404,18 +415,42 @@ buildParentTree <- function(object,
   # Report object & parameter details
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
+                       `if`(!is.null(reduction) | !is.null(var_features), "\n - Provided inputs: ", ""),
+                       `if`(!is.null(reduction), "reduction", ""),
+                       `if`(!is.null(reduction) & !is.null(var_features), ", ", ""),
+                       `if`(!is.null(reduction), "var_features", ""),
                        "\n - # of cells: ", length(cell_IDs),
+                       "\n - # of batches: ", `if`(batch_correction_method == "none", 1, dplyr::n_distinct(batches)),
                        "\n - # of modalities: ", n_modalities,
+                       "\n - ATAC data: ", atac,
                        "\n - Countsplitting: ", countsplit,
                        countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
+                       "\n - Distance approximation: ", distance_approx,
+                       "\n - Downsampling rate: ", round(downsampling_rate, 4),
                        "\n - Normalization method: ", normalization_method,
                        "\n - Dimensionality reduction method: ", `if`(is.null(reduction_method), "Default", reduction_method),
+                       "\n - Dimensionality reduction parameters provided: ", `if`(length(reduction_params) == 0, "No",
+                                                                                   paste0("\n     - ", paste0(paste0(names(reduction_params), ": ",
+                                                                                                                     reduction_params),
+                                                                                                              collapse = "\n     - "))),
                        "\n - # of variable features: ", `if`(!is.null(var_features), length(var_features),
                                                              `if`(is.null(n_var_features), "Default", n_var_features)),
                        "\n - Batch correction method: ", batch_correction_method,
-                       "\n - Distance approximation: ", distance_approx,
+                       "\n - Batch correction parameters provided: ", `if`(length(batch_correction_params) == 0, "No",
+                                                                           paste0("\n     - ", paste0(paste0(names(batch_correction_params), ": ",
+                                                                                                             batch_correction_params),
+                                                                                                      collapse = "\n     - "))),
+                       `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       "\n - Nearest neighbor parameters provided: ", `if`(length(neighbor_params) == 0, "No",
+                                                                           paste0("\n     - ", paste0(paste0(names(neighbor_params), ": ",
+                                                                                                             neighbor_params),
+                                                                                                      collapse = "\n     - "))),
+                       "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
+                                                                     paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
+                                                                                                       cluster_params),
+                                                                                                collapse = "\n     - "))),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")

@@ -458,7 +458,7 @@ buildTree <- function(object,
   }
 
   # ---------------------------------------------------------------------------
-  # Set values for countsplitting (if enabled)
+  # Set values for countsplitting
   # ---------------------------------------------------------------------------
 
   if (countsplit == TRUE) {
@@ -565,7 +565,7 @@ buildTree <- function(object,
                        "\n - # of cells: ", length(cell_IDs),
                        "\n - # of batches: ", `if`(batch_correction_method == "none", 1, dplyr::n_distinct(batches)),
                        "\n - # of modalities: ", n_modalities,
-                       "ATAC data: ", atac,
+                       "\n - ATAC data: ", atac,
                        "\n - Countsplitting: ", countsplit,
                        countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
@@ -601,7 +601,7 @@ buildTree <- function(object,
                                                                            paste0("\n     - ", paste0(paste0(names(batch_correction_params), ": ",
                                                                                                              batch_correction_params),
                                                                                                       collapse = "\n     - "))),
-                       "\n - Metadata column containing batch information: ", `if`(!is.null(batch_labels), batch_labels, "N/A"),
+                       `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
                        "\n - Nearest neighbor parameters provided: ", `if`(length(neighbor_params) == 0, "No",
                                                                            paste0("\n     - ", paste0(paste0(names(neighbor_params), ": ",
                                                                                                              neighbor_params),
