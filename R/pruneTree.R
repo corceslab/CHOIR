@@ -666,7 +666,7 @@ pruneTree <- function(object,
   # Report object & parameter details
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", object_type,
-                       `if`(length(provided_items) > 0, paste0("\n - Provided inputs: ", paste(provided_input, collapse = ", ")), ""),
+                       `if`(length(provided_input) > 0, paste0("\n - Provided inputs: ", paste(provided_input, collapse = ", ")), ""),
                        "\n - # of cells: ", length(cell_IDs),
                        "\n - # of batches: ", `if`(batch_correction_method == "none", 1, dplyr::n_distinct(batches)),
                        "\n - # of modalities: ", n_modalities,
