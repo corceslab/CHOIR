@@ -375,6 +375,7 @@ compareClusters <- function(object = NULL,
         use_assay_m <- .matchArg(use_assay, m)
         use_slot_m <- .matchArg(use_slot, m)
         ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
+        normalization_method_m <- .matchArg(normalization_method, m)
         # Features
         if (length(use_features) > 1) {
           use_features_m <- use_features[[m]]
