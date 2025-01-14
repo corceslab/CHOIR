@@ -102,7 +102,7 @@ subtree_x@misc$CHOIR_subtree$clusters <- data.frame(CellID = colnames(subtree_x)
 subtree_x@misc$CHOIR_subtree$parameters <- subtree_s@misc$CHOIR$parameters
 ```
 
-For example, parent cluster P## from the Siletti et al. 2023 human brain atlas data was composed of ### cells from a single batch, and did not require further subclustering.
+For example, parent cluster P9 from the Siletti et al. 2023 human brain atlas data was composed of 1395 cells from a single batch, and did not require further subclustering.
 
 Then, extract the resulting clusters, clustering trees, and comparison records using the CHOIR function `getRecords`.
 

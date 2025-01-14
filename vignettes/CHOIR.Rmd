@@ -266,7 +266,7 @@ ArchR_object <- CHOIR(ArchR_object,
 
 ## Using CHOIR with multi-modal data
 
-If you are providing input data which contains multiple modalities from the same cell, such as RNA + ATAC multiome data, you must provide multiple values (as a vector) to parameters `use_assay` and `use_slot` (for Seurat objects), `use_assay` for (SingleCellExperiment objects), or `ArchR_matrix` and `ArchR_depthcol` for ArchR objects.
+If you are providing input data which contains multiple modalities from the same cell, such as RNA + ATAC multiome data, you must provide multiple values (as a vector) to parameters `use_assay` and `use_slot` (for Seurat objects), `use_assay` for (SingleCellExperiment objects), or `ArchR_matrix` and `ArchR_depthcol` for ArchR objects. Please make sure your object is limited to the set of shared cells among the modalities, or you may encounter errors.
 
 If you want to use different methods of normalization, dimensionality reduction, number of variable features, or batch correction for each modality, input to related parameters must also be provided as vectors or lists with one value per modality. CHOIR creates a joint dimensionality reduction for the modalities and uses all provided feature matrices as joint input to train/test random forest classifiers. 
 

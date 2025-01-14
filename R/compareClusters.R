@@ -376,7 +376,7 @@ compareClusters <- function(object = NULL,
         use_slot_m <- .matchArg(use_slot, m)
         ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
         # Features
-        if (length(use_features_subtree) > 1) {
+        if (length(use_features) > 1) {
           use_features_m <- use_features[[m]]
         } else {
           use_features_m <- use_features
