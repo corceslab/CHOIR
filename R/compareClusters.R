@@ -340,6 +340,7 @@ compareClusters <- function(object = NULL,
       var_features_provided <- TRUE
       use_features <- var_features
     } else {
+      var_features_provided <- FALSE
       if (feature_set == "all") {
         use_features <- NULL
       } else if (is.null(var_features)) {
@@ -374,6 +375,7 @@ compareClusters <- function(object = NULL,
       var_features_provided <- TRUE
       use_features <- var_features
     } else {
+      var_features_provided <- FALSE
       if (feature_set == "all") {
         use_features <- NULL
       } else {
