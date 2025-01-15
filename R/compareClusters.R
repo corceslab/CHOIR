@@ -271,6 +271,8 @@ compareClusters <- function(object = NULL,
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
       .requirePackage("SingleCellExperiment", source = "bioc")
+    } else {
+      object_type <- "none"
     }
   }
   .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
@@ -334,6 +336,16 @@ compareClusters <- function(object = NULL,
   # Extract input matrix/matrices
   if (!is.null(input_matrix)) {
     input_matrix_provided <- TRUE
+    if (!is.null(var_features)) {
+      var_features_provided <- TRUE
+      use_features <- var_features
+    } else {
+      if (feature_set == "all") {
+        use_features <- NULL
+      } else if (is.null(var_features)) {
+        stop("Please provide as input to parameter 'var_features'.")
+      }
+    }
     input_matrix <- .getMatrix(use_matrix = input_matrix,
                                use_features = var_features,
                                exclude_features = exclude_features,
@@ -358,13 +370,18 @@ compareClusters <- function(object = NULL,
       use_nn_matrix <- "P0"
     }
     # Use all / var features
-    if (feature_set == "all") {
-      use_features <- NULL
+    if (!is.null(var_features)) {
+      var_features_provided <- TRUE
+      use_features <- var_features
     } else {
-      use_features <- .retrieveData(object, key, "var_features", paste0(use_input_matrix, "_var_features"))
-      if (is.null(use_features)) {
-        stop("Could not find variable features under key '", key,
-             "'. Please provide as input to parameter 'var_features'.")
+      if (feature_set == "all") {
+        use_features <- NULL
+      } else {
+        use_features <- .retrieveData(object, key, "var_features", paste0(use_input_matrix, "_var_features"))
+        if (is.null(use_features)) {
+          stop("Could not find variable features under key '", key,
+               "'. Please provide as input to parameter 'var_features'.")
+        }
       }
     }
     # Extract input matrix for random forest comparisons
@@ -471,6 +488,90 @@ compareClusters <- function(object = NULL,
   } else {
     feature_importance_records <- NULL
   }
+
+  # ---------------------------------------------------------------------------
+  # Report object & parameter details
+  # ---------------------------------------------------------------------------
+
+  if (methods::is(object, "Seurat")) {
+    # Seurat object
+    # Set values of 'use_assay' and 'use_slot' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- Seurat::DefaultAssay(object)
+    }
+    if (is.null(use_slot)) {
+      if (use_assay %in% c("RNA", "sketch")) {
+        use_slot <- "data"
+      } else if (use_assay == "SCT" | use_assay == "integrated") {
+        use_slot <- "scale.data"
+      } else {
+        stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+      }
+    }
+    assay_text <- paste0("\n - Assay: ", use_assay,
+                         "\n - ",
+                         ifelse(seurat_version == "v5", "Layer", "Slot"),
+                         ifelse(n_modalities == 1, ": ", "s: "),
+                         paste(use_slot, collapse = ", "))
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    # SingleCellExperiment object
+    # Set value of 'use_assay' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- "logcounts"
+    }
+    assay_text <- paste0("\n - Assay",
+                              ifelse(n_modalities == 1, ": ", "s: "),
+                              paste(use_assay, collapse = ", "))
+  } else if (methods::is(object, "ArchRProject")) {
+    # ArchR object
+    # Set value of 'ArchR_matrix' if necessary
+    if (is.null(ArchR_matrix)) {
+      ArchR_matrix <- "GeneScoreMatrix"
+    }
+    assay_text <- paste0("\n - ArchR matri",
+                              ifelse(n_modalities == 1, "x: ", "ces: "),
+                              paste(ArchR_matrix, collapse = ", "))
+  }
+
+  # Provided input
+  provided_input <- c(
+    if (input_matrix_provided) "input_matrix",
+    if (nn_matrix_provided) "nn_matrix",
+    if (var_features_provided) "var_features"
+  )
+
+  if (verbose) message("\nInput data:",
+                       "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
+                       `if`(length(provided_input) > 0, paste0("\n - Provided inputs: ", paste(provided_input, collapse = ", ")), ""),
+                       "\n - # of cells in ", `if`(is.null(group_by), "", paste0(group_by, " ")), ident1, ": ", length(cluster1_cells),
+                       "\n - # of cells in ", `if`(is.null(group_by), "", paste0(group_by, " ")), ident2, ": ", length(cluster2_cells),
+                       "\n - # of batches: ", `if`(is.null(batch_labels), 1, dplyr::n_distinct(batches)),
+                       "\n - # of modalities: ", n_modalities,
+                       "\n - ATAC data: ", paste(atac, collapse = ", "),
+                       assay_text)
+  if (verbose) message("\nProceeding with the following parameters:",
+                       "\n - Intermediate data stored under key: ", key,
+                       "\n - Alpha: ", alpha,
+                       "\n - Features to train RF: ", feature_set,
+                       "\n - # of excluded features: ", length(exclude_features),
+                       "\n - # of permutations: ", n_iterations,
+                       "\n - # of RF trees: ", n_trees,
+                       "\n - Use variance: ", use_variance,
+                       "\n - Minimum accuracy: ", min_accuracy,
+                       "\n - Minimum connections: ", min_connections,
+                       "\n - Maximum repeated errors: ", max_repeat_errors,
+                       "\n - All metrics collected: ", collect_all_metrics,
+                       "\n - Maximum cells sampled: ", sample_max,
+                       "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
+                       "\n - Normalization method: ", normalization_method,
+                       `if`(!is.null(batch_labels), paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       "\n - # of features used: ", length(features),
+                       "\n - # of cores: ", n_cores,
+                       "\n - Random seed: ", random_seed,
+                       "\n")
+
 
   # ---------------------------------------------------------------------------
   # Run comparison

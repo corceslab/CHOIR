@@ -859,12 +859,12 @@ combineTrees <- function(object,
                               ifelse(seurat_version == "v5", "Layer", "Slot"),
                               ifelse(n_modalities == 1, " ", "s "),
                               "used to build tree: ",
-                              paste(use_slot_build, collapse = " "),
+                              paste(use_slot_build, collapse = ", "),
                               "\n - ",
                               ifelse(seurat_version == "v5", "Layer", "Slot"),
                               ifelse(n_modalities == 1, " ", "s "),
                               "used to prune tree: ",
-                              paste(use_slot_prune, collapse = " "))
+                              paste(use_slot_prune, collapse = ", "))
   } else if (methods::is(object, "SingleCellExperiment")) {
     # SingleCellExperiment object
     # Set value of 'use_assay' if necessary
@@ -881,11 +881,11 @@ combineTrees <- function(object,
     countsplit_text <- paste0("\n - Assay",
                               ifelse(n_modalities == 1, " ", "s "),
                               "used to build tree: ",
-                              paste(use_assay_build, collapse = " "),
+                              paste(use_assay_build, collapse = ", "),
                               "\n - Assay",
                               ifelse(n_modalities == 1, " ", "s "),
                               "used to prune tree: ",
-                              paste(use_assay_prune, collapse = " "))
+                              paste(use_assay_prune, collapse = ", "))
   } else if (methods::is(object, "ArchRProject")) {
     # ArchR object
     # Set value of 'ArchR_matrix' if necessary
@@ -901,18 +901,18 @@ combineTrees <- function(object,
     use_slot_build <- NULL
     use_slot_prune <- NULL
     ArchR_matrix_build <- paste0(ArchR_matrix, countsplit_suffix[1])
-    ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[1])
+    ArchR_matrix_prune <- paste0(ArchR_matrix, countsplit_suffix[2])
     countsplit_text <- paste0("\n - ArchR matri",
                               ifelse(n_modalities == 1, "x ", "ces "),
                               "used to build tree: ",
-                              paste(use_assay_build, collapse = " "),
+                              paste(ArchR_matrix_build, collapse = ", "),
                               "\n - ArchR matri",
                               ifelse(n_modalities == 1,  "x ", "ces "),
                               "used to prune tree: ",
-                              paste(use_assay_prune, collapse = " "),
+                              paste(ArchR_matrix_prune, collapse = ", "),
                               "\n - ArchR depth column",
                               ifelse(n_modalities == 1, ": ", "s: "),
-                              ArchR_depthcol)
+                              paste(ArchR_depthcol, collapse = ", "))
   }
 
   # Extract input matrix
