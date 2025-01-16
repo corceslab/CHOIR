@@ -464,9 +464,9 @@ buildTree <- function(object,
   if (countsplit == TRUE) {
     if (is.null(countsplit_suffix)) {
       countsplit_suffix <- c("_1", "_2")
-    } else {
-      countsplit_suffix <- c("", "")
     }
+  } else {
+    countsplit_suffix <- c("", "")
   }
   # Set new values
   if (methods::is(object, "Seurat")) {
