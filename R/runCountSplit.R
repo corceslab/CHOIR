@@ -78,9 +78,6 @@ runCountSplit <- function(object,
 
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
-    # n_modalities <- max(length(ArchR_matrix), 1)
-    # object_type <- "ArchRProject"
-    # .requirePackage("ArchR", installInfo = "Instructions at archrproject.com")
     stop("Countsplitting using function 'runCountSplit' is not yet supported for ArchR objects.")
   } else {
     n_modalities <- max(length(use_assay), 1)

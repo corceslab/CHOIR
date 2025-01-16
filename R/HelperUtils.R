@@ -306,7 +306,7 @@ getRecords <- function(object,
       ArchR_matrix <- "GeneScoreMatrix"
     }
     if (ArchR_matrix == "GeneScoreMatrix") {
-      gene_score_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+      gene_score_matrix <- suppressMessages(ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix"))
       feature_names <- gene_score_matrix@elementMetadata$name
       use_matrix <- gene_score_matrix@assays@data$GeneScoreMatrix
       rownames(use_matrix) <- feature_names
@@ -371,10 +371,6 @@ getRecords <- function(object,
                                                 use_assay,
                                                 verbose)
   } else if (methods::is(object, "ArchRProject")) {
-    # object <- .storeMatrix.ArchR(object,
-    #                              use_matrix,
-    #                              ArchR_matrix,
-    #                              verbose)
     stop("Function '.storeMatrix' does not yet support ArchR objects.")
   }
   # Return object

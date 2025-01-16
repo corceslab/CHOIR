@@ -131,7 +131,9 @@
       for (i in 1:length(reduction_full_list)) {
         object@reducedDims[[paste0("DR_", i)]] <- reduction_full_list[[i]]
       }
-      object <- ArchR::addCombinedDims(object, reducedDims = paste0("DR_", seq(1:length(reduction_full_list))), name =  "LSI_Combined")
+      object <- suppressWarnings(suppressMessages(ArchR::addCombinedDims(object,
+                                                                         reducedDims = paste0("DR_", seq(1:length(reduction_full_list))),
+                                                                         name =  "LSI_Combined")))
       if (return_full == TRUE) {
         full_reduction <- object@reducedDims$LSI_Combined
       }
@@ -380,23 +382,23 @@
           iterativeLSI_matrix <- ArchR_matrix
         }
 
-        object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
-                                                         "name" = "CHOIR_IterativeLSI",
-                                                         "varFeatures" = n_var_features,
-                                                         "saveIterations" = FALSE,
-                                                         "useMatrix" = iterativeLSI_matrix,
-                                                         "depthCol" = ArchR_depthcol,
-                                                         "force" = TRUE,
-                                                         "seed" = random_seed,
-                                                         "threads" = n_cores),
-                                                    reduction_params))
+        object <- suppressWarnings(suppressMessages(do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
+                                                                                           "name" = "CHOIR_IterativeLSI",
+                                                                                           "varFeatures" = n_var_features,
+                                                                                           "saveIterations" = FALSE,
+                                                                                           "useMatrix" = iterativeLSI_matrix,
+                                                                                           "depthCol" = ArchR_depthcol,
+                                                                                           "force" = TRUE,
+                                                                                           "seed" = random_seed,
+                                                                                           "threads" = n_cores),
+                                                                                      reduction_params))))
 
         # Extract variable features (dataframe)
         if (ArchR_matrix != "GeneScoreMatrix") {
           var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
         } else {
           # Extract GeneScoreMatrix
-          feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
+          feature_matrix <- suppressMessages(ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix"))
           feature_names <- feature_matrix@elementMetadata$name
           feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
           rownames(feature_matrix) <- feature_names
@@ -441,12 +443,12 @@
             object@cellColData[, batch_labels] <- as.character(object@cellColData[, batch_labels])
           }
           if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Running Harmony batch correction using column '", batch_labels, "'..")
-          object <- do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
-                                                      "reducedDims" = "CHOIR_IterativeLSI",
-                                                      "name" = "CHOIR_Harmony",
-                                                      "groupBy" = batch_labels,
-                                                      "force" = TRUE),
-                                                 batch_correction_params))
+          object <- suppressWarnings(suppressMessages(do.call(ArchR::addHarmony, c(list("ArchRProj" = object,
+                                                                                        "reducedDims" = "CHOIR_IterativeLSI",
+                                                                                        "name" = "CHOIR_Harmony",
+                                                                                        "groupBy" = batch_labels,
+                                                                                        "force" = TRUE),
+                                                                                   batch_correction_params))))
 
           # Extract dimensionality reduction coordinates
           reduction_coords <- object@reducedDims$CHOIR_Harmony$matDR
