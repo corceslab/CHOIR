@@ -408,7 +408,7 @@
           }
           feature_matrix <- as.matrix(feature_matrix)
           # Find variable features
-          var_features <-  Seurat:::FindVariableFeatures.V3Matrix(feature_matrix, verbose = TRUE)
+          var_features <-  Seurat:::FindVariableFeatures.V3Matrix(feature_matrix, verbose = FALSE)
           var_features <- data.frame(var_features)
           if ("vst.variance.standardized" %in% colnames(var_features)) {
             var_features <- var_features %>%

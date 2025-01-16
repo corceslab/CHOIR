@@ -956,10 +956,6 @@
       if (!methods::is(input, "character") | length(input) != 2) {
         stop("Input for '", name, "' must be a vector of class 'character' with exactly 2 values. Please supply valid input!")
       }
-      # Warn if 'countsplit' is FALSE
-      if (other == FALSE) {
-        warning("Input for '", name, "' is not used when parameter 'countsplit' is set to FALSE.")
-      }
     }
   }
 
