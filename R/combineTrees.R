@@ -909,10 +909,7 @@ combineTrees <- function(object,
                               "\n - ArchR matri",
                               ifelse(n_modalities == 1,  "x ", "ces "),
                               "used to prune tree: ",
-                              paste(ArchR_matrix_prune, collapse = ", "),
-                              "\n - ArchR depth column",
-                              ifelse(n_modalities == 1, ": ", "s: "),
-                              paste(ArchR_depthcol, collapse = ", "))
+                              paste(ArchR_matrix_prune, collapse = ", "))
   }
 
   # Extract input matrix

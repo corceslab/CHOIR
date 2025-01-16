@@ -94,9 +94,9 @@ If any parent clusters cannot be subclustered further, instead run the following
 
 ```{r, eval = FALSE}
 # Add cluster labels for a single cluster
-subtree_x@misc$CHOIR_subtree$clusters <- data.frame(CellID = colnames(subtree_x),
-                                            CHOIR_clusters_0.05 = 1,
-                                            Record_cluster_label = "P0_L0_1")
+subtree_x@misc$CHOIR_subtree$clusters$CHOIR_clusters_0.05 <- data.frame(CellID = colnames(subtree_x),
+                                                                        CHOIR_clusters_0.05 = 1,
+                                                                        Record_cluster_label = "P0_L0_1")
 
 # Add parameter records matching remaining subtrees
 subtree_x@misc$CHOIR_subtree$parameters <- subtree_s@misc$CHOIR$parameters
