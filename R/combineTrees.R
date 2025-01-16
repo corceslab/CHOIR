@@ -849,6 +849,9 @@ combineTrees <- function(object,
       use_assay <- "logcounts"
     }
     # Set new values
+    print(use_assay)
+    print(countsplit_suffix)
+    print(countsplit_suffix[2])
     use_assay_build <- paste0(use_assay, countsplit_suffix[1])
     use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
     print(use_assay_prune)
