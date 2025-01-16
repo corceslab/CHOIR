@@ -851,6 +851,7 @@ combineTrees <- function(object,
     # Set new values
     use_assay_build <- paste0(use_assay, countsplit_suffix[1])
     use_assay_prune <- paste0(use_assay, countsplit_suffix[2])
+    print(use_assay_prune)
     use_slot_build <- NULL
     use_slot_prune <- NULL
     ArchR_matrix_build <- NULL
