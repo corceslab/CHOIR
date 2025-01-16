@@ -230,6 +230,9 @@ getRecords <- function(object,
       .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     use_matrix <- object@assays@data[[use_assay]]
+    print(use_matrix)
+    print(use_assay)
+    print(use_features)
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing input matrix using '", use_assay, "' assay..")
   } else {
     # If assay is not NULL
