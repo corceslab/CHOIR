@@ -897,10 +897,12 @@ buildTree <- function(object,
         percent_done <- percent_done + tick_amount
       } else {
         # Use subset of dimensionality reduction or recalculate
-        # If there are less than 20 cells in cluster i, do not generate new dimensionality reduction
-        if (subtree_reductions == FALSE | length(cell_IDs_i) < 20) {
+        # If there are less than 20 cells in cluster i (or 500 cells in ArchR objects), do not generate new dimensionality reduction
+        if (subtree_reductions == FALSE | length(cell_IDs_i) < 20 | (methods::is(object, "ArchRProject") & length(cell_IDs_i) < 500)) {
           P_i_dim_reduction <- list("reduction_coords" = P0_dim_reduction[["reduction_coords"]][cell_IDs_i,],
                                     "var_features" = P0_dim_reduction[["var_features"]])
+          if (verbose & subtree_reductions == TRUE) pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                                                      " : ", "Skipped new dimensionality reduction for subtree ", i, " (too few cells)."))
         } else if (subtree_reductions == TRUE) {
           P_i_dim_reduction <- .runDimReduction(object = object,
                                                 normalization_method = normalization_method,

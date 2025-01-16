@@ -380,35 +380,22 @@
           iterativeLSI_matrix <- ArchR_matrix
         }
 
-        if (ArchR_matrix == "GeneExpressionMatrix") {
-          object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
-                                                           "name" = "CHOIR_IterativeLSI",
-                                                           "varFeatures" = 2000,
-                                                           "saveIterations" = FALSE,
-                                                           "useMatrix" = iterativeLSI_matrix,
-                                                           "depthCol" = ArchR_depthcol,
-                                                           "force" = TRUE,
-                                                           "seed" = random_seed,
-                                                           "threads" = n_cores),
-                                                      reduction_params))
-        } else {
-          object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
-                                                           "name" = "CHOIR_IterativeLSI",
-                                                           "varFeatures" = 25000,
-                                                           "saveIterations" = FALSE,
-                                                           "useMatrix" = iterativeLSI_matrix,
-                                                           "depthCol" = ArchR_depthcol,
-                                                           "force" = TRUE,
-                                                           "seed" = random_seed,
-                                                           "threads" = n_cores),
-                                                      reduction_params))
-        }
+        object <- do.call(ArchR::addIterativeLSI, c(list("ArchRProj" = object,
+                                                         "name" = "CHOIR_IterativeLSI",
+                                                         "varFeatures" = n_var_features,
+                                                         "saveIterations" = FALSE,
+                                                         "useMatrix" = iterativeLSI_matrix,
+                                                         "depthCol" = ArchR_depthcol,
+                                                         "force" = TRUE,
+                                                         "seed" = random_seed,
+                                                         "threads" = n_cores),
+                                                    reduction_params))
 
         # Extract variable features (dataframe)
         if (ArchR_matrix != "GeneScoreMatrix") {
           var_features <- object@reducedDims$CHOIR_IterativeLSI$LSIFeatures
         } else {
-          # Extract GeneScoreMatrix ### FIX LATER ###
+          # Extract GeneScoreMatrix
           feature_matrix <- ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix")
           feature_names <- feature_matrix@elementMetadata$name
           feature_matrix <- feature_matrix@assays@data$GeneScoreMatrix
