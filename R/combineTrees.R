@@ -1768,7 +1768,7 @@ combineTrees <- function(object,
     # If there are new clusters, edit list of permitted comparisons
     if (length(new_clusters) > 0) {
       # Get new centroid_distances
-      centroid_distances <- .getCentroidDistance(object@reductions$CHOIR_P0_reduction@cell.embeddings,
+      centroid_distances <- .getCentroidDistance(P0_reduction,
                                                  child_IDs)
       unique_child_clusters <- unique(child_IDs)
       cluster_info <- rbind(cluster_info, data.frame(Subtree_cluster = new_clusters,
