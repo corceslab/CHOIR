@@ -199,14 +199,14 @@ parallel jobs submitted to an HPC, one per subsetted object.</p>
 the following code:</p>
 <div class="sourceCode" id="cb6"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># Add cluster labels for a single cluster</span></span>
-<span><span class="va">subtree_x</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR_subtree</span><span class="op">$</span><span class="va">clusters</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>CellID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">subtree_x</span><span class="op">)</span>,</span>
-<span>                                            CHOIR_clusters_0.05 <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>                                            Record_cluster_label <span class="op">=</span> <span class="st">"P0_L0_1"</span><span class="op">)</span></span>
+<span><span class="va">subtree_x</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR_subtree</span><span class="op">$</span><span class="va">clusters</span><span class="op">$</span><span class="va">CHOIR_clusters_0.05</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/data.frame.html" class="external-link">data.frame</a></span><span class="op">(</span>CellID <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/colnames.html" class="external-link">colnames</a></span><span class="op">(</span><span class="va">subtree_x</span><span class="op">)</span>,</span>
+<span>                                                                        CHOIR_clusters_0.05 <span class="op">=</span> <span class="fl">1</span>,</span>
+<span>                                                                        Record_cluster_label <span class="op">=</span> <span class="st">"P0_L0_1"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># Add parameter records matching remaining subtrees</span></span>
 <span><span class="va">subtree_x</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR_subtree</span><span class="op">$</span><span class="va">parameters</span> <span class="op">&lt;-</span> <span class="va">subtree_s</span><span class="op">@</span><span class="va">misc</span><span class="op">$</span><span class="va">CHOIR</span><span class="op">$</span><span class="va">parameters</span></span></code></pre></div>
-<p>For example, parent cluster P## from the Siletti et al. 2023 human
-brain atlas data was composed of ### cells from a single batch, and did
+<p>For example, parent cluster P9 from the Siletti et al. 2023 human
+brain atlas data was composed of 1395 cells from a single batch, and did
 not require further subclustering.</p>
 <p>Then, extract the resulting clusters, clustering trees, and
 comparison records using the CHOIR function <code>getRecords</code>.</p>
@@ -217,8 +217,8 @@ comparison records using the CHOIR function <code>getRecords</code>.</p>
 <span><span class="op">}</span></span></code></pre></div>
 </div>
 <div class="section level2">
-<h2 id="step-3-combine-subtrees-and-standardize-significance-thresholds">Step 3: Combine subtrees and standardize significance
-thresholds<a class="anchor" aria-label="anchor" href="#step-3-combine-subtrees-and-standardize-significance-thresholds"></a>
+<h2 id="step-4-combine-subtrees-and-standardize-significance-thresholds">Step 4: Combine subtrees and standardize significance
+thresholds<a class="anchor" aria-label="anchor" href="#step-4-combine-subtrees-and-standardize-significance-thresholds"></a>
 </h2>
 <p>Run the CHOIR function <code>combineTrees</code> on the complete set
 of records extracted in step 2. In doing so, the significance threshold

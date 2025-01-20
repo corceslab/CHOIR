@@ -276,7 +276,7 @@ Below is an example command to run CHOIR with joint RNA-seq and ATAC-seq data:
 ```{r, eval = FALSE}
 ArchR_object <- CHOIR(ArchR_object,
                       ArchR_matrix = c("GeneScoreMatrix", "GeneExpressionMatrix"),
-                      ArchR_depthcol <- c("nFrags", "Gex_nUMI"),
+                      ArchR_depthcol = c("nFrags", "Gex_nUMI"),
                       atac = c(TRUE, FALSE))
 ```
 
