@@ -13,6 +13,9 @@
     <loc>/articles/CHOIR.html</loc>
   </url>
   <url>
+    <loc>/articles/atlas_scale_data.html</loc>
+  </url>
+  <url>
     <loc>/articles/index.html</loc>
   </url>
   <url>
@@ -34,13 +37,25 @@
     <loc>/reference/CHOIRpalette.html</loc>
   </url>
   <url>
+    <loc>/reference/buildParentTree.html</loc>
+  </url>
+  <url>
     <loc>/reference/buildTree.html</loc>
+  </url>
+  <url>
+    <loc>/reference/combineTrees.html</loc>
   </url>
   <url>
     <loc>/reference/compareClusters.html</loc>
   </url>
   <url>
+    <loc>/reference/getRecords.html</loc>
+  </url>
+  <url>
     <loc>/reference/index.html</loc>
+  </url>
+  <url>
+    <loc>/reference/inferTree.html</loc>
   </url>
   <url>
     <loc>/reference/pipe.html</loc>
@@ -53,5 +68,8 @@
   </url>
   <url>
     <loc>/reference/runCHOIRumap.html</loc>
+  </url>
+  <url>
+    <loc>/reference/runCountSplit.html</loc>
   </url>
 </urlset>

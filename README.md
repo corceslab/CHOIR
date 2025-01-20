@@ -4,7 +4,7 @@
 <!-- badges: start -->
 <!-- badges: end -->
 
-**CHOIR** (**c**luster **h**ierarchy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
+**CHOIR** (**c**luster **h**ierachy **o**ptimization by **i**terative **r**andom forests) is a clustering algorithm for single-cell data. CHOIR applies a framework of permutation tests and random forest classifiers across a hierarchical clustering tree to statistically identify clusters that represent distinct populations.
 
 <br>
 
@@ -12,7 +12,7 @@
 
 CHOIR is on bioRxiv! You can find it [here](https://www.biorxiv.org/content/10.1101/2024.01.18.576317v1).
 
-Petersen et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
+Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
 
 ## Installation
 
@@ -21,17 +21,17 @@ CHOIR is designed to be run on Unix-based operating systems such as macOS and li
 CHOIR installation currently requires `remotes` and `BiocManager` for installation of GitHub and Bioconductor packages. Run the following commands to install the various dependencies used by CHOIR:
 
 First, install remotes (for installing GitHub packages) if it isn’t already installed:
-```{r, eval = FALSE}
+```
 if (!requireNamespace("remotes", quietly = TRUE)) install.packages("remotes")
 ```
 
 Then, install BiocManager (for installing bioconductor packages) if it isn’t already installed:
-```{r, eval = FALSE}
+```
 if (!requireNamespace("BiocManager", quietly = TRUE)) install.packages("BiocManager")
 ```
 
 Then, install CHOIR:
-```{r, eval = FALSE}
+```
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
 

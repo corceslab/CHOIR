@@ -17,13 +17,14 @@
 # alpha -- A numeric value indicating the significance level used for the permutation test
 # n_iterations A numeric value indicating the number of iterations run for each permutation test
 # n_trees A numeric value indicating the number of trees in each random forest
-# use_variance -- A boolean value indicating whether to use variance in permutation test
+# use_variance -- A Boolean value indicating whether to use variance in permutation test
 # min_accuracy -- A numeric value indicating the minimum accuracy below which clusters will be automatically merged
 # min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
-# collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics from the random forest classifiers
+# collect_all_metrics -- A Boolean value indicating whether to collect and save additional metrics from the random forest classifiers
 # sample_max -- A numeric indicating max cells to sample for random forest
 # downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
+# min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # input_matrix -- A matrix of sequencing data, on which the random forest classifier will be trained/tested
 # nn_matrix -- A nearest neighbors adjacency matrix
 # comparison_records -- A dataframe containing the comparison records output of the previous runs of this function
@@ -55,6 +56,7 @@
                                 collect_all_metrics,
                                 sample_max,
                                 downsampling_rate,
+                                min_reads,
                                 input_matrix,
                                 nn_matrix,
                                 comparison_records = NULL,
@@ -144,12 +146,46 @@
                      max(1, floor(downsampling_rate*(min(length(cluster1_cells), length(cluster2_cells))/2))))
   }
 
-  # Go ahead with comparison
+  # Filter input matrix
   if (proceed == TRUE) {
     # Prepare input matrix
     comparison_input <- input_matrix[c(cluster1_cells, cluster2_cells),]
     comparison_input <- methods::as(comparison_input, "dgCMatrix")
-    comparison_input <- comparison_input[, Matrix::colSums(comparison_input) > 0]
+    # Filter to minimum reads per feature
+    if (is.null(min_reads)) {
+      comparison_input <- comparison_input[, Matrix::colSums(comparison_input) > 0]
+    } else {
+      feature_sums_cluster1 <- Matrix::colSums(comparison_input[cluster1_cells,])
+      feature_sums_cluster2 <- Matrix::colSums(comparison_input[cluster2_cells,])
+      min_reads_cluster1 <- length(cluster1_cells)/min_reads
+      min_reads_cluster2 <- length(cluster2_cells)/min_reads
+      keep_features <- (feature_sums_cluster1 > min_reads_cluster1) | (feature_sums_cluster2 > min_reads_cluster2)
+      if (sum(keep_features) == 0) {
+        comparison_result <- "merge"
+        proceed <- FALSE
+        # Add to comparison records
+        if (!is.null(comparison_records)) {
+          current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
+          colnames(current_comparison) <- colnames(comparison_records)
+          current_comparison <- data.frame(current_comparison)
+          current_comparison$comparison <- paste0(cluster1_name, " vs. ", cluster2_name)
+          current_comparison$cluster1_size <- length(cluster1_cells)
+          current_comparison$cluster2_size <- length(cluster2_cells)
+          current_comparison$connectivity <- adjacent
+          current_comparison$decision <- "merge: minimum reads"
+          if ("root_distance" %in% colnames(comparison_records)) {
+            current_comparison$root_distance <- P0_distance
+            current_comparison$subtree_distance <- P_i_distance
+          }
+        }
+      } else {
+        comparison_input <- comparison_input[, keep_features]
+      }
+    }
+  }
+
+  # Go ahead with comparison
+  if (proceed == TRUE) {
     # Run random forest classifiers
     rf_comparison_list <- parallel::mclapply(seq_len(round(n_iterations/2)), FUN = function(i) {
       .runRF(i = i,
@@ -172,14 +208,19 @@
     mean_acc <- mean(accuracies)
     var_acc <- stats::var(accuracies)
     mean_err <- (1 - mean_acc)*n_sampled
-    # Get batch accuracies
-    batch_acc <- c()
-    if (!is.null(use_batch)) {
-      for (b in 1:length(batches)) {
-        batch_inds <- which(use_batch == batches[b])
-        batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
-      }
-    }
+
+    # Permutation accuracies
+    permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
+    mean_permutation_acc <- mean(permutation_accuracies)
+    var_permutation_acc = stats::var(permutation_accuracies)
+
+    # Percentile of permuted mean via kernel density estimator
+    percentile_acc <- 1 - suppressPackageStartupMessages(spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_acc))
+    # Percentile of permuted variance via bootstrap
+    boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
+                                  function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
+    percentile_var <- spatstat.univar::CDF(stats::density(boot_permutation_var))(var_acc)
+
     # Repeated errors
     if (max_repeat_errors > 0 | collect_all_metrics == TRUE) {
       # Cluster 1
@@ -211,6 +252,8 @@
         }
         modified_accuracies <- accuracies + (mean_modified_acc - mean_acc)
         var_modified_acc <- stats::var(modified_accuracies)
+        percentile_modified_acc <- 1 - spatstat.univar::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
+        percentile_modified_var <- spatstat.univar::CDF(stats::density(boot_permutation_var))(var_modified_acc)
       }
     }
     # Feature importance
@@ -219,19 +262,16 @@
       feature_importance <- do.call(rbind, feature_importance)
       mean_feature_importance <- apply(feature_importance, 2, function(x) mean(x, na.rm = TRUE))
     }
-    # Permutation accuracies
-    permutation_accuracies <- unlist(do.call(rbind, rf_comparison_list)[, "permutation_balanced_accuracy"])
-    mean_permutation_acc <- mean(permutation_accuracies)
-    var_permutation_acc = stats::var(permutation_accuracies)
-    # Percentile of permuted mean via kernel density estimator
-    percentile_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_acc)
-    # Percentile of permuted variance via bootstrap
-    boot_permutation_var <- apply(matrix(seq(1:n_iterations), 1, n_iterations), 2,
-                                  function(x) stats::var(sample(permutation_accuracies, n_iterations, replace = TRUE)))
-    percentile_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_acc)
-    if (max_repeat_errors > 0) {
-      percentile_modified_acc <- 1 - spatstat.explore::CDF(stats::density(permutation_accuracies))(mean_modified_acc)
-      percentile_modified_var <- spatstat.explore::CDF(stats::density(boot_permutation_var))(var_modified_acc)
+
+    # Get batch values
+    batch_acc <- c()
+    batch_var <- c()
+    if (!is.null(use_batch)) {
+      for (b in 1:length(batches)) {
+        batch_inds <- which(use_batch == batches[b])
+        batch_acc <- c(batch_acc, mean(accuracies[batch_inds]))
+        batch_var <- c(batch_var, stats::var(accuracies[batch_inds]))
+      }
     }
 
     # Create record
@@ -281,7 +321,8 @@
     if (!is.null(use_batch)) {
       current_comparison <- dplyr::mutate(current_comparison,
                                           batches_used = paste(batches, collapse = "; "),
-                                          batch_accuracies = paste(round(batch_acc, 3), collapse = "; "))
+                                          batch_mean_accuracies = paste(round(batch_acc, 5), collapse = "; "),
+                                          batch_var_accuracies = paste(round(batch_var, 5), collapse = "; "))
     }
     if (min_connections > 0 | collect_all_metrics == TRUE) {
       current_comparison <- dplyr::mutate(current_comparison,
@@ -393,7 +434,7 @@
 # cluster2_cell_batches -- A vector indicating the batch IDs for cluster 2
 # n_trees -- A numeric value indicating the number of trees in each random forest
 # max_repeat_errors -- A numeric value indicating the maximum number of cells that will be considered as repeated errors
-# collect_all_metrics -- A boolean value indicating whether to collect and save additional metrics
+# collect_all_metrics -- A Boolean value indicating whether to collect and save additional metrics
 # n_sampled -- A numeric indicating number of cells to sample for random forest
 # input_matrix -- A matrix of data, on which the random forest classifier will be trained/tested
 #

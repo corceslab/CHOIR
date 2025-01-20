@@ -24,12 +24,16 @@
      
   </a>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="../articles/CHOIR.html">
+<li class="nav-item dropdown">
+  <a href="#" class="nav-link dropdown-toggle" data-bs-toggle="dropdown" role="button" aria-expanded="false" aria-haspopup="true" id="dropdown--tutorials">
     <span class="fa fa-graduation-cap"></span>
      
-    Quick Tutorial
+    Tutorials
   </a>
+  <div class="dropdown-menu" aria-labelledby="dropdown--tutorials">
+    <a class="dropdown-item" href="../articles/CHOIR.html">Quick start</a>
+    <a class="dropdown-item" href="../articles/atlas_scale_data.html">Atlas-scale data</a>
+  </div>
 </li>
 <li class="active nav-item">
   <a class="nav-link" href="../reference/index.html">
@@ -81,15 +85,35 @@
         <dd>Generate color palette</dd>
       </dl><dl><dt>
           
+          <code><a href="buildParentTree.html">buildParentTree()</a></code> 
+        </dt>
+        <dd>Build parent clustering tree</dd>
+      </dl><dl><dt>
+          
           <code><a href="buildTree.html">buildTree()</a></code> 
         </dt>
         <dd>Build full hierarchical clustering tree</dd>
+      </dl><dl><dt>
+          
+          <code><a href="combineTrees.html">combineTrees()</a></code> 
+        </dt>
+        <dd>Compile separately pruned clustering trees and standardize thresholds</dd>
       </dl><dl><dt>
           
           <code><a href="compareClusters.html">compareClusters()</a></code> 
         </dt>
         <dd>Compare any two clusters using CHOIR's random forest classifier permutation
 testing approach</dd>
+      </dl><dl><dt>
+          
+          <code><a href="getRecords.html">getRecords()</a></code> 
+        </dt>
+        <dd>Retrieve all CHOIR metadata</dd>
+      </dl><dl><dt>
+          
+          <code><a href="inferTree.html">inferTree()</a></code> 
+        </dt>
+        <dd>Infer clustering tree from pre-generated clusters</dd>
       </dl><dl><dt>
           
           <code><a href="plotCHOIR.html">plotCHOIR()</a></code> 
@@ -105,12 +129,17 @@ testing approach</dd>
           <code><a href="runCHOIRumap.html">runCHOIRumap()</a></code> 
         </dt>
         <dd>Run UMAP on CHOIR dimensionality reductions</dd>
+      </dl><dl><dt>
+          
+          <code><a href="runCountSplit.html">runCountSplit()</a></code> 
+        </dt>
+        <dd>Run countsplitting</dd>
       </dl></div>
   </main></div>
 
 
     <footer><div class="pkgdown-footer-left">
-  <p></p><p>Developed by Cathrine Petersen.</p>
+  <p></p><p>Developed by Cathrine Sant.</p>
 </div>
 
 <div class="pkgdown-footer-right">

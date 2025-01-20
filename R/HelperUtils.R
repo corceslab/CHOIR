@@ -2,6 +2,32 @@
 # General helper functions
 # ---------------------------------------------------------------------------
 
+#' Retrieve all CHOIR metadata
+#'
+#' Retrieve all stored CHOIR data from object
+#'
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{ArchRProject} that has undergone CHOIR clustering.
+#' @param key The name under which CHOIR-related data for this run is stored in
+#' the object. Defaults to “CHOIR”.
+#'
+#' @return Returns the data stored under the provided key.
+#'
+#' @export
+#'
+getRecords <- function(object,
+                       key = "CHOIR") {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    output_data <- object@misc[[key]]
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    output_data <- object@metadata[[key]]
+  } else if (methods::is(object, "ArchRProject")) {
+    output_data <- object@projectMetadata[[key]]
+  }
+  return(output_data)
+}
+
 # Retrieve cell IDs ---------------------------
 #
 # Extract cell IDs/names from provided object
@@ -47,7 +73,7 @@
 # use_features -- A vector of feature names to use to subset the matrix
 # exclude_features -- A vector of feature names to exclude from the matrix
 # use_cells -- A vector of cell IDs to use to subset the matrix
-# verbose -- A boolean value indicating whether to use verbose output during the execution of this function
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getMatrix <- function(object = NULL,
                        use_matrix = NULL,
                        use_assay = NULL,
@@ -104,7 +130,7 @@
       use_assay <- Seurat::DefaultAssay(object)
     } else {
       # Check that input assay is present in object
-      .validInput(use_assay, "use_assay", object)
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     # Determine which slot to use
     if (is.null(use_slot)) {
@@ -115,15 +141,15 @@
       } else {
         stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
       }
+      # Check that selected slot is present within selected assay in object
+      .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
     }
-    # Check that selected slot is present within selected assay in object
-    .validInput(use_slot, "use_slot", list(object, use_assay))
     # Extract matrix
-    if (verbose) message("                      Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing matrix using '", use_assay, "' assay and '", use_slot, "' slot..")
     if ("Assay5" %in% methods::is(object[[use_assay]])) {
-      use_matrix <- seurat_object[[use_assay]]@layers[[use_slot]]
-      colnames(use_matrix) <- colnames(seurat_object[[use_assay]])
-      rownames(use_matrix) <- rownames(seurat_object[[use_assay]])
+      use_matrix <- object[[use_assay]]@layers[[use_slot]]
+      colnames(use_matrix) <- colnames(object[[use_assay]])
+      rownames(use_matrix) <- rownames(object[[use_assay]])
     } else {
       use_matrix <- methods::slot(object[[use_assay]], name = use_slot)
     }
@@ -201,10 +227,10 @@
     # Get assay
     if (is.null(use_assay)) {
       use_assay <- "logcounts"
-      .validInput(use_assay, "use_assay", object)
+      .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
     }
     use_matrix <- object@assays@data[[use_assay]]
-    if (verbose) message("                      Preparing input matrix using '", use_assay, "' assay..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Preparing input matrix using '", use_assay, "' assay..")
   } else {
     # If assay is not NULL
     if (!is.null(use_assay)) {
@@ -277,29 +303,152 @@
   if (is.null(use_matrix)) {
     # Matrix to pull from
     if (is.null(ArchR_matrix)) {
-      ArchR_matrix <- "TileMatrix"
+      ArchR_matrix <- "GeneScoreMatrix"
     }
-    # Cells to use
-    if (is.null(use_cells)) {
-      use_cells <- rownames(object@cellColData)
+    if (ArchR_matrix == "GeneScoreMatrix") {
+      gene_score_matrix <- suppressMessages(ArchR::getMatrixFromProject(object, useMatrix = "GeneScoreMatrix"))
+      feature_names <- gene_score_matrix@elementMetadata$name
+      use_matrix <- gene_score_matrix@assays@data$GeneScoreMatrix
+      rownames(use_matrix) <- feature_names
+      # Subset to current cells
+      if (!is.null(use_cells)) {
+        use_matrix <- use_matrix[,use_cells]
+      }
+      # Subset to current features
+      if (!is.null(use_features)) {
+        use_matrix <- use_matrix[use_features,]
+      }
+    } else {
+      # Cells to use
+      if (is.null(use_cells)) {
+        use_cells <- rownames(object@cellColData)
+      }
+      # Features to use
+      if (is.null(use_features)) {
+        stop("Please supply input to 'use_features' when extracting ArchR matrix.")
+      }
+      if (!is.null(exclude_features)) {
+        use_features <- dplyr::anti_join(data.frame(use_features), data.frame(exclude_features))
+      }
+      # Extract matrix & subset
+      use_matrix <- suppressMessages(ArchR:::.getPartialMatrix(ArrowFiles = object@sampleColData$ArrowFiles,
+                                                               featureDF = use_features,
+                                                               cellNames = use_cells,
+                                                               useMatrix = ArchR_matrix))
+      # Set feature names to chromosome + start
+      rownames(use_matrix) <- paste(use_features$seqnames, use_features$start, "_")
     }
-    # Features to use
-    if (is.null(use_features)) {
-      stop("Please supply input to 'use_features' when extracting ArchR matrix.")
-    }
-    if (!is.null(exclude_features)) {
-      use_features <- dplyr::anti_join(data.frame(use_features), data.frame(exclude_features))
-    }
-    # Extract matrix & subset
-    use_matrix <- suppressMessages(ArchR:::.getPartialMatrix(ArrowFiles = object@sampleColData$ArrowFiles,
-                                                             featureDF = use_features,
-                                                             cellNames = use_cells,
-                                                             useMatrix = ArchR_matrix))
-    # Set feature names to chromosome + start
-    rownames(use_matrix) <- paste(use_features$seqnames, use_features$start, "_")
   }
   return(use_matrix)
 }
+
+# Store matrix ---------------------------
+#
+# Store a matrix in provided object
+#
+# object -- An object of class Seurat, SingleCellExperiment, or ArchRProject
+# use_matrix -- Matrix to be stored
+# use_assay -- For Seurat or SingleCellExperiment objects, a character string indicating the assay to use
+# use_slot -- For Seurat objects, a character string indicating the slot/layer to use
+# ArchR_matrix -- For ArchR objects, a character string indicating which matrix to use
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
+.storeMatrix <- function(object,
+                         use_matrix,
+                         use_assay = NULL,
+                         use_slot = NULL,
+                         ArchR_matrix = NULL,
+                         verbose = TRUE) {
+  # By object type
+  if (methods::is(object, "Seurat")) {
+    object <- .storeMatrix.Seurat(object,
+                                  use_matrix,
+                                  use_assay,
+                                  use_slot,
+                                  verbose)
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    object <- .storeMatrix.SingleCellExperiment(object,
+                                                use_matrix,
+                                                use_assay,
+                                                verbose)
+  } else if (methods::is(object, "ArchRProject")) {
+    stop("Function '.storeMatrix' does not yet support ArchR objects.")
+  }
+  # Return object
+  return(object)
+}
+
+.storeMatrix.Seurat <- function(object,
+                                use_matrix,
+                                use_assay,
+                                use_slot,
+                                verbose) {
+  # Get assay
+  if (is.null(use_assay)) {
+    use_assay <- Seurat::DefaultAssay(object)
+  } else {
+    # Check that input assay is present in object
+    .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+  }
+  # Determine which slot to use
+  if (is.null(use_slot)) {
+    stop("For Seurat objects, .storeMatrix requires input for parameter 'use_slot', please supply a valid input for the slot parameter.")
+  }
+  if (!methods::is(use_slot, "character") | length(use_slot) != 1) {
+    stop("Input value for 'use_slot' is not a single value of of class 'character', please supply valid input!")
+  }
+  # Check that selected slot is NOT already present within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (use_slot %in% names(object[[use_assay]]@layers)) {
+      stop("Layer '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat v5 object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
+    if (exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' is already present in assay '", use_assay, "' of provided Seurat object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing ", ifelse("Assay5" %in% methods::is(object[[use_assay]]), "layer", "slot"), " '", use_slot, "' under assay '", use_assay, "' in Seurat object.")
+  try(object[[use_assay]][use_slot] <- use_matrix)
+  # Check that selected slot does now exist within selected assay in object
+  if ("Assay5" %in% methods::is(object[[use_assay]])) {
+    if (!(use_slot %in% names(object[[use_assay]]@layers))) {
+      stop("Layer '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat v5 object.")
+    }
+  } else {
+    try(slot_exists_1 <- methods::validObject(methods::slot(object[[use_assay]], use_slot)), silent = TRUE)
+    if (!exists("slot_exists_1")) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    } else if (slot_exists_1 == FALSE) {
+      stop("Slot '", use_slot, "' could not be stored in assay '", use_assay, "' of provided Seurat object, try converting assay to class 'Assay5' before running.")
+    }
+  }
+
+  # Return object
+  return(object)
+}
+
+.storeMatrix.SingleCellExperiment <- function(object,
+                                              use_matrix,
+                                              use_assay,
+                                              verbose) {
+  # Check assay
+  if (is.null(use_assay)) {
+    stop("For SingleCellExperiment objects, .storeMatrix requires input for parameter 'use_assay', please supply a valid input for the slot parameter.")
+  } else {
+    # Check that input assay is NOT already present in object
+    if (use_assay %in% names(object@assays)) {
+      stop("Assay '", use_assay, "' provided for parameter '", name, "' is already present in provided SingleCellExperiment object, please supply different input to 'countsplit_suffix' to avoid overwriting data.")
+    }
+  }
+  # Proceed to store matrix
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Storing assay '", use_assay, "' in SingleCellExperiment object.")
+  object@assays@data[[use_assay]] <- use_matrix
+
+  # Return object
+  return(object)
+}
+
 
 # Store data ---------------------------
 #
@@ -336,14 +485,20 @@
             }
           }
           use_assay_i <- .matchArg(use_assay, i)
-          object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
+          try(object[[paste0(name, "_", use_assay_i)]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data[[i]],
                                                                                                     key = reduction_method_i,
-                                                                                                    assay = use_assay_i))
+                                                                                                    assay = use_assay_i)), silent = TRUE)
+          if (!(paste0(name, "_", use_assay_i) %in% names(object@reductions))) {
+            warning("Reduction ", paste0(name, "_", use_assay_i), " is stored only in 'misc' slot under provided CHOIR 'key'.")
+          }
         }
       } else {
-        object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
+        try(object[[name]] <- suppressWarnings(Seurat::CreateDimReducObject(embeddings = input_data,
                                                                         key = reduction_method,
-                                                                        assay = use_assay))
+                                                                        assay = use_assay)), silent = TRUE)
+        if (!(name %in% names(object@reductions))) {
+          warning("Reduction ", name, " is stored only in 'misc' slot under provided CHOIR 'key'.")
+        }
       }
     } else if (type == "final_clusters") {
       object@meta.data[, name] <- input_data
@@ -442,7 +597,12 @@
 # name -- Name of parameter
 # parameter_list -- List of stored parameter values
 # default_list -- List of default parameter values
-.retrieveParam <- function(input, name, parameter_list, default_list) {
+# function_name -- Name of function for which parameter values were stored
+.retrieveParam <- function(input,
+                           name,
+                           parameter_list,
+                           default_list,
+                           function_name = "buildTree") {
   # If supplied parameter list contains name
   if (name %in% names(parameter_list)) {
     # For any parameters set to NULL, use values from parameter_list
@@ -450,7 +610,7 @@
       input <- parameter_list[[name]]
     } else if (input != parameter_list[[name]]) {
       # For any parameters not set to NULL, warn if value does not match parameter_list
-      warning("Supplied value for parameter '", name, "' does not match the value used for function 'buildTree'.")
+      warning("Supplied value for parameter '", name, "' does not match the value used for function '", function_name, "'.")
     }
   }
   # Set features that are still NULL to defaults
@@ -531,15 +691,15 @@
 # Generate new cluster labels that are non-redundant.
 #
 # merge_groups -- A list indicating which clusters will merge
-# parent_labels -- The current list of cluster labels
+# level -- Level at which new label will be generated
+# compiled_labels -- The set of compiled cluster labels that have been previously used
+
 .getNewLabels <- function(merge_groups,
-                          parent_labels) {
+                          level,
+                          compiled_labels) {
 
   # Create new list
   merge_group_labels <- vector(mode = "list", length(merge_groups))
-
-  # Get level of parent_labels
-  level <- stringr::str_extract(parent_labels[1], "L\\d*")
 
   # For each element in merge_groups
   for (i in 1:length(merge_groups)) {
@@ -556,20 +716,45 @@
       } else {
         use_root <- "P0"
       }
-      # Find the max number under that tree among the parent cluster labels
-      root_parent_labels <- parent_labels[grepl(use_root, parent_labels)]
-      if (length(root_parent_labels) == 0) {
+      # Find the max number under that tree among the parent cluster labels with the matching level
+      root_compiled_labels <- compiled_labels[grepl(paste0(use_root, "_L", level, "_"), compiled_labels)]
+      if (length(root_compiled_labels) == 0) {
         num <- 1
       } else {
-        num <- max(as.numeric(unlist(stringr::str_extract(root_parent_labels, "\\d*$")))) + 1
+        num <- max(as.numeric(unlist(stringr::str_extract(root_compiled_labels, "\\d*$")))) + 1
       }
       # The subsequent number is used and recorded
-      new_label <- paste0(use_root, "_", level, "_", num)
+      new_label <- paste0(use_root, "_L", level, "_", num)
       merge_group_labels[[i]] <- new_label
-      parent_labels <- c(parent_labels, new_label)
+      compiled_labels <- c(compiled_labels, new_label)
     }
   }
   # Return list
   return(list("merge_group_labels" = merge_group_labels,
-              "evolving_parent_IDs" = parent_labels))
+              "compiled_cluster_labels" = compiled_labels))
+}
+
+# Startup ---------------------------
+#
+# Adapted from ArchR code, Jeffrey Granja & Ryan Corces
+
+.onAttach <- function(libname, pkgname){
+  # ASCII CHOIR logo
+  packageStartupMessage("                           ____
+                         /  .-. \\
+                         \\  \\ / /
+    _____  __    __       /\\ \\/        __   _____
+  /      ||  |  |  |    /  /\\ \\       |  | |   _  \\
+ |  ,----'|  |__|  |  /  /  .----.    |  | |  |_|  |
+ |  |     |   __   | |  |  / .---. \\  |  | |      /
+ |  `----.|  |  |  | |  |  `-' \\ \\' | |  | |  |\\  \\__
+  \\______||__|  |__|  `. ` .____| |/  |__| | _| `.___|
+                         ` -----| |
+                         /`.___/ /
+                         `------'
+")
+  # package startup
+  v <- utils::packageVersion("CHOIR")
+  packageStartupMessage("CHOIR : Version ", v,
+                        "\nFor more information see our website : www.CHOIRclustering.com\nIf you encounter a bug please report : https://github.com/CorcesLab/CHOIR/issues")
 }

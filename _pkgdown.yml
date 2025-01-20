@@ -14,8 +14,12 @@ navbar:
       href: index.html
     tutorial:
       icon: fa-graduation-cap
-      href: articles/CHOIR.html
-      text: Quick Tutorial
+      text: Tutorials
+      menu:
+        - text: Quick start
+          href: articles/CHOIR.html
+        - text: Atlas-scale data
+          href: articles/atlas_scale_data.html
     functions:
       icon: fa-code
       href: reference/index.html
@@ -27,3 +31,4 @@ navbar:
 
 toc:
   depth: 4
+

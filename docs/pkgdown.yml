@@ -3,5 +3,6 @@ pkgdown: 2.0.7
 pkgdown_sha: ~
 articles:
   CHOIR: CHOIR.html
-last_built: 2024-01-29T20:21Z
+  atlas_scale_data: atlas_scale_data.html
+last_built: 2025-01-20T21:23Z
 

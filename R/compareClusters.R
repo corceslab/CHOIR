@@ -5,12 +5,13 @@
 #' distinguishable by a permutation test using random forest classifier
 #' prediction accuracies.
 #'
-#' @param object An object of class 'Seurat', 'SingleCellExperiment', or
-#' 'ArchRProject'. Not used if values are provided for parameters
-#' 'input_matrix' and 'nn_matrix'.
-#' @param key The name under which CHOIR-related data is retrieved from the
-#' object. Defaults to 'CHOIR'. Not used if values are provided for parameters
-#' 'input_matrix' and 'nn_matrix'.
+#' @param object An object of class \code{Seurat}, \code{SingleCellExperiment},
+#' or \code{ArchRProject}. For multi-omic data, we recommend using
+#' \code{ArchRProject} objects. Not used if values are provided for parameters
+#' \code{input_matrix} and \code{nn_matrix}.
+#' @param key The name under which CHOIR-related data for this run is stored in
+#' the object. Defaults to “CHOIR”. Not used if input is provided for
+#' parameters \code{input_matrix} and \code{nn_matrix}.
 #' @param cluster1_cells A character vector of cell names belonging to cluster
 #' 1.
 #' @param cluster2_cells A character vector of cell names belonging to cluster
@@ -19,84 +20,153 @@
 #' @param ident2 A string indicating the label for cluster 2.
 #' @param group_by A string indicating the column of cluster labels that
 #' 'ident1' and 'ident2' belong to.
-#' @param alpha A numeric value indicating the significance level used for
-#' permutation test comparisons of cluster prediction accuracies. Defaults to
-#' 0.05.
+#' @param alpha A numerical value indicating the significance level used for
+#' permutation test comparisons of cluster distinguishability. Defaults to 0.05.
 #' @param feature_set A string indicating whether to train random forest
-#' classifiers on 'all' features or only variable ('var') features. Defaults to
-#' 'var'.
+#' classifiers on “all” features or only variable (“var”) features. Defaults to
+#' “var”. Computational time and memory required may increase if more features
+#' are used. Using all features instead of variable features may result in more
+#' conservative cluster calls.
 #' @param exclude_features A character vector indicating features that should be
-#' excluded from input to the random forest classifier. Default = \code{NULL}
-#' will not exclude any features.
-#' @param n_iterations A numeric value indicating the number of iterations run
-#' for each permutation test comparison. Defaults to 100.
-#' @param n_trees A numeric value indicating the number of trees in each random
-#' forest. Defaults to 50.
-#' @param use_variance A boolean value indicating whether to use the variance of
+#' excluded from input to the random forest classifier. Defaults to \code{NULL},
+#' which means that no features will be excluded. This parameter can be used,
+#' for example, to exclude features correlated with cell quality, such as
+#' mitochondrial genes. Failure to exclude problematic features could result in
+#' clusters driven by cell quality, while over-exclusion of features could
+#' reduce the ability of CHOIR to distinguish cell populations that differ by
+#' those features.
+#' @param n_iterations A numerical value indicating the number of iterations run
+#' for each permutation test comparison. Increasing the number of iterations
+#' will approximately linearly increase the computational time required but
+#' provide a more accurate estimation of the significance of the permutation
+#' test. Decreasing the number of iterations runs the risk of leading to
+#' underclustering due to lack of statistical power. The default value, 100
+#' iterations, was selected because it avoids underclustering, while minimizing
+#' computational time and the diminishing returns from running CHOIR with
+#' additional iterations.
+#' @param n_trees A numerical value indicating the number of trees in each
+#' random forest. Defaults to 50. Increasing the number of trees is likely to
+#' increase the computational time required. Though not entirely predictable,
+#' increasing the number of trees up to a point may enable more nuanced
+#' distinctions, but is likely to provide diminishing returns.
+#' @param use_variance A Boolean value indicating whether to use the variance of
 #' the random forest accuracy scores as part of the permutation test threshold.
-#' Defaults to \code{TRUE}.
-#' @param min_accuracy A numeric value indicating the minimum accuracy required
-#' of the random forest classifier, below which clusters will be automatically
-#' merged. Defaults to 0.5 (chance).
-#' @param min_connections A numeric value indicating the minimum number of
-#' nearest neighbors between two clusters for them to be considered 'adjacent'.
-#' Non-adjacent clusters will not be merged. Defaults to 1.
-#' @param max_repeat_errors Used to account for situations in which random
-#' forest classifier errors are concentrated among a few cells that are
-#' repeatedly misassigned. A numeric value indicating the maximum number of such
-#' 'repeat errors' that will be taken into account. If set to 0, 'repeat errors'
-#' will not be evaluated. Defaults to 20.
-#' @param collect_all_metrics A boolean value indicating whether to collect and
-#' save additional metrics from the random forest classifier comparisons,
-#' including feature importances and tree depth. Defaults to \code{FALSE}.
-#' @param sample_max A numeric value indicating the maximum number of cells used
-#' per cluster to train/test each random forest classifier. Default = \code{Inf}
-#' does not cap the number of cells used.
-#' @param downsampling_rate A numeric value indicating the proportion of cells
-#' used per cluster to train/test each random forest classifier. Default =
-#' "auto" sets the downsampling rate according to the dataset size, for
-#' efficiency.
+#' Defaults to \code{TRUE}. Setting this parameter to \code{FALSE} will make
+#' CHOIR considerably less conservative, identifying more clusters, particularly
+#' on large datasets.
+#' @param min_accuracy A numerical value indicating the minimum accuracy
+#' required of the random forest classifier, below which clusters will be
+#' automatically merged. Defaults to 0.5, representing the random chance
+#' probability of assigning correct cluster labels; therefore, decreasing the
+#' minimum accuracy is not recommended. Increasing the minimum accuracy will
+#' lead to more conservative cluster assignments and will often decrease the
+#' computational time required, because fewer cluster comparisons may be needed.
+#' @param min_connections A numerical value indicating the minimum number of
+#' nearest neighbors between two clusters for those clusters to be considered
+#' adjacent. Non-adjacent clusters will not be merged. Defaults to 1. This
+#' threshold allows CHOIR to avoid running the full permutation test comparison
+#' for clusters that are highly likely to be distinct, saving computational
+#' time. The intent of this parameter is only to avoid running permutation test
+#' comparisons between clusters that are so different that they should not be
+#' merged. Therefore, we do not recommend increasing this parameter value
+#' beyond 10, as higher values may result in instances of overclustering.
+#' @param max_repeat_errors A numerical value indicating the maximum number of
+#' repeatedly mislabeled cells that will be taken into account during the
+#' permutation tests. This parameter is used to account for situations in which
+#' random forest classifier errors are concentrated among a few cells that are
+#' repeatedly misassigned. If set to 0, such repeat errors will not be
+#' evaluated. Defaults to 20. These situations are relatively infrequent, but
+#' setting this parameter to lower values (especially 0) may result in
+#' underclustering due to a small number of intermediate cells. Setting this
+#' parameter to higher values may lead to instances of overclustering and is not
+#' recommended.
+#' @param collect_all_metrics A Boolean value indicating whether to collect and
+#' save additional metrics from the random forest classifiers, including feature
+#' importances for every comparison. Defaults to \code{FALSE}. Setting this
+#' parameter to \code{TRUE} will slightly increase the computational time
+#' required. This parameter has no effect on the final cluster calls.
+#' @param sample_max A numerical value indicating the maximum number of cells to
+#' be sampled per cluster to train/test each random forest classifier. Defaults
+#' to \code{Inf} (infinity), which does not cap the number of cells used, so all
+#' cells will be used in all comparisons. Decreasing this parameter may decrease
+#' the computational time required, but may result in instances of
+#' underclustering. If input is provided to both the \code{downsampling_rate}
+#' and \code{sample_max} parameters, the minimum resulting cell number is
+#' calculated and used for each comparison.
+#' @param downsampling_rate A numerical value indicating the proportion of cells
+#' to be sampled per cluster to train/test each random forest classifier. For
+#' efficiency, the default value, "auto", sets the downsampling rate according
+#' to the dataset size. Decreasing this parameter may decrease the computational
+#' time required, but may also make the final cluster calls more conservative.
+#' If input is provided to both \code{downsampling_rate} and
+#' \code{sample_max parameters}, the minimum resulting cell number is calculated
+#' and used for each comparison.
+#' @param min_reads A numeric value used to filter out features prior to input
+#' to the random forest classifier. The default value, \code{NULL}, will filter
+#' out features with 0 counts for the current clusters being compared. Higher
+#' values should be used with caution, but may increase the signal-to-noise
+#' ratio encountered by the random forest classifiers.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
-#' CHOIR after normalization, except in cases when the user wishes to use
-#' \code{Seurat::SCTransform()} normalization. Permitted values are 'none' or
-#' 'SCTransform'. Defaults to 'none'.
-#' @param batch_labels If applying batch correction, a character string or
-#' vector indicating the name of the column containing the batch labels.
-#' Defaults to \code{NULL}.
-#' @param use_assay For Seurat or SingleCellExperiment objects, a character
-#' string or vector indicating the assay(s) to use in the provided object.
-#' Default = \code{NULL} will choose the current active assay for Seurat objects
-#' and the \code{logcounts} assay for SingleCellExperiment objects.
-#' @param use_slot For Seurat objects, a character string or vector indicating
-#' the layers(s) — previously known as slot(s) — to use in the provided object.
-#' Default = \code{NULL} will choose a layer/slot based on the selected assay.
-#' If a non-standard assay is provided, do not leave \code{use_slot} as
-#' \code{NULL}.
-#' @param ArchR_matrix For ArchR objects, a character string or vector
-#' indicating which matri(ces) to use in the provided object. Default =
-#' \code{NULL} will use the 'TileMatrix' for ATAC-seq data or the
-#' 'GeneExpressionMatrix' for RNA-seq data.
-#' @param atac A boolean value or vector indicating whether the provided data is
-#' ATAC-seq data. Defaults to \code{FALSE}. For multi-omic datasets containing
-#' ATAC-seq data, it is important to supply this parameter as a vector
-#' corresponding to each modality in order.
-#' @param input_matrix An optional matrix containing the feature x cell data on
-#' which to train the random forest classifiers. Default = \code{NULL} will use
-#' the feature x cell matri(ces) indicated by function \code{buildTree()}.
+#' CHOIR after normalization, except when the user wishes to use
+#' \code{Seurat SCTransform} normalization. Permitted values are “none” or
+#' “SCTransform”. Defaults to “none”. Because CHOIR has not been tested
+#' thoroughly with \code{SCTransform} normalization, we do not recommend this
+#' approach at this time. For multi-omic datasets, provide a vector with a value
+#' corresponding to each provided value of \code{use_assay} or
+#' \code{ArchR_matrix} in the same order.
+#' @param batch_labels A character string that, if applying batch correction,
+#' specifies the name of the column in the input object metadata containing the
+#' batch labels. Defaults to \code{NULL}.
+#' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
+#' character string or vector indicating the assay(s) to use in the provided
+#' object. The default value, \code{NULL}, will choose the current active assay
+#' for \code{Seurat} objects and the \code{logcounts} assay for
+#' \code{SingleCellExperiment} objects.
+#' @param use_slot For \code{Seurat} objects, a character string or vector
+#' indicating the layers(s)—previously known as slot(s)—to use in the provided
+#' object. The default value, \code{NULL}, will choose a layer/slot based on the
+#' selected assay. If an assay other than "RNA", "sketch”, "SCT”, or
+#' "integrated" is provided, you must specify a value for \code{use_slot}. For
+#' multi-omic datasets, provide a vector with a value corresponding to each
+#' provided value of \code{use_assay} in the same order.
+#' @param ArchR_matrix For \code{ArchR} objects, a character string or vector
+#' indicating which matrix or matrices to use in the provided object. The
+#' default value, \code{NULL}, will use the “GeneScoreMatrix” for ATAC-seq data
+#' or the “GeneExpressionMatrix” for RNA-seq data. For multi-omic datasets,
+#' provide a vector with a value corresponding to each modality.
+#' @param atac A Boolean value or vector indicating whether the provided data is
+#' ATAC-seq data. For multi-omic datasets, provide a vector with a value
+#' corresponding to each provided value of \code{use_assay} or
+#' \code{ArchR_matrix} in the same order. Defaults to \code{FALSE}.
+#' @param input_matrix An optional matrix containing the feature x cell data
+#' provided by the user, on which to train the random forest classifiers. By
+#' default, this parameter is set to \code{NULL}, and CHOIR will look for the
+#' feature x cell matri(ces) indicated by function \code{buildTree}.
 #' @param nn_matrix An optional matrix containing the nearest neighbor adjacency
-#' of the cells. Default = \code{NULL} will look for the adjacency matri(ces)
-#' generated by function \code{buildTree()}.
-#' @param var_features An optional character vector of variable features to be
-#' used for subsequent clustering steps. Default = \code{NULL} will use
-#' the variable features identified by function \code{buildTree()}.
-#' @param n_cores A numeric value indicating the number of cores to use for
-#' parallelization. Default = \code{NULL} will use the number of available cores
-#' minus 2.
-#' @param random_seed A numeric value indicating the random seed to be used.
-#' @param verbose A boolean value indicating whether to use verbose output
-#' during the execution of this function. Can be set to \code{FALSE} for a
-#' cleaner output.
+#' of the cells, provided by the user. By default, this parameter is set to
+#' \code{NULL}, and CHOIR will look for the adjacency matri(ces) generated by
+#' function \code{buildTree}.
+#' @param var_features An optional character vector of names of variable
+#' features to be used for subsequent clustering steps. By default, this
+#' parameter is set to \code{NULL}, and variable features previously identified
+#' by function \code{buildTree} will be used. Input to this parameter is
+#' required when a dimensionality reduction is supplied to parameter
+#' \code{reduction}. For multi-omic datasets, concatenate feature names for all
+#' modalities.
+#' @param n_cores A numerical value indicating the number of cores to use for
+#' parallelization. By default, CHOIR will use the number of available cores
+#' minus 2. CHOIR is parallelized at the computation of permutation test
+#' iterations. Therefore, any number of cores up to the number of iterations
+#' will theoretically decrease the computational time required. In practice,
+#' 8–16 cores are recommended for datasets up to 500,000 cells.
+#' @param random_seed A numerical value indicating the random seed to be used.
+#' Defaults to 1. CHOIR uses randomization throughout the generation and pruning
+#' of the clustering tree. Therefore, changing the random seed may yield slight
+#' differences in the final cluster assignments.
+#' @param verbose A Boolean value indicating whether to use verbose output
+#' during the execution of CHOIR. Defaults to \code{TRUE}, but can be set to
+#' \code{FALSE} for a cleaner output.
 #'
 #' @return Returns a list containing the following elements: \describe{
 #'   \item{comparison_result}{A string, either "merge" or "split", indicating
@@ -128,6 +198,7 @@ compareClusters <- function(object = NULL,
                             collect_all_metrics = FALSE,
                             sample_max = Inf,
                             downsampling_rate = "auto",
+                            min_reads = NULL,
                             normalization_method = "none",
                             batch_labels = NULL,
                             use_assay = NULL,
@@ -164,11 +235,12 @@ compareClusters <- function(object = NULL,
   .validInput(max_repeat_errors, "max_repeat_errors")
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
+  .validInput(min_reads, "min_reads")
   .validInput(batch_labels, "batch_labels", object)
   .validInput(collect_all_metrics, "collect_all_metrics")
-  .validInput(use_assay, "use_assay", object)
-  .validInput(use_slot, "use_slot", list(object, use_assay))
-  .validInput(ArchR_matrix, "ArchR_matrix", object)
+  .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
+  .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
+  .validInput(ArchR_matrix, "ArchR_matrix", list(object, FALSE, NULL))
   # Number of modalities & object type
   if (methods::is(object, "ArchRProject")) {
     n_modalities <- max(length(ArchR_matrix), 1)
@@ -199,6 +271,8 @@ compareClusters <- function(object = NULL,
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
       .requirePackage("SingleCellExperiment", source = "bioc")
+    } else {
+      object_type <- "none"
     }
   }
   .validInput(normalization_method, "normalization_method", list(object, n_modalities, use_assay))
@@ -233,6 +307,7 @@ compareClusters <- function(object = NULL,
   # Extract batch labels
   if (!is.null(batch_labels)) {
     batches <- .retrieveData(object = object, key = key, type = "cell_metadata", name = batch_labels)
+    batches <- as.character(batches)
     names(batches) <- cell_IDs
   }
 
@@ -261,6 +336,17 @@ compareClusters <- function(object = NULL,
   # Extract input matrix/matrices
   if (!is.null(input_matrix)) {
     input_matrix_provided <- TRUE
+    if (!is.null(var_features)) {
+      var_features_provided <- TRUE
+      use_features <- var_features
+    } else {
+      var_features_provided <- FALSE
+      if (feature_set == "all") {
+        use_features <- NULL
+      } else if (is.null(var_features)) {
+        stop("Please provide as input to parameter 'var_features'.")
+      }
+    }
     input_matrix <- .getMatrix(use_matrix = input_matrix,
                                use_features = var_features,
                                exclude_features = exclude_features,
@@ -285,13 +371,19 @@ compareClusters <- function(object = NULL,
       use_nn_matrix <- "P0"
     }
     # Use all / var features
-    if (feature_set == "all") {
-      use_features <- NULL
+    if (!is.null(var_features)) {
+      var_features_provided <- TRUE
+      use_features <- var_features
     } else {
-      use_features <- .retrieveData(object, key, "var_features", paste0(use_input_matrix, "_var_features"))
-      if (is.null(use_features)) {
-        stop("Could not find variable features under key '", key,
-             "'. Please provide as input to parameter 'var_features'.")
+      var_features_provided <- FALSE
+      if (feature_set == "all") {
+        use_features <- NULL
+      } else {
+        use_features <- .retrieveData(object, key, "var_features", paste0(use_input_matrix, "_var_features"))
+        if (is.null(use_features)) {
+          stop("Could not find variable features under key '", key,
+               "'. Please provide as input to parameter 'var_features'.")
+        }
       }
     }
     # Extract input matrix for random forest comparisons
@@ -302,8 +394,9 @@ compareClusters <- function(object = NULL,
         use_assay_m <- .matchArg(use_assay, m)
         use_slot_m <- .matchArg(use_slot, m)
         ArchR_matrix_m <- .matchArg(ArchR_matrix, m)
+        normalization_method_m <- .matchArg(normalization_method, m)
         # Features
-        if (length(use_features_subtree) > 1) {
+        if (length(use_features) > 1) {
           use_features_m <- use_features[[m]]
         } else {
           use_features_m <- use_features
@@ -378,15 +471,15 @@ compareClusters <- function(object = NULL,
                    'mean_repeat_errors1', 'mean_repeat_errors2',
                    'mean_modified_accuracy', 'var_modified_accuracy',
                    'percentile_modified_accuracy', 'percentile_modified_variance',
-                   'batches_used', 'batch_mean_accuracies',
+                   'batches_used', 'batch_mean_accuracies', 'batch_mean_variances',
                    'connectivity', 'time',
                    'decision')
   selected_metrics <- all_metrics[c(1:11,
                                     `if`(collect_all_metrics == TRUE | max_repeat_errors > 0, 12:15, NULL),
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
-                                    `if`(!is.null(batch_labels), 20:21, NULL),
-                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 22, NULL),
-                                    23:24)]
+                                    `if`(!is.null(batch_labels), 20:22, NULL),
+                                    `if`(collect_all_metrics == TRUE | min_connections > 0, 23, NULL),
+                                    24:25)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
 
@@ -397,6 +490,90 @@ compareClusters <- function(object = NULL,
   } else {
     feature_importance_records <- NULL
   }
+
+  # ---------------------------------------------------------------------------
+  # Report object & parameter details
+  # ---------------------------------------------------------------------------
+
+  if (methods::is(object, "Seurat")) {
+    # Seurat object
+    # Set values of 'use_assay' and 'use_slot' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- Seurat::DefaultAssay(object)
+    }
+    if (is.null(use_slot)) {
+      if (use_assay %in% c("RNA", "sketch")) {
+        use_slot <- "data"
+      } else if (use_assay == "SCT" | use_assay == "integrated") {
+        use_slot <- "scale.data"
+      } else {
+        stop("When using a non-standard assay in a Seurat object, please supply a valid input for the slot parameter.")
+      }
+    }
+    assay_text <- paste0("\n - Assay: ", use_assay,
+                         "\n - ",
+                         ifelse(seurat_version == "v5", "Layer", "Slot"),
+                         ifelse(n_modalities == 1, ": ", "s: "),
+                         paste(use_slot, collapse = ", "))
+  } else if (methods::is(object, "SingleCellExperiment")) {
+    # SingleCellExperiment object
+    # Set value of 'use_assay' if necessary
+    if (is.null(use_assay)) {
+      use_assay <- "logcounts"
+    }
+    assay_text <- paste0("\n - Assay",
+                              ifelse(n_modalities == 1, ": ", "s: "),
+                              paste(use_assay, collapse = ", "))
+  } else if (methods::is(object, "ArchRProject")) {
+    # ArchR object
+    # Set value of 'ArchR_matrix' if necessary
+    if (is.null(ArchR_matrix)) {
+      ArchR_matrix <- "GeneScoreMatrix"
+    }
+    assay_text <- paste0("\n - ArchR matri",
+                              ifelse(n_modalities == 1, "x: ", "ces: "),
+                              paste(ArchR_matrix, collapse = ", "))
+  }
+
+  # Provided input
+  provided_input <- c(
+    if (input_matrix_provided) "input_matrix",
+    if (nn_matrix_provided) "nn_matrix",
+    if (var_features_provided) "var_features"
+  )
+
+  if (verbose) message("\nInput data:",
+                       "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
+                       `if`(length(provided_input) > 0, paste0("\n - Provided inputs: ", paste(provided_input, collapse = ", ")), ""),
+                       "\n - # of cells in ", `if`(is.null(group_by), "", paste0(group_by, " ")), ident1, ": ", length(cluster1_cells),
+                       "\n - # of cells in ", `if`(is.null(group_by), "", paste0(group_by, " ")), ident2, ": ", length(cluster2_cells),
+                       "\n - # of batches: ", `if`(is.null(batch_labels), 1, dplyr::n_distinct(batches)),
+                       "\n - # of modalities: ", n_modalities,
+                       "\n - ATAC data: ", paste(atac, collapse = ", "),
+                       assay_text)
+  if (verbose) message("\nProceeding with the following parameters:",
+                       "\n - Intermediate data stored under key: ", key,
+                       "\n - Alpha: ", alpha,
+                       "\n - Features to train RF: ", feature_set,
+                       "\n - # of excluded features: ", length(exclude_features),
+                       "\n - # of permutations: ", n_iterations,
+                       "\n - # of RF trees: ", n_trees,
+                       "\n - Use variance: ", use_variance,
+                       "\n - Minimum accuracy: ", min_accuracy,
+                       "\n - Minimum connections: ", min_connections,
+                       "\n - Maximum repeated errors: ", max_repeat_errors,
+                       "\n - All metrics collected: ", collect_all_metrics,
+                       "\n - Maximum cells sampled: ", sample_max,
+                       "\n - Downsampling rate: ", round(downsampling_rate, 4),
+                       "\n - Minimum reads: ", `if`(is.null(min_reads),
+                                                    paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
+                       "\n - Normalization method: ", normalization_method,
+                       `if`(!is.null(batch_labels), paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       "\n - # of features used: ", length(features),
+                       "\n - # of cores: ", n_cores,
+                       "\n - Random seed: ", random_seed,
+                       "\n")
+
 
   # ---------------------------------------------------------------------------
   # Run comparison
@@ -424,6 +601,7 @@ compareClusters <- function(object = NULL,
                                            collect_all_metrics = collect_all_metrics,
                                            sample_max = sample_max,
                                            downsampling_rate = downsampling_rate,
+                                           min_reads = min_reads,
                                            input_matrix = input_matrix,
                                            nn_matrix = nn_matrix,
                                            comparison_records = comparison_records,
@@ -459,7 +637,7 @@ compareClusters <- function(object = NULL,
   if (collect_all_metrics == TRUE) {
     output_list <- list("comparison_result" = comparison_output[["result"]],
                         "comparison_records" = comparison_output[["comparison_records"]],
-                        "feature_importances" = comparison_output[["feature_importances"]])
+                        "feature_importances" = comparison_output[["feature_importance_records"]])
   } else {
     output_list <- list("comparison_result" = comparison_output[["result"]],
                         "comparison_records" = comparison_output[["comparison_records"]])
