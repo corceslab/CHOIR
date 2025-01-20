@@ -1,5 +1,5 @@
 # CHOIR 0.3.0
 
-# CHOIR 0.2.0
-
-* Improved compatibility with Seurat v5 and SingleCellExperiment
+* Added compatibility with count splitting
+* Improved performance on ATAC-seq data in ArchR objects using GeneScoreMatrix
+* Added workflow for clustering atlas-scale datasets
