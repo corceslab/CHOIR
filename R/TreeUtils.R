@@ -555,6 +555,7 @@
   }
 
   # Find initial cluster results
+  hour_start_time <- Sys.time()
   res0_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                          "resolution" = 0,
                                                                          "random.seed" = random_seed),
@@ -566,6 +567,18 @@
     res0_clusters <- .relabelSingletons(res0_clusters)
   }
   n_clust_res0 <- dplyr::n_distinct(res0_clusters[,1])
+
+  # Progress
+  if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+    hour_start_time <- Sys.time()
+    if (n_clust_res0 == 1) {
+      message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                     " : At resolution = 0, 1 cluster. [1 iteration]"))
+    } else {
+      message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                     " : At resolution = 0, ", n_clust_res0, " clusters identified. [1 iteration]"))
+    }
+  }
 
   try(res1_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                              "resolution" = 1,
@@ -585,13 +598,22 @@
     }
     n_clust_res1 <- dplyr::n_distinct(res1_clusters[,1])
 
+    # Progress
+    if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+      hour_start_time <- Sys.time()
+      if (n_clust_res1 == 1) {
+        message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                       " : At resolution = 1, 1 cluster. [2 iterations]"))
+      } else {
+        message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                       " : At resolution = 1, ", n_clust_res1, " clusters. [2 iterations]"))
+      }
+    }
+
     # Number of decimal places to use for rounding
     decimal_places <- 1
 
-    # Progress bar
-    pb <- progress::progress_bar$new(format = "                      [[ Current tree: :current iterations in :elapsed ]] ",
-                                     total = NA)
-    pb$tick(0)
+
     if (n_clust_res0 == n_clust_res1) {
       # From 1-4, +0.5 until there are more clusters than at resolution = 1
       # From 4-10, +1 until there are more clusters than at resolution = 1
@@ -599,9 +621,9 @@
       res <- 1.5
       new_n_clust <- n_clust_res1
       stop <- FALSE
-
+      n_iterations <- 2
       while (new_n_clust <= n_clust_res1 & stop == FALSE) {
-        if (verbose) pb$tick()
+        n_iterations <- n_iterations + 1
         if (exists("new_clusters")) rm(new_clusters)
         try(new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                                   "resolution" = res,
@@ -625,6 +647,19 @@
             new_clusters <- .relabelSingletons(new_clusters)
           }
           new_n_clust <- dplyr::n_distinct(new_clusters[,1])
+
+          # Progress
+          if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+            hour_start_time <- Sys.time()
+            if (new_n_clust == 1) {
+              message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                             " : At resolution = ", res, ", 1 cluster. [", n_iterations, " iterations]"))
+            } else {
+              message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                             " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_iterations, " iterations]"))
+            }
+          }
+
           if (new_n_clust <= n_clust_res1) {
             if (res < 4) {
               res <- res + 0.5
@@ -637,14 +672,16 @@
         }
       }
       starting_res <- res
-      if (verbose) message("                      Starting resolution: ", starting_res)
+      if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                  " : Starting resolution: ", starting_res))
     } else if (n_clust_res1 > n_clust_res0) {
       # From 1 to 0.1, -0.3 until there is the same # of clusters as res=0
       # From 0.1 on, go down by a power of 10 until there is the same # of clusters as res=0
       res <- 0.7
       new_n_clust <- n_clust_res1
+      n_iterations <- 2
       while (new_n_clust > n_clust_res0) {
-        if (verbose) pb$tick()
+        n_iterations <- n_iterations + 1
         new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                               "resolution" = res,
                                                                               "random.seed" = random_seed),
@@ -656,6 +693,18 @@
           new_clusters <- .relabelSingletons(new_clusters)
         }
         new_n_clust <- dplyr::n_distinct(new_clusters[,1])
+
+        # Progress
+        if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+          hour_start_time <- Sys.time()
+          if (new_n_clust == 1) {
+            message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                           " : At resolution = ", res, ", 1 cluster. [", n_iterations, " iterations]"))
+          } else {
+            message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                           " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_iterations, " iterations]"))
+          }
+        }
 
         if (new_n_clust > n_clust_res0) {
           if (res > 0.1) {
@@ -675,7 +724,8 @@
         starting_res <- res*10
         decimal_places <- decimal_places - 1
       }
-      if (verbose) message("                      Starting resolution: ", starting_res)
+      if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                  " : Starting resolution: ", starting_res))
     }
   }
   decimal_places <- decimal_places + 1
