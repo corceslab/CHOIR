@@ -118,6 +118,12 @@
 #' @param batch_labels A character string that, if applying batch correction,
 #' specifies the name of the column in the input object metadata containing the
 #' batch labels. Defaults to \code{NULL}.
+#' @param max_n_batch A numeric value indicating how many of the batches
+#' to use for the permutation test, selecting in order of largest to smallest.
+#' Defaults to \code{Inf}, which will use all batches that pass cell number
+#' thresholds. In datasets with many batches (>10), setting this value to a
+#' smaller value such as 4 or 5 may help avoid excessive downsampling when
+#' running the permutation tests, that can potentially cause underclustering.
 #' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
 #' character string or vector indicating the assay(s) to use in the provided
 #' object. The default value, \code{NULL}, will choose the current active assay
@@ -201,6 +207,7 @@ compareClusters <- function(object = NULL,
                             min_reads = NULL,
                             normalization_method = "none",
                             batch_labels = NULL,
+                            max_n_batch = Inf,
                             use_assay = NULL,
                             use_slot = NULL,
                             ArchR_matrix = NULL,
@@ -237,6 +244,7 @@ compareClusters <- function(object = NULL,
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(min_reads, "min_reads")
   .validInput(batch_labels, "batch_labels", object)
+  .validInput(max_n_batch, "max_n_batch")
   .validInput(collect_all_metrics, "collect_all_metrics")
   .validInput(use_assay, "use_assay", list(object, FALSE, NULL))
   .validInput(use_slot, "use_slot", list(object, use_assay, FALSE, NULL))
@@ -569,6 +577,7 @@ compareClusters <- function(object = NULL,
                                                     paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
                        "\n - Normalization method: ", normalization_method,
                        `if`(!is.null(batch_labels), paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       `if`(batch_correction_method != 'none', paste0("\n - Maximum # of batches used per permutation test: ", max_n_batch), ""),
                        "\n - # of features used: ", length(features),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
@@ -602,6 +611,7 @@ compareClusters <- function(object = NULL,
                                            sample_max = sample_max,
                                            downsampling_rate = downsampling_rate,
                                            min_reads = min_reads,
+                                           max_n_batch = max_n_batch,
                                            input_matrix = input_matrix,
                                            nn_matrix = nn_matrix,
                                            comparison_records = comparison_records,

@@ -996,6 +996,7 @@
 # downsampling_rate -- A numeric value indicating the proportion of cells used per cluster to train/test random forest classifier
 # batch_correction_method -- Character string or vector indicating which batch correction method to use
 # batches -- Character vector of batch labels for each cell
+# max_n_batch -- A numeric indicating how many of the batches (ranked from largest to smallest), to use for the permutation test
 # min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
 # tree_records -- A dataframe comprising records from tree generation
 # tree_id -- Name of tree
@@ -1027,6 +1028,7 @@
                      min_reads = NULL,
                      batch_correction_method = NULL,
                      batches = NULL,
+                     max_n_batch = NULL,
                      tree_records = NULL,
                      tree_id = "P0",
                      n_cores,
@@ -1076,6 +1078,7 @@
                                     min_reads = min_reads,
                                     batch_correction_method = batch_correction_method,
                                     batches = batches,
+                                    max_n_batch = max_n_batch,
                                     tree_records = tree_records,
                                     tree_id = tree_id,
                                     n_cores = n_cores,
@@ -1592,6 +1595,7 @@
                              min_reads,
                              batch_correction_method,
                              batches,
+                             max_n_batch,
                              tree_records,
                              tree_id,
                              n_cores,
@@ -1827,6 +1831,7 @@
                                                 sample_max = sample_max,
                                                 downsampling_rate = downsampling_rate,
                                                 min_reads = min_reads,
+                                                max_n_batch = max_n_batch,
                                                 input_matrix = input_matrix[current_cells, ],
                                                 nn_matrix = nn_matrix[current_cells, current_cells],
                                                 comparison_records = comparison_records,
@@ -1960,6 +1965,7 @@
                                               sample_max = sample_max,
                                               downsampling_rate = downsampling_rate,
                                               min_reads = min_reads,
+                                              max_n_batch = max_n_batch,
                                               input_matrix = input_matrix[current_cells,],
                                               nn_matrix = nn_matrix[current_cells, current_cells],
                                               comparison_records = comparison_records,
@@ -2047,6 +2053,7 @@
                                                     sample_max = sample_max,
                                                     downsampling_rate = downsampling_rate,
                                                     min_reads = min_reads,
+                                                    max_n_batch = max_n_batch,
                                                     input_matrix = input_matrix[current_cells, ],
                                                     nn_matrix = nn_matrix[current_cells, current_cells],
                                                     comparison_records = comparison_records,

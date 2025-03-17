@@ -153,6 +153,12 @@
 #' @param batch_labels A character string that, if applying batch correction,
 #' specifies the name of the column in the input object metadata containing the
 #' batch labels. Defaults to \code{NULL}.
+#' @param max_n_batch A numeric value indicating how many of the batches
+#' to use for the permutation test, selecting in order of largest to smallest.
+#' Defaults to \code{Inf}, which will use all batches that pass cell number
+#' thresholds. In datasets with many batches (>10), setting this value to a
+#' smaller value such as 4 or 5 may help avoid excessive downsampling when
+#' running the permutation tests, that can potentially cause underclustering.
 #' @param cluster_params A list of additional parameters to be passed to
 #' \code{Seurat} function \code{FindClusters} for clustering at each level of
 #' the tree. By default, when the \code{Seurat::FindClusters} parameter
@@ -246,6 +252,7 @@ pruneTree <- function(object,
                       normalization_method = NULL,
                       batch_correction_method = NULL,
                       batch_labels = NULL,
+                      max_n_batch = NULL,
                       cluster_params = NULL,
                       use_assay = NULL,
                       countsplit = NULL,
@@ -304,6 +311,7 @@ pruneTree <- function(object,
                              "normalization_method" = "none",
                              "batch_correction_method" = "none",
                              "batch_labels" = NULL,
+                             "max_n_batch" = Inf,
                              "cluster_params" = list(algorithm = 1,
                                                      group.singletons = TRUE),
                              "use_assay"  = NULL,
@@ -330,6 +338,7 @@ pruneTree <- function(object,
   normalization_method <- .retrieveParam(normalization_method, "normalization_method", buildTree_parameters, default_parameters)
   batch_correction_method <- .retrieveParam(batch_correction_method, "batch_correction_method", buildTree_parameters, default_parameters)
   batch_labels <- .retrieveParam(batch_labels, "batch_labels", buildTree_parameters, default_parameters)
+  max_n_batch <- .retrieveParam(max_n_batch, "max_n_batch", buildTree_parameters, default_parameters)
   cluster_params <- .retrieveParam(cluster_params, "cluster_params", buildTree_parameters, default_parameters)
   use_assay <- .retrieveParam(use_assay, "use_assay", buildTree_parameters, default_parameters)
   countsplit <- .retrieveParam(countsplit, "countsplit", buildTree_parameters, default_parameters)
@@ -350,6 +359,7 @@ pruneTree <- function(object,
   .validInput(sample_max, "sample_max")
   .validInput(downsampling_rate, "downsampling_rate")
   .validInput(min_reads, "min_reads")
+  .validInput(max_n_batch, "max_n_batch")
   .validInput(cluster_params, "cluster_params")
   .validInput(use_assay, "use_assay", object)
   .validInput(countsplit, "countsplit")
@@ -697,6 +707,7 @@ pruneTree <- function(object,
                        "\n - Normalization method: ", normalization_method,
                        "\n - Batch correction method: ", batch_correction_method,
                        `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
+                       `if`(batch_correction_method != 'none', paste0("\n - Maximum # of batches used per permutation test: ", max_n_batch), ""),
                        "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
                                                                      paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
                                                                                                        cluster_params),
@@ -910,6 +921,7 @@ pruneTree <- function(object,
                                                              sample_max = sample_max,
                                                              downsampling_rate = downsampling_rate,
                                                              min_reads = min_reads,
+                                                             max_n_batch = max_n_batch,
                                                              input_matrix = input_matrices[[use_input_matrix]],
                                                              nn_matrix = nn_matrices[[use_nn_matrix]],
                                                              comparison_records = comparison_records,
@@ -1091,6 +1103,7 @@ pruneTree <- function(object,
                                                                   sample_max = sample_max,
                                                                   downsampling_rate = downsampling_rate,
                                                                   min_reads = min_reads,
+                                                                  max_n_batch = max_n_batch,
                                                                   input_matrix = input_matrices[[use_input_matrix]],
                                                                   nn_matrix = nn_matrices[[use_nn_matrix]],
                                                                   comparison_records = comparison_records,
@@ -1149,10 +1162,11 @@ pruneTree <- function(object,
                                                                   min_accuracy = min_accuracy,
                                                                   min_connections = min_connections,
                                                                   max_repeat_errors = max_repeat_errors,
+                                                                  collect_all_metrics = collect_all_metrics,
                                                                   sample_max = sample_max,
                                                                   downsampling_rate = downsampling_rate,
                                                                   min_reads = min_reads,
-                                                                  collect_all_metrics = collect_all_metrics,
+                                                                  max_n_batch = max_n_batch,
                                                                   input_matrix = input_matrices[[use_input_matrix]],
                                                                   nn_matrix = nn_matrices[[use_nn_matrix]],
                                                                   comparison_records = comparison_records,
@@ -1750,6 +1764,7 @@ pruneTree <- function(object,
                          "normalization_method" = normalization_method,
                          "batch_correction_method" = batch_correction_method,
                          "batch_labels" = batch_labels,
+                         "max_n_batch" = max_n_batch,
                          "countsplit" = countsplit,
                          "countsplit_suffix" = countsplit_suffix,
                          "countsplit_text" = countsplit_text,

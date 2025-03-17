@@ -834,8 +834,8 @@
     }
   }
 
-  # sample_max
-  if (name == "sample_max") {
+  # sample_max, max_n_batch
+  if (name %in% c("sample_max", "max_n_batch")) {
     # Should be of class 'numeric', must be a single value
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")

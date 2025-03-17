@@ -211,6 +211,12 @@
 #' @param batch_labels A character string that, if applying batch correction,
 #' specifies the name of the column in the input object metadata containing the
 #' batch labels. Defaults to \code{NULL}.
+#' @param max_n_batch A numeric value indicating how many of the batches
+#' to use for the permutation test, selecting in order of largest to smallest.
+#' Defaults to \code{Inf}, which will use all batches that pass cell number
+#' thresholds. In datasets with many batches (>10), setting this value to a
+#' smaller value such as 4 or 5 may help avoid excessive downsampling when
+#' running the permutation tests, that can potentially cause underclustering.
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat} function \code{FindNeighbors} (or, in the case of multi-modal
 #' data for \code{Seurat} or \code{SingleCellExperiment} objects, \code{Seurat}
@@ -335,6 +341,7 @@ CHOIR <- function(object,
                   batch_correction_method = "none",
                   batch_correction_params = list(),
                   batch_labels = NULL,
+                  max_n_batch = Inf,
                   neighbor_params = list(),
                   cluster_params = list(algorithm = 1,
                                         group.singletons = TRUE),
@@ -392,6 +399,7 @@ CHOIR <- function(object,
                       batch_correction_method = batch_correction_method,
                       batch_correction_params = batch_correction_params,
                       batch_labels = batch_labels,
+                      max_n_batch = max_n_batch,
                       neighbor_params = neighbor_params,
                       cluster_params = cluster_params,
                       use_assay = use_assay,
