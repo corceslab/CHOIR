@@ -23,6 +23,7 @@ buildTree(
   min_reads = NULL,
   max_clusters = "auto",
   min_cluster_depth = 2000,
+  min_root_cluster_size = 1,
   normalization_method = "none",
   subtree_reductions = TRUE,
   reduction_method = NULL,
@@ -183,6 +184,13 @@ Defaults to 2000. Increasing this parameter can cause a computational
 bottleneck when generating the initial clustering tree for some large
 datasets; therefore, the default value is recommended. However, changing this
 value is unlikely to have meaningful effects on the final cluster results.}
+
+\item{min_root_cluster_size}{A numerical value indicating the minimum cluster
+size for a cluster to be "counted" during root tree generation. Defaults to
+1, which sets no minimum. This parameter should only be changed in rare
+cases when modularity-based clustering yields anexcessive number of singleton
+or extremely small clusters (particularly occurs with 1M+ cell datasets),
+which can complicate and slow down further clustering.}
 
 \item{normalization_method}{A character string or vector indicating which
 normalization method to use. In general, input data should be supplied to

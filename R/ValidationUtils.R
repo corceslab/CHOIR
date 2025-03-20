@@ -80,7 +80,7 @@
 
   # Single positive integer
   # n_iterations, n_trees, random_seed, n
-  if (name %in% c("n_iterations", "n_trees", "random_seed", "n")) {
+  if (name %in% c("n_iterations", "n_trees", "random_seed", "n", "min_root_cluster_size")) {
     # Should be of class 'numeric', must be a single value
     if (!methods::is(input, "numeric") | length(input) != 1) {
       stop("Input value for '", name, "' must be a single value of class 'numeric'. Please supply valid input!")
