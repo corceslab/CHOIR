@@ -25,6 +25,7 @@
 # sample_max -- A numeric indicating max cells to sample for random forest
 # downsampling_rate -- A numeric indicating how much to downsample cells from each cluster for train/test
 # min_reads -- A numeric used to filter out features that do not have more than 1 read for this many cells in at least one of the clusters
+# max_n_batch -- A numeric indicating how many of the batches (ranked from largest to smallest), to use for the permutation test
 # input_matrix -- A matrix of sequencing data, on which the random forest classifier will be trained/tested
 # nn_matrix -- A nearest neighbors adjacency matrix
 # comparison_records -- A dataframe containing the comparison records output of the previous runs of this function
@@ -57,6 +58,7 @@
                                 sample_max,
                                 downsampling_rate,
                                 min_reads,
+                                max_n_batch,
                                 input_matrix,
                                 nn_matrix,
                                 comparison_records = NULL,
@@ -107,11 +109,19 @@
     # Only use batches which fulfill these conditions in both clusters:
     # (1) Contain at least 2 cells
     # (2) Make up at least 20% as many cells as the most prevalent batch in the cluster
+    # If number of batches > max_n_batch
+    # Subset to max_n_batch largest batches
     cluster1_batch_freq <- table(cluster1_cell_batches)
     cluster1_batches <- names(cluster1_batch_freq)[cluster1_batch_freq >= max(2, 0.20*max(cluster1_batch_freq))]
     cluster2_batch_freq <- table(cluster2_cell_batches)
     cluster2_batches <- names(cluster2_batch_freq)[cluster2_batch_freq >= max(2, 0.20*max(cluster2_batch_freq))]
     batches <- intersect(cluster1_batches, cluster2_batches)
+    # Subset batches if necessary
+    if (length(batches) > max_n_batch) {
+      batch_min_freq <- pmin(cluster1_batch_freq, cluster2_batch_freq)[batches]
+      batches <- names(sort(batch_min_freq, decreasing = TRUE))[1:max_n_batch]
+    }
+    # Check if batch confounded
     if (length(batches) == 0) {
       comparison_result <- "merge"
       proceed <- FALSE
