@@ -26,6 +26,7 @@ pruneTree(
   normalization_method = NULL,
   batch_correction_method = NULL,
   batch_labels = NULL,
+  max_n_batch = NULL,
   cluster_params = NULL,
   use_assay = NULL,
   countsplit = NULL,
@@ -206,6 +207,16 @@ thereby making the final cluster calls more conservative.}
 \item{batch_labels}{A character string that, if applying batch correction,
 specifies the name of the column in the input object metadata containing the
 batch labels. Defaults to \code{NULL}.}
+
+\item{max_n_batch}{A numeric value used if applying batch correction,
+indicating the maximum number batches to use in each permutation test.
+Batches are selected in order from largest to smallest. Defaults to
+\code{Inf}, which will use all batches that pass cell number thresholds. In
+datasets that contain many batches (>10), where there is no logical way to
+group batches prior to applying CHOIR, setting \code{max_n_batch} to a
+smaller value (we suggest between 1 and 5) may help avoid excessive
+downsampling when running the permutation tests, and thereby help avoid
+underclustering.}
 
 \item{cluster_params}{A list of additional parameters to be passed to
 \code{Seurat} function \code{FindClusters} for clustering at each level of

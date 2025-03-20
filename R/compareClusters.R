@@ -118,12 +118,15 @@
 #' @param batch_labels A character string that, if applying batch correction,
 #' specifies the name of the column in the input object metadata containing the
 #' batch labels. Defaults to \code{NULL}.
-#' @param max_n_batch A numeric value indicating how many of the batches
-#' to use for the permutation test, selecting in order of largest to smallest.
-#' Defaults to \code{Inf}, which will use all batches that pass cell number
-#' thresholds. In datasets with many batches (>10), setting this value to a
-#' smaller value such as 4 or 5 may help avoid excessive downsampling when
-#' running the permutation tests, that can potentially cause underclustering.
+#' @param max_n_batch A numeric value used if applying batch correction,
+#' indicating the maximum number batches to use in each permutation test.
+#' Batches are selected in order from largest to smallest. Defaults to
+#' \code{Inf}, which will use all batches that pass cell number thresholds. In
+#' datasets that contain many batches (>10), where there is no logical way to
+#' group batches prior to applying CHOIR, setting \code{max_n_batch} to a
+#' smaller value (we suggest between 1 and 5) may help avoid excessive
+#' downsampling when running the permutation tests, and thereby help avoid
+#' underclustering.
 #' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
 #' character string or vector indicating the assay(s) to use in the provided
 #' object. The default value, \code{NULL}, will choose the current active assay
