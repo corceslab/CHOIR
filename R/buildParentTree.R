@@ -90,8 +90,10 @@
 #' @param cluster_params A list of additional parameters to be passed to
 #' \code{Seurat} function \code{FindClusters} for clustering at each level of
 #' the tree. By default, when the \code{Seurat::FindClusters} parameter
-#' \code{group.singletons} is set to \code{TRUE}, CHOIR relabels clusters such
-#' that each singleton constitutes its own cluster.
+#' \code{group.singletons} is set to \code{TRUE}, singletons are grouped into
+#' the nearest cluster. Alternately, if \code{group.singletons} is set to
+#' \code{FALSE}, CHOIR will relabel clusters such that each singleton
+#' constitutes its own cluster.
 #' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
 #' character string or vector indicating the assay(s) to use in the provided
 #' object. The default value, \code{NULL}, will choose the current active assay

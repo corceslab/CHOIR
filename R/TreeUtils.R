@@ -574,7 +574,7 @@
     if (verbose & (n_clust_res0_filtered != n_clust_res0)) {
       hour_start_time <- Sys.time()
       message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = 0, ",
-              n_clust_res0, " (", n_clust_res0_filtered, " with >=", min_root_cluster_size, " cells)")
+              n_clust_res0, " clusters (", n_clust_res0_filtered, " with >=", min_root_cluster_size, " cells)")
     }
     n_clust_res0 <- n_clust_res0_filtered
   }
@@ -613,7 +613,7 @@
       if (verbose & (n_clust_res1_filtered != n_clust_res1)) {
         hour_start_time <- Sys.time()
         message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = 1, ",
-                n_clust_res1, " (", n_clust_res1_filtered, " with >=", min_root_cluster_size, " cells)")
+                n_clust_res1, " clusters (", n_clust_res1_filtered, " with >=", min_root_cluster_size, " cells)")
       }
       n_clust_res1 <- n_clust_res1_filtered
     }
@@ -672,7 +672,7 @@
             if (verbose & (new_n_clust_filtered != new_n_clust)) {
               hour_start_time <- Sys.time()
               message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = ", res, ", ",
-                      new_n_clust, " (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
+                      new_n_clust, " clusters (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
             }
             new_n_clust <- new_n_clust_filtered
           }
@@ -727,7 +727,7 @@
           if (verbose & (new_n_clust_filtered != new_n_clust)) {
             hour_start_time <- Sys.time()
             message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = ", res, ", ",
-                    new_n_clust, " (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
+                    new_n_clust, " clusters (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
           }
           new_n_clust <- new_n_clust_filtered
         }
@@ -1174,7 +1174,7 @@
     n_clust_filtered <- sum(table(res0_clusters[,1]) >= min_root_cluster_size)
     if (verbose & (n_clust_filtered != n_clust)) {
       message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = 0, ",
-              n_clust, " (", n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
+              n_clust, " clusters (", n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
     }
     n_clust <- n_clust_filtered
   }
@@ -1255,7 +1255,7 @@
         if (verbose & (new_n_clust_filtered != new_n_clust)) {
           hour_start_time <- Sys.time()
           message(format(Sys.time(), "%Y-%m-%d %X"), " : At resolution = ", res,", ",
-                  new_n_clust, " (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
+                  new_n_clust, " clusters (", new_n_clust_filtered, " with >=", min_root_cluster_size, " cells)")
         }
         new_n_clust <- new_n_clust_filtered
       }
