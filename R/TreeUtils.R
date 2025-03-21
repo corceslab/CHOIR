@@ -542,7 +542,7 @@
 # random_seed -- A numeric value indicating the random seed used
 # verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getStartingResolution <- function(snn_matrix,
-                                   cluster_params = cluster_params,
+                                   cluster_params,
                                    random_seed = 1,
                                    verbose = TRUE) {
 
@@ -621,9 +621,9 @@
       res <- 1.5
       new_n_clust <- n_clust_res1
       stop <- FALSE
-      n_iterations <- 2
+      n_loops <- 2
       while (new_n_clust <= n_clust_res1 & stop == FALSE) {
-        n_iterations <- n_iterations + 1
+        n_loops <- n_loops + 1
         if (exists("new_clusters")) rm(new_clusters)
         try(new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                                   "resolution" = res,
@@ -653,10 +653,10 @@
             hour_start_time <- Sys.time()
             if (new_n_clust == 1) {
               message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                             " : At resolution = ", res, ", 1 cluster. [", n_iterations, " iterations]"))
+                             " : At resolution = ", res, ", 1 cluster. [", n_loops, " iterations]"))
             } else {
               message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                             " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_iterations, " iterations]"))
+                             " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_loops, " iterations]"))
             }
           }
 
@@ -679,9 +679,9 @@
       # From 0.1 on, go down by a power of 10 until there is the same # of clusters as res=0
       res <- 0.7
       new_n_clust <- n_clust_res1
-      n_iterations <- 2
+      n_loops <- 2
       while (new_n_clust > n_clust_res0) {
-        n_iterations <- n_iterations + 1
+        n_loops <- n_loops + 1
         new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                               "resolution" = res,
                                                                               "random.seed" = random_seed),
@@ -699,10 +699,10 @@
           hour_start_time <- Sys.time()
           if (new_n_clust == 1) {
             message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                           " : At resolution = ", res, ", 1 cluster. [", n_iterations, " iterations]"))
+                           " : At resolution = ", res, ", 1 cluster. [", n_loops, " iterations]"))
           } else {
             message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                           " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_iterations, " iterations]"))
+                           " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_loops, " iterations]"))
           }
         }
 
@@ -1002,6 +1002,7 @@
 # tree_id -- Name of tree
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
+# verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getTree <- function(snn_matrix,
                      nn_matrix = NULL,
                      dist_matrix = NULL,
@@ -1032,7 +1033,8 @@
                      tree_records = NULL,
                      tree_id = "P0",
                      n_cores,
-                     random_seed) {
+                     random_seed,
+                     verbose = FALSE) {
   if (tree_type == "silhouette") {
     tree_output <- .getTree.silhouette(snn_matrix = snn_matrix,
                                  dist_matrix = dist_matrix,
@@ -1045,7 +1047,8 @@
                                  tree_records = tree_records,
                                  tree_id = tree_id,
                                  n_cores = n_cores,
-                                 random_seed = random_seed)
+                                 random_seed = random_seed,
+                                 verbose = verbose)
   } else if (tree_type == "full") {
     tree_output <- .getTree.full(snn_matrix = snn_matrix,
                                  max_clusters = max_clusters,
@@ -1055,7 +1058,8 @@
                                  decimal_places = decimal_places,
                                  tree_records = tree_records,
                                  n_cores = n_cores,
-                                 random_seed = random_seed)
+                                 random_seed = random_seed,
+                                 verbose = verbose)
   } else if (tree_type == "subtree") {
     tree_output <- .getTree.subtree(snn_matrix = snn_matrix,
                                     nn_matrix = nn_matrix,
@@ -1082,9 +1086,9 @@
                                     tree_records = tree_records,
                                     tree_id = tree_id,
                                     n_cores = n_cores,
-                                    random_seed = random_seed)
+                                    random_seed = random_seed,
+                                    verbose = verbose)
   }
-
   return(list("cluster_tree" = tree_output[["cluster_tree"]],
               "tree_records" = tree_output[["tree_records"]]))
 }
@@ -1100,7 +1104,8 @@
                           tree_records,
                           tree_id = "P0",
                           n_cores,
-                          random_seed) {
+                          random_seed,
+                          verbose) {
   # Find number of cells
   n_cells <- ncol(snn_matrix)
 
@@ -1121,6 +1126,7 @@
   old_res <- 0
   res <- starting_resolution
   gap <- starting_resolution/2
+
   n_clust <- dplyr::n_distinct(res0_clusters[,1])
 
   # Starting silhouette score
@@ -1159,14 +1165,11 @@
   max_sil_res <- old_res
   gap_counter <- 0
   reset_counter <- 0
-
-  # Progress bar
-  pb <- progress::progress_bar$new(format = "                      [[ Current tree: :current iterations in :elapsed ]] ",
-                                   total = NA)
-  pb$tick(0)
+  hour_start_time <- Sys.time()
+  n_loops <- 1
 
   while (stop == FALSE) {
-    pb$tick()
+    n_loops <- n_loops + 1
     if (exists("new_clusters")) rm(new_clusters)
     try(new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                               "resolution" = res,
@@ -1197,6 +1200,18 @@
       }
       # Number of new clusters
       new_n_clust <- dplyr::n_distinct(new_clusters[,1])
+
+      # Progress
+      if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+        hour_start_time <- Sys.time()
+        if (new_n_clust == 1) {
+          message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                         " : At resolution = ", res, ", 1 cluster. [", n_loops, " iterations]"))
+        } else {
+          message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                         " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_loops, " iterations]"))
+        }
+      }
 
       # Stop prior to reaching all singletons / if max cluster size is 2
       if (max(table(new_clusters)) <= 2) {
@@ -1313,6 +1328,9 @@
   rm(dist_matrix)
   rm(reduction)
 
+  # Progress
+  if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : ", stop_reason))
+
   # After max silhouette has been established, we'll remove any subsequent resolutions from the tree
   if (which(colnames(multi_level_clusters) == max_sil_lvl) == 1) {
     multi_level_clusters <- data.frame(col = multi_level_clusters[, 1])
@@ -1325,6 +1343,9 @@
   if ((ncol(multi_level_clusters) == 2 & dplyr::n_distinct(multi_level_clusters[,1]) == 1) | ncol(multi_level_clusters) == 1) {
     cluster_tree <- multi_level_clusters
   } else {
+    # Progress
+    if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : Running MRtree.."))
+
     multi_level_clusters <- as.matrix(multi_level_clusters)
     # Convert to numerical for MRtree
     multi_level_clusters <- apply(multi_level_clusters, 2, function(x) as.numeric(as.factor(x)))
@@ -1366,7 +1387,8 @@
                           decimal_places,
                           tree_records,
                           n_cores,
-                          random_seed) {
+                          random_seed,
+                          verbose) {
   # Find number of cells
   n_cells <- ncol(snn_matrix)
 
@@ -1389,6 +1411,8 @@
   level <- 0
   gap_counter <- 0
   reset_counter <- 0
+  hour_start_time <- Sys.time()
+  n_loops <- 0
 
   # Add to records
   tree_records <- rbind(tree_records, data.frame(tree_type = "full",
@@ -1405,13 +1429,9 @@
                                                  neighbors_decision = NA,
                                                  stop_branching_reason = NA))
 
-  # Progress bar
-  pb <- progress::progress_bar$new(format = "[[ Current tree: :current in :elapsed ]] ",
-                                   total = NA)
-  pb$tick(0)
 
   while (stop == FALSE) {
-    pb$tick()
+    n_loops <- n_loops + 1
     if (exists("new_clusters")) rm(new_clusters)
     try(new_clusters <- suppressWarnings(do.call(Seurat::FindClusters, c(list("object" = snn_matrix,
                                                                               "resolution" = res,
@@ -1442,6 +1462,18 @@
       }
       # Number of new clusters
       new_n_clust <- dplyr::n_distinct(new_clusters[,1])
+
+      # Progress
+      if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+        hour_start_time <- Sys.time()
+        if (new_n_clust == 1) {
+          message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                         " : At resolution = ", res, ", 1 cluster. [", n_loops, " iterations]"))
+        } else {
+          message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                         " : At resolution = ", res, ", ", new_n_clust, " clusters. [", n_loops, " iterations]"))
+        }
+      }
 
       # Stop prior to reaching all singletons / if max cluster size is 2
       if (max(table(new_clusters)) <= 2) {
@@ -1535,11 +1567,17 @@
   # Clean up
   rm(snn_matrix)
 
+  # Progress
+  if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : ", stop_reason))
+
   ## We now have our multi-level clustering results across a range of resolutions
   # If necessary, reconcile into strictly hierarchical clustering tree using MRtree
   if ((ncol(multi_level_clusters) == 2 & dplyr::n_distinct(multi_level_clusters[,1]) == 1) | ncol(multi_level_clusters) == 1) {
     cluster_tree <- multi_level_clusters
   } else {
+    # Progress
+    if (verbose) message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : Running MRtree.."))
+
     multi_level_clusters <- as.matrix(multi_level_clusters)
     # Convert to numerical for MRtree
     multi_level_clusters <- apply(multi_level_clusters, 2, function(x) as.numeric(as.factor(x)))
@@ -1599,7 +1637,8 @@
                              tree_records,
                              tree_id,
                              n_cores,
-                             random_seed) {
+                             random_seed,
+                             verbose) {
   # Find number of cells
   n_cells <- ncol(snn_matrix)
   cell_IDs <- colnames(snn_matrix)

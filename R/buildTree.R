@@ -800,7 +800,8 @@ buildTree <- function(object,
                              decimal_places = P0_starting_resolution[["decimal_places"]],
                              tree_records = tree_records,
                              n_cores = n_cores,
-                             random_seed = random_seed)
+                             random_seed = random_seed,
+                             verbose = verbose)
     P0_tree <- P0_tree_list[["cluster_tree"]]
     if (verbose) message("\n                      ", P0_tree_list[["stop_reason"]])
 
@@ -838,7 +839,8 @@ buildTree <- function(object,
                                decimal_places = P0_starting_resolution[["decimal_places"]],
                                tree_records = tree_records,
                                n_cores = n_cores,
-                               random_seed = random_seed)
+                               random_seed = random_seed,
+                               verbose = verbose)
     full_tree <- full_tree_list[["cluster_tree"]]
     if (verbose) message("\n                      ", full_tree_list[["stop_reason"]])
 
