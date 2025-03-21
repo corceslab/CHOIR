@@ -9,7 +9,6 @@ buildParentTree(
   key = "CHOIR",
   distance_approx = TRUE,
   downsampling_rate = "auto",
-  min_root_cluster_size = 1,
   normalization_method = "none",
   reduction_method = NULL,
   reduction_params = list(),
@@ -59,13 +58,6 @@ If input is provided to both \code{downsampling_rate} and
 and used for each comparison. Note that the \code{downsampling_rate} is set
 in the \code{buildParentTree} function so that it can be retrieved in later
 steps when running CHOIR on atlas-scale data.}
-
-\item{min_root_cluster_size}{A numerical value indicating the minimum cluster
-size for a cluster to be "counted" during root tree generation. Defaults to
-1, which sets no minimum. This parameter should only be changed in rare
-cases when modularity-based clustering yields anexcessive number of singleton
-or extremely small clusters (particularly occurs with 1M+ cell datasets),
-which can complicate and slow down further clustering.}
 
 \item{normalization_method}{A character string or vector indicating which
 normalization method to use. In general, input data should be supplied to

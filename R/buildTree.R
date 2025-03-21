@@ -126,12 +126,6 @@
 #' bottleneck when generating the initial clustering tree for some large
 #' datasets; therefore, the default value is recommended. However, changing this
 #' value is unlikely to have meaningful effects on the final cluster results.
-#' @param min_root_cluster_size A numerical value indicating the minimum cluster
-#' size for a cluster to be "counted" during root tree generation. Defaults to
-#' 1, which sets no minimum. This parameter should only be changed in rare
-#' cases when modularity-based clustering yields anexcessive number of singleton
-#' or extremely small clusters (particularly occurs with 1M+ cell datasets),
-#' which can complicate and slow down further clustering.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except when the user wishes to use
@@ -309,7 +303,6 @@ buildTree <- function(object,
                       min_reads = NULL,
                       max_clusters = "auto",
                       min_cluster_depth = 2000,
-                      min_root_cluster_size = 1,
                       normalization_method = "none",
                       subtree_reductions = TRUE,
                       reduction_method = NULL,
@@ -363,7 +356,6 @@ buildTree <- function(object,
   .validInput(min_reads, "min_reads")
   .validInput(max_clusters, "max_clusters")
   .validInput(min_cluster_depth, "min_cluster_depth")
-  .validInput(min_root_cluster_size, "min_root_cluster_size")
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
@@ -608,7 +600,6 @@ buildTree <- function(object,
                                                     paste0(">0 reads"), paste0(">1 read per ", min_reads, " cells")),
                        "\n - Maximum clusters: ", max_clusters,
                        "\n - Minimum cluster depth: ", min_cluster_depth,
-                       "\n - Minimum cluster size counted during root tree generation: ", min_root_cluster_size,
                        "\n - Normalization method: ", normalization_method,
                        "\n - Subtree dimensionality reductions: ", subtree_reductions,
                        "\n - Dimensionality reduction method: ", `if`(is.null(reduction_method), "Default", reduction_method),
@@ -755,7 +746,6 @@ buildTree <- function(object,
 
   P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
                                                    cluster_params = cluster_params,
-                                                   min_root_cluster_size = min_root_cluster_size,
                                                    random_seed = random_seed,
                                                    verbose = verbose)
 
@@ -786,7 +776,6 @@ buildTree <- function(object,
                              distance_approx = distance_approx,
                              tree_type = "silhouette",
                              cluster_params = cluster_params,
-                             min_root_cluster_size = min_root_cluster_size,
                              starting_resolution = P0_starting_resolution[["starting_resolution"]],
                              res0_clusters = P0_starting_resolution[["res0_clusters"]],
                              decimal_places = P0_starting_resolution[["decimal_places"]],
@@ -1338,7 +1327,6 @@ buildTree <- function(object,
                          "min_reads" = min_reads,
                          "max_clusters" = max_clusters,
                          "min_cluster_depth" = min_cluster_depth,
-                         "min_root_cluster_size" = min_root_cluster_size,
                          "normalization_method" = normalization_method,
                          "subtree_reductions" = subtree_reductions,
                          "reduction_method" = reduction_method,

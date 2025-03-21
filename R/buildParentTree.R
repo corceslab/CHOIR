@@ -29,12 +29,6 @@
 #' and used for each comparison. Note that the \code{downsampling_rate} is set
 #' in the \code{buildParentTree} function so that it can be retrieved in later
 #' steps when running CHOIR on atlas-scale data.
-#' @param min_root_cluster_size A numerical value indicating the minimum cluster
-#' size for a cluster to be "counted" during root tree generation. Defaults to
-#' 1, which sets no minimum. This parameter should only be changed in rare
-#' cases when modularity-based clustering yields anexcessive number of singleton
-#' or extremely small clusters (particularly occurs with 1M+ cell datasets),
-#' which can complicate and slow down further clustering.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except when the user wishes to use
@@ -178,7 +172,6 @@ buildParentTree <- function(object,
                             key = "CHOIR",
                             distance_approx = TRUE,
                             downsampling_rate = "auto",
-                            min_root_cluster_size = 1,
                             normalization_method = "none",
                             reduction_method = NULL,
                             reduction_params = list(),
@@ -209,7 +202,6 @@ buildParentTree <- function(object,
   .validInput(object, "object", "buildTree")
   .validInput(key, "key", list("buildTree", object))
   .validInput(downsampling_rate, "downsampling_rate")
-  .validInput(min_root_cluster_size, "min_root_cluster_size")
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
@@ -439,7 +431,6 @@ buildParentTree <- function(object,
                        "\n - Intermediate data stored under key: ", key,
                        "\n - Distance approximation: ", distance_approx,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
-                       "\n - Minimum cluster size counted during root tree generation: ", min_root_cluster_size,
                        "\n - Normalization method: ", normalization_method,
                        "\n - Dimensionality reduction method: ", `if`(is.null(reduction_method), "Default", reduction_method),
                        "\n - Dimensionality reduction parameters provided: ", `if`(length(reduction_params) == 0, "No",
@@ -573,7 +564,6 @@ buildParentTree <- function(object,
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
   P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
                                                    cluster_params = cluster_params,
-                                                   min_root_cluster_size = min_root_cluster_size,
                                                    random_seed = random_seed,
                                                    verbose = verbose)
 
@@ -603,7 +593,6 @@ buildParentTree <- function(object,
                            distance_approx = distance_approx,
                            tree_type = "silhouette",
                            cluster_params = cluster_params,
-                           min_root_cluster_size = min_root_cluster_size,
                            starting_resolution = P0_starting_resolution[["starting_resolution"]],
                            res0_clusters = P0_starting_resolution[["res0_clusters"]],
                            decimal_places = P0_starting_resolution[["decimal_places"]],
@@ -666,7 +655,6 @@ buildParentTree <- function(object,
   # Record parameters used and add to original object
   parameter_list <- list("downsampling_rate" = downsampling_rate,
                          "distance_approx"  = distance_approx,
-                         "min_root_cluster_size" = min_root_cluster_size,
                          "normalization_method" = normalization_method,
                          "reduction_method" = reduction_method,
                          "reduction_params" = reduction_params,
