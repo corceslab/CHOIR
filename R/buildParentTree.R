@@ -80,12 +80,15 @@
 #' @param neighbor_params A list of additional parameters to be passed to
 #' \code{Seurat} function \code{FindNeighbors} (or, in the case of multi-modal
 #' data for \code{Seurat} or \code{SingleCellExperiment} objects, \code{Seurat}
-#' function \code{FindMultiModalNeighbors}).
+#' function \code{FindMultiModalNeighbors}). If provided, parameter 'dims' can
+#' be used to determine which dimensions of the reduction are used as input.
 #' @param cluster_params A list of additional parameters to be passed to
 #' \code{Seurat} function \code{FindClusters} for clustering at each level of
 #' the tree. By default, when the \code{Seurat::FindClusters} parameter
-#' \code{group.singletons} is set to \code{TRUE}, CHOIR relabels clusters such
-#' that each singleton constitutes its own cluster.
+#' \code{group.singletons} is set to \code{TRUE}, singletons are grouped into
+#' the nearest cluster. Alternately, if \code{group.singletons} is set to
+#' \code{FALSE}, CHOIR will relabel clusters such that each singleton
+#' constitutes its own cluster.
 #' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
 #' character string or vector indicating the assay(s) to use in the provided
 #' object. The default value, \code{NULL}, will choose the current active assay
@@ -264,6 +267,10 @@ buildParentTree <- function(object,
   if (!any(names(neighbor_params) == "verbose")) {
     neighbor_params$verbose <- FALSE
   }
+  neighbor_params_text <- `if`((length(neighbor_params) == 0), "No",
+                               paste0("\n     - ", paste0(paste0(names(neighbor_params), ": ",
+                                                                 neighbor_params),
+                                                          collapse = "\n     - ")))
   if (!any(names(cluster_params) == "verbose")) {
     cluster_params$verbose <- FALSE
   }
@@ -272,6 +279,13 @@ buildParentTree <- function(object,
   }
   if (!any(names(cluster_params) == "group.singletons")) {
     cluster_params$group.singletons <- TRUE
+  }
+  # Separate certain parameters
+  if (!any(names(neighbor_params) == "dims")) {
+    neighbor_dims <- neighbor_params$dims
+    neighbor_params <- neighbor_params[names(neighbor_params) != "dims"]
+  } else {
+    neighbor_dims <- NULL
   }
 
   # Set defaults
@@ -443,10 +457,7 @@ buildParentTree <- function(object,
                                                                                                              batch_correction_params),
                                                                                                       collapse = "\n     - "))),
                        `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
-                       "\n - Nearest neighbor parameters provided: ", `if`(length(neighbor_params) == 0, "No",
-                                                                           paste0("\n     - ", paste0(paste0(names(neighbor_params), ": ",
-                                                                                                             neighbor_params),
-                                                                                                      collapse = "\n     - "))),
+                       "\n - Nearest neighbor parameters provided: ", neighbor_params_text,
                        "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
                                                                      paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
                                                                                                        cluster_params),
@@ -512,8 +523,14 @@ buildParentTree <- function(object,
     cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]])
 
     # Find neighbors
-    P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]]),
-                                                             neighbor_params))
+    if (is.null(neighbor_dims)) {
+      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]]),
+                                                               neighbor_params))
+    } else {
+      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]][, neighbor_dims]),
+                                                               neighbor_params))
+    }
+
     # Dimensionality reduction distance matrix
     if (distance_approx == FALSE) {
       P0_reduction_dist <- stats::dist(P0_dim_reduction[["reduction_coords"]])
@@ -532,7 +549,11 @@ buildParentTree <- function(object,
     for (i in 1:length(use_assay_build)) {
       tmp_seurat[[paste0("DR_", i)]] <- Seurat::CreateDimReducObject(embeddings = P0_dim_reduction[["reduction_coords"]][[i]],
                                                                      key = paste0("DR_", i, "_"), assay = 'tmp')
-      dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
+      if (is.null(neighbor_dims)) {
+        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
+      } else {
+        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]][, neighbor_dims])
+      }
     }
     # Find neighbors
     P0_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
@@ -660,6 +681,7 @@ buildParentTree <- function(object,
                          "batch_correction_params" = batch_correction_params,
                          "batch_labels" = batch_labels,
                          "neighbor_params" = neighbor_params,
+                         "neighbor_dims" = neighbor_dims,
                          "cluster_params" = cluster_params,
                          "use_assay" = use_assay,
                          "use_slot" = use_slot,
