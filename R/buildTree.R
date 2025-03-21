@@ -440,7 +440,7 @@ buildTree <- function(object,
     cluster_params$group.singletons <- TRUE
   }
   # Separate certain parameters
-  if (!any(names(neighbor_params) == "dims")) {
+  if (any(names(neighbor_params) == "dims")) {
     neighbor_dims <- neighbor_params$dims
     neighbor_params <- neighbor_params[names(neighbor_params) != "dims"]
   } else {
