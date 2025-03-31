@@ -267,14 +267,26 @@ plotCHOIR <- function(object,
     group_by <- paste0("CHOIR_clusters_", alpha)
     color_label <- "CHOIR clusters"
     title <- paste0("CHOIR clusters (\u03b1 = ", alpha, ")")
+    group_by_default <- TRUE
   } else {
     color_label <- group_by
     title <- group_by
     accuracy_scores <- FALSE
+    group_by_default <- FALSE
   }
   tmp_seurat@meta.data$groups <- tmp_seurat@meta.data[,group_by]
   group_names <- unique(tmp_seurat@meta.data$groups)
   n_groups <- length(group_names)
+
+  # Generate color palette
+  if (group_by_default & (reduction != "P0_reduction_UMAP") & grepl("P\\d*_reduction_UMAP", reduction)) {
+    color_palette <- CHOIRpalette(dplyr::n_distinct(.retrieveData(object = object,
+                                                                  key = key,
+                                                                  type = "final_clusters",
+                                                                  name = group_by)))[group_names]
+  } else {
+    color_palette <- CHOIRpalette(n_groups)
+  }
 
   # ---------------------------------------------------------------------------
   # Plot
@@ -288,7 +300,7 @@ plotCHOIR <- function(object,
                                   label = FALSE,
                                   alpha = 0.1,
                                   ...) +
-      ggplot2::scale_color_manual(values = CHOIRpalette(n_groups)) +
+      ggplot2::scale_color_manual(values = color_palette) +
       ggplot2::labs(color = color_label) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2") +
@@ -305,7 +317,7 @@ plotCHOIR <- function(object,
                                   group.by = "groups",
                                   label = FALSE,
                                   ...) +
-      ggplot2::scale_color_manual(values = CHOIRpalette(n_groups)) +
+      ggplot2::scale_color_manual(values = color_palette) +
       ggplot2::labs(color = color_label) +
       ggplot2::xlab("Dim 1") +
       ggplot2::ylab("Dim 2") +
