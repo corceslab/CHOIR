@@ -72,6 +72,7 @@ CHOIRpalette <- function(n) {
 #' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of CHOIR. Defaults to \code{TRUE}, but can be set to
 #' \code{FALSE} for a cleaner output.
+#' @param ... Parameters passed to \code{Seurat::RunUMAP()}
 #'
 #' @return Returns the object with the following added data stored under the
 #' provided key: \describe{
@@ -84,7 +85,8 @@ CHOIRpalette <- function(n) {
 runCHOIRumap <- function(object,
                          key = "CHOIR",
                          reduction = NULL,
-                         verbose = TRUE) {
+                         verbose = TRUE,
+                         ...) {
   # ---------------------------------------------------------------------------
   # Check parameter input validity
   # ---------------------------------------------------------------------------
@@ -120,7 +122,7 @@ runCHOIRumap <- function(object,
                                          type = "reduction",
                                          name = reduction[r])
     # Run UMAP
-    try(CHOIR_UMAP <- Seurat::RunUMAP(extracted_reduction))
+    try(CHOIR_UMAP <- Seurat::RunUMAP(extracted_reduction, ...))
     if (exists("CHOIR_UMAP")) {
       # Store embeddings
       object <- .storeData(object, key, "reduction", CHOIR_UMAP@cell.embeddings, paste0(reduction[r], "_UMAP"))
