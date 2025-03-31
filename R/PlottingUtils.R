@@ -283,7 +283,7 @@ plotCHOIR <- function(object,
     color_palette <- CHOIRpalette(dplyr::n_distinct(.retrieveData(object = object,
                                                                   key = key,
                                                                   type = "final_clusters",
-                                                                  name = group_by)))[group_names]
+                                                                  name = group_by)))[sort(group_names)]
   } else {
     color_palette <- CHOIRpalette(n_groups)
   }
