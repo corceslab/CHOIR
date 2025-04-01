@@ -966,6 +966,14 @@ pruneTree <- function(object,
                                     " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
                 }
                 percent_done <- percent_done + tick_amount
+              } else {
+                if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : Running additional comparisons, ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
               }
             }
           }
@@ -981,6 +989,14 @@ pruneTree <- function(object,
                                 " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
             }
             percent_done <- percent_done + tick_amount
+          } else {
+            if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : Running additional comparisons, ",
+                                round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+            }
           }
         }
         # Identify which clusters will merge & update child IDs
@@ -1364,6 +1380,14 @@ pruneTree <- function(object,
                               " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
           }
           percent_done <- percent_done + tick_amount
+        } else {
+          if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+            hour_start_time <- Sys.time()
+            pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                              " : Running additional comparisons, ",
+                              round(difftime(Sys.time(), start_time, units = "min"), 2),
+                              " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+          }
         }
       }
       # Progress
@@ -1379,6 +1403,14 @@ pruneTree <- function(object,
                             " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
         }
         percent_done <- percent_done + tick_amount
+      } else {
+        if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+          hour_start_time <- Sys.time()
+          pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                            " : Running additional comparisons, ",
+                            round(difftime(Sys.time(), start_time, units = "min"), 2),
+                            " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+        }
       }
     }
     # Check multiple comparison adjustment
@@ -1548,7 +1580,16 @@ pruneTree <- function(object,
                           " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
       }
       percent_done <- percent_done + tick_amount
+    } else {
+      if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+        hour_start_time <- Sys.time()
+        pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                          " : Running additional comparisons, ",
+                          round(difftime(Sys.time(), start_time, units = "min"), 2),
+                          " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+      }
     }
+
     # Check for completion if beyond root of clustering tree
     if (lvl < 1) {
       if (underclustering_buffer == FALSE &
@@ -1578,6 +1619,7 @@ pruneTree <- function(object,
           parent_IDs <- child_IDs
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : Checking for underclustering in ",
                             length(clusters_to_check), " clusters."))
+          hour_start_time <- Sys.time()
           for (u_clust in 1:length(clusters_to_check)) {
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
@@ -1646,6 +1688,12 @@ pruneTree <- function(object,
                                         "_", subcluster_labels + max_P_label)
               child_IDs[current_cell_inds] <- new_cluster_IDs
               results_of_underclustering_check <- c(results_of_underclustering_check, unique(new_cluster_IDs))
+            }
+            # Progress
+            if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : Checked ", u_clust, " of ", length(clusters_to_check), " for underclustering."))
             }
           }
         } else {

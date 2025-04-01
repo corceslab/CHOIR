@@ -1213,6 +1213,14 @@ combineTrees <- function(object,
                                 " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
             }
             percent_done <- percent_done + tick_amount
+          } else {
+            if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : Running additional comparisons, ",
+                                round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+            }
           }
         } else {
           # Create matrix for comparison results
@@ -1346,6 +1354,14 @@ combineTrees <- function(object,
                                         " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
                     }
                     percent_done <- percent_done + tick_amount
+                  } else {
+                    if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                      hour_start_time <- Sys.time()
+                      pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                        " : Running additional comparisons, ",
+                                        round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                        " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                    }
                   }
                 }
               }
@@ -1362,6 +1378,14 @@ combineTrees <- function(object,
                                     " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
                 }
                 percent_done <- percent_done + tick_amount
+              } else {
+                if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : Running additional comparisons, ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
               }
             } else {
               # All split
@@ -1381,6 +1405,14 @@ combineTrees <- function(object,
                                     " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
                 }
                 percent_done <- percent_done + tick_amount
+              } else {
+                if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : Running additional comparisons, ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
               }
             }
           }
@@ -1741,6 +1773,14 @@ combineTrees <- function(object,
                               " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
           }
           percent_done <- percent_done + tick_amount
+        } else {
+          if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+            hour_start_time <- Sys.time()
+            pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                              " : Running additional comparisons, ",
+                              round(difftime(Sys.time(), start_time, units = "min"), 2),
+                              " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+          }
         }
       }
       # Progress
@@ -1756,6 +1796,14 @@ combineTrees <- function(object,
                             " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
         }
         percent_done <- percent_done + tick_amount
+      } else {
+        if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+          hour_start_time <- Sys.time()
+          pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                            " : Running additional comparisons, ",
+                            round(difftime(Sys.time(), start_time, units = "min"), 2),
+                            " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+        }
       }
     }
 
@@ -1842,6 +1890,14 @@ combineTrees <- function(object,
                           " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
       }
       percent_done <- percent_done + tick_amount
+    } else {
+      if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+        hour_start_time <- Sys.time()
+        pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                          " : Running additional comparisons, ",
+                          round(difftime(Sys.time(), start_time, units = "min"), 2),
+                          " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+      }
     }
 
     # Check for completion if beyond root of clustering tree
