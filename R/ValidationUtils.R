@@ -753,13 +753,8 @@
       if (input < 1.25) {
         warning("Input value for '", name, "' is under 1.25, consider increasing this value to account for the inherent inexactness of distance measurements.")
       }
-    } else if (methods::is(input, "logical") && length(input) == 1) {
-      # Must be 'FALSE'
-      if (input != FALSE) {
-        stop("Input value for '", name, "' must be single value of class 'numeric' or set to FALSE, please supply valid input!")
-      }
     } else {
-      stop("Input value for '", name, "' must be single value of class 'numeric' or set to FALSE, please supply valid input!")
+      stop("Input value for '", name, "' must be single value of class 'numeric', please supply valid input!")
     }
   }
 

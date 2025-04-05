@@ -1830,7 +1830,7 @@ combineTrees <- function(object,
         if(is.na(distance_i)) {
           distance_i <- Inf
         }
-        keep <- distances <= 2*distance_thresholds & distances <= distance_i
+        keep <- distances <= distance_awareness*distance_thresholds & distances <= distance_i
         permitted_comparisons <- other_clusters[keep]
         retained_permitted_comparisons <- c()
         if (length(permitted_comparisons) > 0) {

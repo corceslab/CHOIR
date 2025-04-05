@@ -101,7 +101,7 @@
 #' full permutation test comparison for clusters that are highly likely to be
 #' distinct, saving computational time. To omit all distance calculations and
 #' perform permutation testing on all comparisons, set this parameter to
-#' \code{FALSE}. Setting this parameter to \code{FALSE} or increasing the input
+#' \code{Inf}. Setting this parameter to \code{Inf} or increasing the input
 #' value will increase the number of permutation test comparisons run and, thus,
 #' the computational time. In rare cases, very small distant clusters may be
 #' erroneously merged when distance thresholds are not used. The intent of this
@@ -393,12 +393,12 @@ pruneTree <- function(object,
   .validInput(reduction, "reduction", list("pruneTree", object))
 
   # User supplied data should not be mixed with data from buildTree()
-  if (methods::is(distance_awareness, "numeric") & distance_approx == FALSE) {
+  if (distance_awareness < Inf & distance_approx == FALSE) {
     if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix))) &
         !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(dist_matrix)))) {
       warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'dist_matrix', it should be provided for all five.")
     }
-  } else if (methods::is(distance_awareness, "numeric") & distance_approx == TRUE) {
+  } else if (distance_awareness < Inf & distance_approx == TRUE) {
     if (any(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction))) &
         !all(c(!is.null(cluster_tree), !is.null(input_matrix), !is.null(nn_matrix), !is.null(snn_matrix), !is.null(reduction)))) {
       warning("If user-supplied data is provided for any of 'cluster_tree', 'input_matrix', 'nn_matrix', 'snn_matrix', or 'reduction', it should be provided for all five.")
@@ -742,7 +742,7 @@ pruneTree <- function(object,
                                     `if`(max_repeat_errors > 0, 16:19, NULL),
                                     `if`(batch_correction_method == "Harmony", 20:22, NULL),
                                     `if`(collect_all_metrics == TRUE | min_connections > 0, 23, NULL),
-                                    `if`(methods::is(distance_awareness, "numeric"), 24:25, NULL),
+                                    `if`(distance_awareness < Inf, 24:25, NULL),
                                     26:27)]
   comparison_records <- data.frame(matrix(ncol = length(selected_metrics), nrow = 0))
   colnames(comparison_records) <- selected_metrics
@@ -752,7 +752,7 @@ pruneTree <- function(object,
   colnames(feature_importance_records) <- c('cluster1', 'cluster2', features)
 
   # Record of distances
-  if (methods::is(distance_awareness, "numeric")) {
+  if (distance_awareness < Inf) {
     distance_records <- data.frame(cluster_name = NULL,
                                    min_root_distance = NULL,
                                    min_subtree_distance = NULL,
@@ -806,9 +806,22 @@ pruneTree <- function(object,
   # Progress markers
   progress_markers <- c(10,20,30,40,50,60,70,80,90)
 
+  # Create list of permitted comparisons
+  permitted_comparisons <- .getPermittedComparisons(object = object,
+                                                   key = key,
+                                                   clusters = child_IDs,
+                                                   cell_IDs = cell_IDs,
+                                                   nn_matrices = nn_matrices,
+                                                   min_connections = min_connections,
+                                                   collect_all_metrics = collect_all_metrics,
+                                                   distance_awareness = distance_awareness,
+                                                   n_cores = n_cores)
+
+  # Iterate through levels of clustering tree
   while (complete == FALSE) {
     # Get all cluster IDs at this level
     unique_parent_IDs <- unique(parent_IDs)
+    new_clusters <- c()
 
     # For each parent cluster
     for (parent in 1:length(unique_parent_IDs)) {
@@ -822,140 +835,211 @@ pruneTree <- function(object,
       n_child_clusters <- length(unique_child_IDs)
 
       if (n_child_clusters > 1) {
-        # Create matrix for comparison results
-        result_matrix <- matrix(NA, n_child_clusters, n_child_clusters)
-        colnames(result_matrix) <- unique_child_IDs
-        rownames(result_matrix) <- unique_child_IDs
-        # For each child cluster
-        for (child1 in 1:(n_child_clusters-1)) {
-          # Name of child cluster 1
-          child1_name <- unique_child_IDs[child1]
-          # Get names of cells belonging to child1 cluster
-          child1_cells <- cell_IDs[which(child_IDs == child1_name)]
-          # If there is only one cell in child1, simply fill in the result_matrix with all "merge"
-          if (length(child1_cells) == 1) {
-            result_matrix[child1_name, ] <- "merge"
-            result_matrix[, child1_name] <- "merge"
-            result_matrix[child1_name, child1_name] <- NA
+        # Alternately, if this parent and its child clusters have not changed at all since the last level, skip
+        if (lvl == n_levels-2) {
+          check_identical <- identical(cluster_tree[parent_inds, ncol(cluster_tree)], child_IDs[parent_inds])
+        } else if (lvl < n_levels-2) {
+          check_identical <- identical(stepwise_cluster_IDs[parent_inds, (ncol(stepwise_cluster_IDs)-1)], child_IDs[parent_inds])
+        } else {
+          check_identical <- FALSE
+        }
+        if (dplyr::n_distinct(cluster_tree[parent_inds, lvl+1]) == 1 & # (Check that previous level was originally 1 cluster)
+            check_identical == TRUE) {
+          # Progress
+          if (lvl >= 0) {
+            tick_amount <- 0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+            pb$tick(tick_amount)
+            if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                           (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+            }
+            percent_done <- percent_done + tick_amount
           } else {
-            # Compare the child cluster pairwise to each subsequent sibling cluster
-            for (child2 in (child1+1):n_child_clusters) {
-              comparison_start_time <- Sys.time()
-              child2_name <- unique_child_IDs[child2]
+            if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+              hour_start_time <- Sys.time()
+              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                " : Running additional comparisons, ",
+                                round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+            }
+          }
+        } else {
+          # Create matrix for comparison results
+          result_matrix <- matrix(NA, n_child_clusters, n_child_clusters)
+          colnames(result_matrix) <- unique_child_IDs
+          rownames(result_matrix) <- unique_child_IDs
+          # For each child cluster
+          for (child1 in 1:(n_child_clusters-1)) {
+            # Name of child cluster 1
+            child1_name <- unique_child_IDs[child1]
+            # Check if child cluster 1 is part of any permitted comparisons
+            if (child1_name %in% unique(c(permitted_comparisons$cluster1, permitted_comparisons$cluster2))) {
               # Get names of cells belonging to child1 cluster
-              child2_cells <- cell_IDs[which(child_IDs == child2_name)]
-              # If there is only 1 cell in child2, automatically merge
-              if (length(child2_cells) == 1) {
-                result_matrix[child1_name, child2_name] <- "merge"
-                result_matrix[child2_name, child1_name] <- "merge"
+              child1_cells <- cell_IDs[which(child_IDs == child1_name)]
+              # If there is only one cell in child1, simply fill in the result_matrix with all "merge"
+              if (length(child1_cells) == 1) {
+                result_matrix[child1_name, ] <- "merge"
+                result_matrix[, child1_name] <- "merge"
+                result_matrix[child1_name, child1_name] <- NA
               } else {
-                # Check whether clusters have been previously compared
-                previous_comparison <- .checkComparisonRecords(cluster1_name = child1_name,
-                                                               cluster1_cells = child1_cells,
-                                                               cluster2_name = child2_name,
-                                                               cluster2_cells = child2_cells,
-                                                               comparison_records = comparison_records)
-                # If they have, fill in result matrix
-                if (previous_comparison[["previously_compared"]] == TRUE) {
-                  # Add result to matrix
-                  result_matrix[child1_name, child2_name] <- previous_comparison[["result"]]
-                  result_matrix[child2_name, child1_name] <- previous_comparison[["result"]]
-                } else {
-                  # Determine which input & nn matrices to use
-                  roots <- unlist(stringr::str_extract_all(c(child1_name, child2_name), "P\\d*"))
-                  if (dplyr::n_distinct(roots) == 1) {
-                    if (n_input_matrices > 1) {
-                      use_input_matrix <- roots[1]
-                    } else {
-                      use_input_matrix <- "P0"
-                    }
-                    use_nn_matrix <- roots[1]
+                # Compare the child cluster pairwise to each subsequent sibling cluster
+                for (child2 in (child1+1):n_child_clusters) {
+                  child2_name <- unique_child_IDs[child2]
+                  # Get names of cells belonging to child1 cluster
+                  child2_cells <- cell_IDs[which(child_IDs == child2_name)]
+                  # If there is only 1 cell in child2, automatically merge
+                  if (length(child2_cells) == 1) {
+                    result_matrix[child1_name, child2_name] <- "merge"
+                    result_matrix[child2_name, child1_name] <- "merge"
                   } else {
-                    use_input_matrix <- "P0"
-                    use_nn_matrix <- "P0"
-                  }
-                  # Check whether distance between current clusters is greater than previous comparisons
-                  distance_check <- .checkDistance(object = object,
-                                                   key = key,
-                                                   cluster1_name = child1_name,
-                                                   cluster1_cells = child1_cells,
-                                                   cluster2_name = child2_name,
-                                                   cluster2_cells = child2_cells,
-                                                   distance_awareness = distance_awareness,
-                                                   distance_approx = distance_approx,
-                                                   use_input_matrix = use_input_matrix,
-                                                   dist_matrix = dist_matrix,
-                                                   reduction = reduction,
-                                                   distance_records = distance_records)
-                  if (distance_check[["distance_conflict"]] == TRUE) {
-                    # Add result to matrix
-                    result_matrix[child1_name, child2_name] <- "split"
-                    result_matrix[child2_name, child1_name] <- "split"
-                    # Add result to comparison records
-                    current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
-                    colnames(current_comparison) <- colnames(comparison_records)
-                    current_comparison <- data.frame(current_comparison)
-                    current_comparison$comparison <- paste0(child1_name, " vs. ", child2_name)
-                    current_comparison$cluster1_size <- length(child1_cells)
-                    current_comparison$cluster2_size <- length(child2_cells)
-                    current_comparison$root_distance <- distance_check[["P0_distance"]]
-                    current_comparison$subtree_distance <- distance_check[["P_i_distance"]]
-                    current_comparison$decision <- "split: distance"
-                    current_comparison$time <- round(difftime(Sys.time(), comparison_start_time, units = "secs"), 2)
-                    comparison_records <- rbind(comparison_records, current_comparison)
-                  } else if (distance_check[["distance_conflict"]] == FALSE) {
-                    # Run comparison
-                    comparison_output <- .runPermutationTest(cluster1_name = child1_name,
-                                                             cluster1_cells = child1_cells,
-                                                             cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                          batches[child1_cells],
-                                                                                          NULL),
+                    # Check whether clusters are among permitted comparisons
+                    if (nrow(dplyr::filter(permitted_comparisons, (cluster1 == child1_name & cluster2 == child2_name) |
+                                           (cluster2 == child2_name & cluster1 == child1_name))) == 0) {
+                      # Add result to matrix
+                      result_matrix[child1_name, child2_name] <- "split"
+                      result_matrix[child2_name, child1_name] <- "split"
+                    } else {
+                      comparison_start_time <- Sys.time()
+                      # Check whether clusters have been previously compared
+                      previous_comparison <- .checkComparisonRecords(cluster1_name = child1_name,
+                                                                     cluster1_cells = child1_cells,
+                                                                     cluster2_name = child2_name,
+                                                                     cluster2_cells = child2_cells,
+                                                                     comparison_records = comparison_records)
+                      # If they have, fill in result matrix
+                      if (previous_comparison[["previously_compared"]] == TRUE) {
+                        # Add result to matrix
+                        result_matrix[child1_name, child2_name] <- previous_comparison[["result"]]
+                        result_matrix[child2_name, child1_name] <- previous_comparison[["result"]]
+                      } else {
+                        # Extract info from permitted comparison dataframe
+                        tree_name <- dplyr::filter(permitted_comparisons, (cluster1 == child1_name & cluster2 == child2_name) |
+                                                (cluster2 == child2_name & cluster1 == child1_name))$tree_name[1]
+                        P0_distance <- dplyr::filter(permitted_comparisons, (cluster1 == child1_name & cluster2 == child2_name) |
+                                                       (cluster2 == child2_name & cluster1 == child1_name))$root_distance[1]
+                        P_i_distance <- dplyr::filter(permitted_comparisons, (cluster1 == child1_name & cluster2 == child2_name) |
+                                                        (cluster2 == child2_name & cluster1 == child1_name))$subtree_distance[1]
+                        adjacent <- dplyr::filter(permitted_comparisons, (cluster1 == child1_name & cluster2 == child2_name) |
+                                                    (cluster2 == child2_name & cluster1 == child1_name))$connectivity[1]
+                        # Check whether distance between current clusters is greater than previous comparisons
+                        distance_conflict <- FALSE
+                        if (distance_awareness < Inf & !is.null(distance_records)) {
+                          if (child1_name %in% distance_records$cluster_name & child2_name %in% distance_records$cluster_name) {
+                            if (tree_name == "P0") {
+                              previous_P0_distance <- max(dplyr::filter(distance_records,
+                                                                        cluster_name == child1_name |
+                                                                          cluster_name == child2_name)$min_root_distance, na.rm = TRUE)
+                              if (P0_distance > (previous_P0_distance*distance_awareness)) {
+                                distance_conflict <- TRUE
+                              }
+                            } else if (tree_name != "P0" & !is.na(P_i_distance)) {
+                              previous_P_i_distance <- max(dplyr::filter(distance_records,
+                                                                         cluster_name == child1_name |
+                                                                           cluster_name == child2_name)$min_subtree_distance, na.rm = TRUE)
+                              if (P_i_distance > (previous_P_i_distance*distance_awareness)) {
+                                distance_conflict <- TRUE
+                              }
+                            }
+                          }
+                        }
+                        if (distance_conflict == TRUE) {
+                          # Add result to matrix
+                          result_matrix[child1_name, child2_name] <- "split"
+                          result_matrix[child2_name, child1_name] <- "split"
+                          # Add result to comparison records
+                          current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
+                          colnames(current_comparison) <- colnames(comparison_records)
+                          current_comparison <- data.frame(current_comparison)
+                          current_comparison$comparison <- paste0(child1_name, " vs. ", child2_name)
+                          current_comparison$cluster1_size <- length(child1_cells)
+                          current_comparison$cluster2_size <- length(child2_cells)
+                          current_comparison$root_distance <- P0_distance
+                          current_comparison$subtree_distance <- P_i_distance
+                          current_comparison$connectivity <- adjacent
+                          current_comparison$decision <- "split: distance"
+                          current_comparison$time <- round(difftime(Sys.time(), comparison_start_time, units = "secs"), 2)
+                          comparison_records <- rbind(comparison_records, current_comparison)
+                        } else if (distance_conflict == FALSE) {
+                          # Run comparison
+                          comparison_output <- .runPermutationTest(cluster1_name = child1_name,
+                                                                   cluster1_cells = child1_cells,
+                                                                   cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                batches[child1_cells],
+                                                                                                NULL),
+                                                                   cluster2_name = child2_name,
+                                                                   cluster2_cells = child2_cells,
+                                                                   cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                batches[child2_cells],
+                                                                                                NULL),
+                                                                   alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
+                                                                   n_iterations = n_iterations,
+                                                                   n_trees = n_trees,
+                                                                   use_variance = use_variance,
+                                                                   min_accuracy = min_accuracy,
+                                                                   min_connections = min_connections,
+                                                                   max_repeat_errors = max_repeat_errors,
+                                                                   collect_all_metrics = collect_all_metrics,
+                                                                   sample_max = sample_max,
+                                                                   downsampling_rate = downsampling_rate,
+                                                                   min_reads = min_reads,
+                                                                   max_n_batch = max_n_batch,
+                                                                   input_matrix = input_matrices[[tree_name]],
+                                                                   comparison_records = comparison_records,
+                                                                   feature_importance_records = feature_importance_records,
+                                                                   P0_distance = P0_distance,
+                                                                   P_i_distance = P_i_distance,
+                                                                   adjacent = adjacent,
+                                                                   comparison_start_time = comparison_start_time,
+                                                                   n_cores = n_cores,
+                                                                   random_seed = random_seed)
+                          # Add result to matrix
+                          result_matrix[child1_name, child2_name] <- comparison_output[["result"]]
+                          result_matrix[child2_name, child1_name] <- comparison_output[["result"]]
+                          # If split, add distances to distance_records
+                          if (comparison_output[["result"]] == "split" & distance_awareness < Inf) {
+                            distance_records <- .addDistance(cluster1_name = child1_name,
                                                              cluster2_name = child2_name,
-                                                             cluster2_cells = child2_cells,
-                                                             cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                          batches[child2_cells],
-                                                                                          NULL),
-                                                             alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
-                                                             n_iterations = n_iterations,
-                                                             n_trees = n_trees,
-                                                             use_variance = use_variance,
-                                                             min_accuracy = min_accuracy,
-                                                             min_connections = min_connections,
-                                                             max_repeat_errors = max_repeat_errors,
-                                                             collect_all_metrics = collect_all_metrics,
-                                                             sample_max = sample_max,
-                                                             downsampling_rate = downsampling_rate,
-                                                             min_reads = min_reads,
-                                                             max_n_batch = max_n_batch,
-                                                             input_matrix = input_matrices[[use_input_matrix]],
-                                                             nn_matrix = nn_matrices[[use_nn_matrix]],
-                                                             comparison_records = comparison_records,
-                                                             feature_importance_records = feature_importance_records,
-                                                             P0_distance = distance_check[["P0_distance"]],
-                                                             P_i_distance = distance_check[["P_i_distance"]],
-                                                             comparison_start_time = comparison_start_time,
-                                                             n_cores = n_cores,
-                                                             random_seed = random_seed)
-                    # Add result to matrix
-                    result_matrix[child1_name, child2_name] <- comparison_output[["result"]]
-                    result_matrix[child2_name, child1_name] <- comparison_output[["result"]]
-                    # If split, add distances to distance_records
-                    if (comparison_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
-                      distance_records <- .addDistance(cluster1_name = child1_name,
-                                                       cluster2_name = child2_name,
-                                                       P0_distance = distance_check[["P0_distance"]],
-                                                       P_i_distance = distance_check[["P_i_distance"]],
-                                                       max_p = comparison_output[["max_p"]],
-                                                       distance_records = distance_records)
+                                                             P0_distance = P0_distance,
+                                                             P_i_distance = P_i_distance,
+                                                             max_p = comparison_output[["max_p"]],
+                                                             distance_records = distance_records)
+                          }
+                          # Update records
+                          comparison_records <- comparison_output[["comparison_records"]]
+                          feature_importance_records <- comparison_output[["feature_importance_records"]]
+                        }
+                      }
                     }
-                    # Update records
-                    comparison_records <- comparison_output[["comparison_records"]]
-                    feature_importance_records <- comparison_output[["feature_importance_records"]]
+                  }
+                  if (lvl >= 0) {
+                    tick_amount <- (1/(n_child_clusters - child1))*0.9*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                    pb$tick(tick_amount)
+                    if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                                   (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
+                      hour_start_time <- Sys.time()
+                      pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                        " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                        round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                        " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                    }
+                    percent_done <- percent_done + tick_amount
+                  } else {
+                    if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                      hour_start_time <- Sys.time()
+                      pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                        " : Running additional comparisons, ",
+                                        round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                        " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                    }
                   }
                 }
               }
               if (lvl >= 0) {
-                tick_amount <- (1/(n_child_clusters - child1))*0.9*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
                 pb$tick(tick_amount)
                 if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
                                (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
@@ -975,393 +1059,396 @@ pruneTree <- function(object,
                                     " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
                 }
               }
+            } else {
+              # All split
+              result_matrix[child1_name, ] <- "split"
+              result_matrix[, child1_name] <- "split"
+              result_matrix[child1_name, child1_name] <- NA
+              # Progress
+              if (lvl >= 0) {
+                tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                pb$tick(tick_amount)
+                if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                               (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
+                percent_done <- percent_done + tick_amount
+              } else {
+                if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                  hour_start_time <- Sys.time()
+                  pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                    " : Running additional comparisons, ",
+                                    round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                    " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                }
+              }
             }
           }
-          if (lvl >= 0) {
-            tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
-            pb$tick(tick_amount)
-            if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
-                           (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
-              hour_start_time <- Sys.time()
-              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                                " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
-                                round(difftime(Sys.time(), start_time, units = "min"), 2),
-                                " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
-            }
-            percent_done <- percent_done + tick_amount
+          # Identify which clusters will merge & update child IDs
+          # If all clusters will merge
+          if (sum(result_matrix == "merge", na.rm = TRUE) == n_child_clusters*(n_child_clusters - 1)) {
+            # Update child IDs
+            child_IDs[parent_inds] <- parent_IDs[parent_inds]
           } else {
-            if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
-              hour_start_time <- Sys.time()
-              pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
-                                " : Running additional comparisons, ",
-                                round(difftime(Sys.time(), start_time, units = "min"), 2),
-                                " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
-            }
-          }
-        }
-        # Identify which clusters will merge & update child IDs
-        # If all clusters will merge
-        if (sum(result_matrix == "merge", na.rm = TRUE) == n_child_clusters*(n_child_clusters - 1)) {
-          # Update child IDs
-          child_IDs[parent_inds] <- parent_IDs[parent_inds]
-        } else {
-          # For each child
-          for (child in 1:n_child_clusters) {
-            child_name <- unique_child_IDs[child]
-            # Count comparisons
-            n_merge <- sum(result_matrix[child_name,] == "merge", na.rm = TRUE)
-            # If there is more than one cluster that is slated to merge
-            if (n_merge > 1) {
-              # Identify the set of clusters this cluster is slated to merge with
-              partner_clusters <- colnames(result_matrix[, colnames(result_matrix) != child_name])[result_matrix[child_name, colnames(result_matrix) != child_name] == "merge"]
-              # Check whether these partner clusters are also slated to merge with each other
-              for (partner1 in 1:(length(partner_clusters)-1)) {
-                partner1_name <- partner_clusters[partner1]
-                for (partner2 in (partner1 + 1):length(partner_clusters)) {
-                  partner2_name <- partner_clusters[partner2]
-                  # If not, assess whether to bridge the clusters or not
-                  if (result_matrix[partner1_name, partner2_name] == "split") {
-                    # Get cell IDs belonging to each cluster
-                    child_cells <- cell_IDs[which(child_IDs == child_name)]
-                    partner1_cells <- cell_IDs[which(child_IDs == partner1_name)]
-                    partner2_cells <- cell_IDs[which(child_IDs == partner2_name)]
-                    # Compare child + partner1 vs. partner2
-                    child_partner1_name <- paste0(child_name, ".", partner1_name)
-                    child_partner1_cells <- c(child_cells, partner1_cells)
-                    # If there is only 1 cell in partner 2, automatically merge
-                    if (length(partner2_cells) == 1) {
-                      comparison1_output <- list("result" = "merge")
-                      comparison1_proceed <- FALSE
-                    } else {
-                      # Check whether clusters have been previously compared
-                      previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner1_name,
-                                                                     cluster1_cells = child_partner1_cells,
-                                                                     cluster2_name = partner2_name,
-                                                                     cluster2_cells = partner2_cells,
-                                                                     comparison_records = comparison_records,
-                                                                     type = "bridge")
-                      # If they have, fill in result matrix
-                      if (previous_comparison[["previously_compared"]] == TRUE) {
-                        comparison1_output <- list("result" = previous_comparison[["result"]])
+            # For each child
+            for (child in 1:n_child_clusters) {
+              child_name <- unique_child_IDs[child]
+              # Count comparisons
+              n_merge <- sum(result_matrix[child_name,] == "merge", na.rm = TRUE)
+              # If there is more than one cluster that is slated to merge
+              if (n_merge > 1) {
+                # Identify the set of clusters this cluster is slated to merge with
+                partner_clusters <- colnames(result_matrix[, colnames(result_matrix) != child_name])[result_matrix[child_name, colnames(result_matrix) != child_name] == "merge"]
+                # Check whether these partner clusters are also slated to merge with each other
+                for (partner1 in 1:(length(partner_clusters)-1)) {
+                  partner1_name <- partner_clusters[partner1]
+                  for (partner2 in (partner1 + 1):length(partner_clusters)) {
+                    partner2_name <- partner_clusters[partner2]
+                    # If not, assess whether to bridge the clusters or not
+                    if (result_matrix[partner1_name, partner2_name] == "split") {
+                      # Get cell IDs belonging to each cluster
+                      child_cells <- cell_IDs[which(child_IDs == child_name)]
+                      partner1_cells <- cell_IDs[which(child_IDs == partner1_name)]
+                      partner2_cells <- cell_IDs[which(child_IDs == partner2_name)]
+                      # Compare child + partner1 vs. partner2
+                      child_partner1_name <- paste0(child_name, ".", partner1_name)
+                      child_partner1_cells <- c(child_cells, partner1_cells)
+                      # If there is only 1 cell in partner 2, automatically merge
+                      if (length(partner2_cells) == 1) {
+                        comparison1_output <- list("result" = "merge")
                         comparison1_proceed <- FALSE
                       } else {
-                        comparison1_proceed <- TRUE
+                        # Check whether clusters have been previously compared
+                        previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner1_name,
+                                                                       cluster1_cells = child_partner1_cells,
+                                                                       cluster2_name = partner2_name,
+                                                                       cluster2_cells = partner2_cells,
+                                                                       comparison_records = comparison_records,
+                                                                       type = "bridge")
+                        # If they have, fill in result matrix
+                        if (previous_comparison[["previously_compared"]] == TRUE) {
+                          comparison1_output <- list("result" = previous_comparison[["result"]])
+                          comparison1_proceed <- FALSE
+                        } else {
+                          comparison1_proceed <- TRUE
+                        }
                       }
-                    }
-                    # Compare child + partner1 vs. partner2
-                    child_partner2_name <- paste0(child_name, ".", partner2_name)
-                    child_partner2_cells <- c(child_cells, partner2_cells)
-                    # If there is only 1 cell in partner 1, automatically merge
-                    if (length(partner1_cells) == 1) {
-                      comparison2_output <- list("result" = "merge")
-                      comparison2_proceed <- FALSE
-                    } else {
-                      # Check whether clusters have been previously compared
-                      previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner2_name,
-                                                                     cluster1_cells = child_partner2_cells,
-                                                                     cluster2_name = partner1_name,
-                                                                     cluster2_cells = partner1_cells,
-                                                                     comparison_records = comparison_records,
-                                                                     type = "bridge")
-                      # If they have, fill in result matrix
-                      if (previous_comparison[["previously_compared"]] == TRUE) {
-                        comparison2_output <- list("result" = previous_comparison[["result"]])
+                      # Compare child + partner1 vs. partner2
+                      child_partner2_name <- paste0(child_name, ".", partner2_name)
+                      child_partner2_cells <- c(child_cells, partner2_cells)
+                      # If there is only 1 cell in partner 1, automatically merge
+                      if (length(partner1_cells) == 1) {
+                        comparison2_output <- list("result" = "merge")
                         comparison2_proceed <- FALSE
                       } else {
-                        comparison2_proceed <- TRUE
-                      }
-                    }
-                    if (comparison1_proceed == TRUE | comparison2_proceed == TRUE) {
-                      # Determine which input & nn matrices to use
-                      roots <- unlist(stringr::str_extract_all(c(child_name, partner1_name, partner2_name), "P\\d*"))
-                      if (dplyr::n_distinct(roots) == 1) {
-                        if (n_input_matrices > 1) {
-                          use_input_matrix <- roots[1]
+                        # Check whether clusters have been previously compared
+                        previous_comparison <- .checkComparisonRecords(cluster1_name = child_partner2_name,
+                                                                       cluster1_cells = child_partner2_cells,
+                                                                       cluster2_name = partner1_name,
+                                                                       cluster2_cells = partner1_cells,
+                                                                       comparison_records = comparison_records,
+                                                                       type = "bridge")
+                        # If they have, fill in result matrix
+                        if (previous_comparison[["previously_compared"]] == TRUE) {
+                          comparison2_output <- list("result" = previous_comparison[["result"]])
+                          comparison2_proceed <- FALSE
                         } else {
-                          use_input_matrix <- "P0"
+                          comparison2_proceed <- TRUE
                         }
-                        use_nn_matrix <- roots[1]
-                      } else {
-                        use_input_matrix <- "P0"
-                        use_nn_matrix <- "P0"
                       }
-                      if (comparison1_proceed == TRUE) {
-                        comparison_start_time <- Sys.time()
-                        child_partner1_comparison_names <- c(paste0(child_name, " vs. ", partner1_name),
-                                                             paste0(partner1_name, " vs. ", child_name))
-                        # Get distance between clusters
-                        distance_check <- .checkDistance(object = object,
-                                                         key = key,
-                                                         cluster1_name = child_partner1_name,
-                                                         cluster1_cells = child_partner1_cells,
-                                                         cluster2_name = partner2_name,
-                                                         cluster2_cells = partner2_cells,
-                                                         distance_awareness = distance_awareness,
-                                                         distance_approx = distance_approx,
-                                                         use_input_matrix = use_input_matrix,
-                                                         dist_matrix = dist_matrix,
-                                                         reduction = reduction,
-                                                         distance_records = NULL)
-                        # Run comparison 1
-                        comparison1_output <- .runPermutationTest(cluster1_name = child_partner1_name,
-                                                                  cluster1_cells = child_partner1_cells,
-                                                                  cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                               batches[child_partner1_cells],
-                                                                                               NULL),
-                                                                  cluster2_name = partner2_name,
-                                                                  cluster2_cells = partner2_cells,
-                                                                  cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                               batches[partner2_cells],
-                                                                                               NULL),
-                                                                  alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
-                                                                  n_iterations = n_iterations,
-                                                                  n_trees = n_trees,
-                                                                  use_variance = use_variance,
-                                                                  min_accuracy = min_accuracy,
-                                                                  min_connections = min_connections,
-                                                                  max_repeat_errors = max_repeat_errors,
-                                                                  collect_all_metrics = collect_all_metrics,
-                                                                  sample_max = sample_max,
-                                                                  downsampling_rate = downsampling_rate,
-                                                                  min_reads = min_reads,
-                                                                  max_n_batch = max_n_batch,
-                                                                  input_matrix = input_matrices[[use_input_matrix]],
-                                                                  nn_matrix = nn_matrices[[use_nn_matrix]],
-                                                                  comparison_records = comparison_records,
-                                                                  feature_importance_records = feature_importance_records,
-                                                                  P0_distance = distance_check[["P0_distance"]],
-                                                                  P_i_distance = distance_check[["P_i_distance"]],
-                                                                  comparison_start_time = comparison_start_time,
-                                                                  n_cores = n_cores,
-                                                                  random_seed = random_seed)
-                        # If split, add distances to distance_records
-                        if (comparison1_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
-                          distance_records <- .addDistance(cluster1_name = child_partner1_name,
-                                                           cluster2_name = partner2_name,
-                                                           P0_distance = distance_check[["P0_distance"]],
-                                                           P_i_distance = distance_check[["P_i_distance"]],
-                                                           max_p = comparison1_output[["max_p"]],
-                                                           distance_records = distance_records)
-                        }
-                        # Update records
-                        comparison_records <- comparison1_output[["comparison_records"]]
-                        feature_importance_records <- comparison1_output[["feature_importance_records"]]
-                        comparison1 <- comparison_records %>% dplyr::filter(comparison == paste0(child_partner1_name, " vs. ", partner2_name))
-                      }
-                      if (comparison2_proceed == TRUE) {
-                        comparison_start_time <- Sys.time()
-                        child_partner2_comparison_names <- c(paste0(child_name, " vs. ", partner2_name),
-                                                             paste0(partner2_name, " vs. ", child_name))
-                        # Get distance between clusters
-                        distance_check <- .checkDistance(object = object,
-                                                         key = key,
-                                                         cluster1_name = child_partner2_name,
-                                                         cluster1_cells = child_partner2_cells,
-                                                         cluster2_name = partner1_name,
-                                                         cluster2_cells = partner1_cells,
-                                                         distance_awareness = distance_awareness,
-                                                         distance_approx = distance_approx,
-                                                         use_input_matrix = use_input_matrix,
-                                                         dist_matrix = dist_matrix,
-                                                         reduction = reduction,
-                                                         distance_records = NULL)
-                        # Run comparison 2
-                        comparison2_output <- .runPermutationTest(cluster1_name = child_partner2_name,
-                                                                  cluster1_cells = child_partner2_cells,
-                                                                  cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                               batches[child_partner2_cells],
-                                                                                               NULL),
-                                                                  cluster2_name = partner1_name,
-                                                                  cluster2_cells = partner1_cells,
-                                                                  cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
-                                                                                               batches[partner1_cells],
-                                                                                               NULL),
-                                                                  alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
-                                                                  n_iterations = n_iterations,
-                                                                  n_trees = n_trees,
-                                                                  use_variance = use_variance,
-                                                                  min_accuracy = min_accuracy,
-                                                                  min_connections = min_connections,
-                                                                  max_repeat_errors = max_repeat_errors,
-                                                                  collect_all_metrics = collect_all_metrics,
-                                                                  sample_max = sample_max,
-                                                                  downsampling_rate = downsampling_rate,
-                                                                  min_reads = min_reads,
-                                                                  max_n_batch = max_n_batch,
-                                                                  input_matrix = input_matrices[[use_input_matrix]],
-                                                                  nn_matrix = nn_matrices[[use_nn_matrix]],
-                                                                  comparison_records = comparison_records,
-                                                                  feature_importance_records = feature_importance_records,
-                                                                  P0_distance = distance_check[["P0_distance"]],
-                                                                  P_i_distance = distance_check[["P_i_distance"]],
-                                                                  comparison_start_time = comparison_start_time,
-                                                                  n_cores = n_cores,
-                                                                  random_seed = random_seed)
-                        # If split, add distances to distance_records
-                        if (comparison2_output[["result"]] == "split" & methods::is(distance_awareness, "numeric")) {
-                          distance_records <- .addDistance(cluster1_name = child_partner2_name,
-                                                           cluster2_name = partner1_name,
-                                                           P0_distance = distance_check[["P0_distance"]],
-                                                           P_i_distance = distance_check[["P_i_distance"]],
-                                                           max_p = comparison2_output[["max_p"]],
-                                                           distance_records = distance_records)
-                        }
-                        # Update records
-                        comparison_records <- comparison2_output[["comparison_records"]]
-                        feature_importance_records <- comparison2_output[["feature_importance_records"]]
-                        comparison2 <- comparison_records %>% dplyr::filter(comparison == paste0(child_partner2_name, " vs. ", partner1_name))
-                      }
-                    }
-                    # Update results matrix
-                    if (comparison1_output[["result"]] == "merge" & comparison2_output[["result"]] == "split") {
-                      result_matrix[child_name, partner1_name] <- "split"
-                      result_matrix[partner1_name, child_name] <- "split"
-                    } else if (comparison1_output[["result"]] == "split" & comparison2_output[["result"]] == "merge") {
-                      result_matrix[child_name, partner2_name] <- "split"
-                      result_matrix[partner2_name, child_name] <- "split"
-                    } else if (comparison1_output[["result"]] == "split" & comparison2_output[["result"]] == "split") {
-                      # If they both result in a "split", merge child cluster with the partner w/ the lowest distance
-                      if (methods::is(distance_awareness, "numeric")) {
-                        if (use_input_matrix == "P0") {
-                          child_partner1_distance <- dplyr::filter(comparison_records,
-                                                                   comparison %in% child_partner1_comparison_names)$root_distance
-                          child_partner2_distance <- dplyr::filter(comparison_records,
-                                                                   comparison %in% child_partner2_comparison_names)$root_distance
+                      if (comparison1_proceed == TRUE | comparison2_proceed == TRUE) {
+                        # Determine which input & nn matrices to use
+                        trees <- unlist(stringr::str_extract_all(c(child_name, partner1_name, partner2_name), "P\\d*"))
+                        if ((dplyr::n_distinct(trees) == 1) &
+                            (trees[1] %in% names(input_matrices))) {
+                          tree_name <- trees[1]
                         } else {
-                          child_partner1_distance <- dplyr::filter(comparison_records,
-                                                                   comparison %in% child_partner1_comparison_names)$subtree_distance
-                          child_partner2_distance <- dplyr::filter(comparison_records,
-                                                                   comparison %in% child_partner2_comparison_names)$subtree_distance
+                          tree_name <- "P0"
                         }
-                        # If distance has not been calculated
-                        if (length(child_partner1_distance) == 0) {
+                        if (comparison1_proceed == TRUE) {
+                          comparison_start_time <- Sys.time()
+                          child_partner1_comparison_names <- c(paste0(child_name, " vs. ", partner1_name),
+                                                               paste0(partner1_name, " vs. ", child_name))
+                          # Get distance between clusters
                           distance_check <- .checkDistance(object = object,
                                                            key = key,
-                                                           cluster1_name = child_name,
-                                                           cluster1_cells = child_cells,
-                                                           cluster2_name = partner1_name,
-                                                           cluster2_cells = partner1_cells,
-                                                           distance_awareness = distance_awareness,
-                                                           distance_approx = distance_approx,
-                                                           use_input_matrix = use_input_matrix,
-                                                           dist_matrix = dist_matrix,
-                                                           reduction = reduction,
-                                                           distance_records = NULL)
-                          if (use_input_matrix == "P0") {
-                            child_partner1_distance <- distance_check[["P0_distance"]]
-                          } else {
-                            child_partner1_distance <- distance_check[["P_i_distance"]]
-                          }
-                        }
-                        if (length(child_partner2_distance) == 0) {
-                          distance_check <- .checkDistance(object = object,
-                                                           key = key,
-                                                           cluster1_name = child_name,
-                                                           cluster1_cells = child_cells,
+                                                           cluster1_name = child_partner1_name,
+                                                           cluster1_cells = child_partner1_cells,
                                                            cluster2_name = partner2_name,
                                                            cluster2_cells = partner2_cells,
                                                            distance_awareness = distance_awareness,
                                                            distance_approx = distance_approx,
-                                                           use_input_matrix = use_input_matrix,
+                                                           use_input_matrix = tree_name,
                                                            dist_matrix = dist_matrix,
                                                            reduction = reduction,
                                                            distance_records = NULL)
-                          if (use_input_matrix == "P0") {
-                            child_partner2_distance <- distance_check[["P0_distance"]]
-                          } else {
-                            child_partner2_distance <- distance_check[["P_i_distance"]]
+                          # Run comparison 1
+                          comparison1_output <- .runPermutationTest(cluster1_name = child_partner1_name,
+                                                                    cluster1_cells = child_partner1_cells,
+                                                                    cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                 batches[child_partner1_cells],
+                                                                                                 NULL),
+                                                                    cluster2_name = partner2_name,
+                                                                    cluster2_cells = partner2_cells,
+                                                                    cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                 batches[partner2_cells],
+                                                                                                 NULL),
+                                                                    alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
+                                                                    n_iterations = n_iterations,
+                                                                    n_trees = n_trees,
+                                                                    use_variance = use_variance,
+                                                                    min_accuracy = min_accuracy,
+                                                                    min_connections = min_connections,
+                                                                    max_repeat_errors = max_repeat_errors,
+                                                                    collect_all_metrics = collect_all_metrics,
+                                                                    sample_max = sample_max,
+                                                                    downsampling_rate = downsampling_rate,
+                                                                    min_reads = min_reads,
+                                                                    max_n_batch = max_n_batch,
+                                                                    input_matrix = input_matrices[[tree_name]],
+                                                                    nn_matrix = nn_matrices[[tree_name]],
+                                                                    comparison_records = comparison_records,
+                                                                    feature_importance_records = feature_importance_records,
+                                                                    P0_distance = distance_check[["P0_distance"]],
+                                                                    P_i_distance = distance_check[["P_i_distance"]],
+                                                                    comparison_start_time = comparison_start_time,
+                                                                    n_cores = n_cores,
+                                                                    random_seed = random_seed)
+                          # If split, add distances to distance_records
+                          if (comparison1_output[["result"]] == "split" & distance_awareness < Inf) {
+                            distance_records <- .addDistance(cluster1_name = child_partner1_name,
+                                                             cluster2_name = partner2_name,
+                                                             P0_distance = distance_check[["P0_distance"]],
+                                                             P_i_distance = distance_check[["P_i_distance"]],
+                                                             max_p = comparison1_output[["max_p"]],
+                                                             distance_records = distance_records)
                           }
+                          # Update records
+                          comparison_records <- comparison1_output[["comparison_records"]]
+                          feature_importance_records <- comparison1_output[["feature_importance_records"]]
+                          comparison1 <- comparison_records %>% dplyr::filter(comparison == paste0(child_partner1_name, " vs. ", partner2_name))
                         }
-                        # Compare
-                        if (child_partner1_distance > child_partner2_distance) {
-                          result_matrix[child_name, partner1_name] <- "split"
-                          result_matrix[partner1_name, child_name] <- "split"
-                        } else {
-                          result_matrix[child_name, partner2_name] <- "split"
-                          result_matrix[partner2_name, child_name] <- "split"
-                        }
-                      } else {
-                        # Alternately, use accuracy scores
-                        child_partner1_mean_accuracy <- dplyr::filter(comparison_records,
-                                                                 comparison %in% child_partner1_comparison_names)$mean_accuracy
-                        child_partner2_mean_accuracy <- dplyr::filter(comparison_records,
-                                                                 comparison %in% child_partner2_comparison_names)$mean_accuracy
-                        if (child_partner1_mean_accuracy > child_partner2_mean_accuracy) {
-                          result_matrix[child_name, partner1_name] <- "split"
-                          result_matrix[partner1_name, child_name] <- "split"
-                        } else {
-                          result_matrix[child_name, partner2_name] <- "split"
-                          result_matrix[partner2_name, child_name] <- "split"
+                        if (comparison2_proceed == TRUE) {
+                          comparison_start_time <- Sys.time()
+                          child_partner2_comparison_names <- c(paste0(child_name, " vs. ", partner2_name),
+                                                               paste0(partner2_name, " vs. ", child_name))
+                          # Get distance between clusters
+                          distance_check <- .checkDistance(object = object,
+                                                           key = key,
+                                                           cluster1_name = child_partner2_name,
+                                                           cluster1_cells = child_partner2_cells,
+                                                           cluster2_name = partner1_name,
+                                                           cluster2_cells = partner1_cells,
+                                                           distance_awareness = distance_awareness,
+                                                           distance_approx = distance_approx,
+                                                           use_input_matrix = tree_name,
+                                                           dist_matrix = dist_matrix,
+                                                           reduction = reduction,
+                                                           distance_records = NULL)
+                          # Run comparison 2
+                          comparison2_output <- .runPermutationTest(cluster1_name = child_partner2_name,
+                                                                    cluster1_cells = child_partner2_cells,
+                                                                    cluster1_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                 batches[child_partner2_cells],
+                                                                                                 NULL),
+                                                                    cluster2_name = partner1_name,
+                                                                    cluster2_cells = partner1_cells,
+                                                                    cluster2_cell_batches = `if`(batch_correction_method == "Harmony",
+                                                                                                 batches[partner1_cells],
+                                                                                                 NULL),
+                                                                    alpha = ifelse(p_adjust != "none", adjusted_alpha, alpha),
+                                                                    n_iterations = n_iterations,
+                                                                    n_trees = n_trees,
+                                                                    use_variance = use_variance,
+                                                                    min_accuracy = min_accuracy,
+                                                                    min_connections = min_connections,
+                                                                    max_repeat_errors = max_repeat_errors,
+                                                                    collect_all_metrics = collect_all_metrics,
+                                                                    sample_max = sample_max,
+                                                                    downsampling_rate = downsampling_rate,
+                                                                    min_reads = min_reads,
+                                                                    max_n_batch = max_n_batch,
+                                                                    input_matrix = input_matrices[[tree_name]],
+                                                                    nn_matrix = nn_matrices[[tree_name]],
+                                                                    comparison_records = comparison_records,
+                                                                    feature_importance_records = feature_importance_records,
+                                                                    P0_distance = distance_check[["P0_distance"]],
+                                                                    P_i_distance = distance_check[["P_i_distance"]],
+                                                                    comparison_start_time = comparison_start_time,
+                                                                    n_cores = n_cores,
+                                                                    random_seed = random_seed)
+                          # If split, add distances to distance_records
+                          if (comparison2_output[["result"]] == "split" & distance_awareness < Inf) {
+                            distance_records <- .addDistance(cluster1_name = child_partner2_name,
+                                                             cluster2_name = partner1_name,
+                                                             P0_distance = distance_check[["P0_distance"]],
+                                                             P_i_distance = distance_check[["P_i_distance"]],
+                                                             max_p = comparison2_output[["max_p"]],
+                                                             distance_records = distance_records)
+                          }
+                          # Update records
+                          comparison_records <- comparison2_output[["comparison_records"]]
+                          feature_importance_records <- comparison2_output[["feature_importance_records"]]
+                          comparison2 <- comparison_records %>% dplyr::filter(comparison == paste0(child_partner2_name, " vs. ", partner1_name))
                         }
                       }
-                    } # Else if both result in "merge", do nothing, allow bridge
-                  }
-                }
-              }
-            }
-          }
-          # Loop through child clusters again to find merge groups
-          merge_group_list <- vector(mode = "list", length = n_child_clusters)
-          # Change this if all children merge
-          all_merge <- FALSE
-          # For each child
-          for (child in 1:n_child_clusters) {
-            child_name <- unique_child_IDs[child]
-            # Stop if it becomes established that all children will merge
-            if (all_merge == FALSE) {
-              # count cells
-              n_merge <- sum(result_matrix[child_name,] == "merge", na.rm = TRUE)
-              n_splits <- sum(result_matrix[child_name,] == "split", na.rm = TRUE)
-              # if all merge
-              if (n_merge == (n_child_clusters-1)) {
-                all_merge <- TRUE
-              } else if (n_splits == (n_child_clusters-1)) { # If all splits
-                merge_group_list[[child]] <- child_name
-              } else {
-                merge_names <- rownames(result_matrix)[result_matrix[child_name,] == "merge"]
-                merge_names <- merge_names[!is.na(merge_names)]
-                merge_names <- c(child_name, merge_names)
-                # Check if this group overlaps with any that are already identified
-                if (child > 1) {
-                  for (i in 1:(child-1)) {
-                    overlap <- length(intersect(merge_names, merge_group_list[[i]]))
-                    if (overlap > 0) {
-                      # include all members & delete old group
-                      merge_names <- unique(c(merge_group_list[[i]], merge_names))
-                      merge_group_list[i] <- list(NULL)
+                      # Update results matrix
+                      if (comparison1_output[["result"]] == "merge" & comparison2_output[["result"]] == "split") {
+                        result_matrix[child_name, partner1_name] <- "split"
+                        result_matrix[partner1_name, child_name] <- "split"
+                      } else if (comparison1_output[["result"]] == "split" & comparison2_output[["result"]] == "merge") {
+                        result_matrix[child_name, partner2_name] <- "split"
+                        result_matrix[partner2_name, child_name] <- "split"
+                      } else if (comparison1_output[["result"]] == "split" & comparison2_output[["result"]] == "split") {
+                        # If they both result in a "split", merge child cluster with the partner w/ the lowest distance
+                        if (distance_awareness < Inf) {
+                          if (tree_name == "P0") {
+                            child_partner1_distance <- dplyr::filter(comparison_records,
+                                                                     comparison %in% child_partner1_comparison_names)$root_distance
+                            child_partner2_distance <- dplyr::filter(comparison_records,
+                                                                     comparison %in% child_partner2_comparison_names)$root_distance
+                          } else {
+                            child_partner1_distance <- dplyr::filter(comparison_records,
+                                                                     comparison %in% child_partner1_comparison_names)$subtree_distance
+                            child_partner2_distance <- dplyr::filter(comparison_records,
+                                                                     comparison %in% child_partner2_comparison_names)$subtree_distance
+                          }
+                          # If distance has not been calculated
+                          if (length(child_partner1_distance) == 0) {
+                            distance_check <- .checkDistance(object = object,
+                                                             key = key,
+                                                             cluster1_name = child_name,
+                                                             cluster1_cells = child_cells,
+                                                             cluster2_name = partner1_name,
+                                                             cluster2_cells = partner1_cells,
+                                                             distance_awareness = distance_awareness,
+                                                             distance_approx = distance_approx,
+                                                             use_input_matrix = tree_name,
+                                                             dist_matrix = dist_matrix,
+                                                             reduction = reduction,
+                                                             distance_records = NULL)
+                            if (tree_name == "P0") {
+                              child_partner1_distance <- distance_check[["P0_distance"]]
+                            } else {
+                              child_partner1_distance <- distance_check[["P_i_distance"]]
+                            }
+                          }
+                          if (length(child_partner2_distance) == 0) {
+                            distance_check <- .checkDistance(object = object,
+                                                             key = key,
+                                                             cluster1_name = child_name,
+                                                             cluster1_cells = child_cells,
+                                                             cluster2_name = partner2_name,
+                                                             cluster2_cells = partner2_cells,
+                                                             distance_awareness = distance_awareness,
+                                                             distance_approx = distance_approx,
+                                                             use_input_matrix = tree_name,
+                                                             dist_matrix = dist_matrix,
+                                                             reduction = reduction,
+                                                             distance_records = NULL)
+                            if (tree_name == "P0") {
+                              child_partner2_distance <- distance_check[["P0_distance"]]
+                            } else {
+                              child_partner2_distance <- distance_check[["P_i_distance"]]
+                            }
+                          }
+                          # Compare
+                          if (child_partner1_distance > child_partner2_distance) {
+                            result_matrix[child_name, partner1_name] <- "split"
+                            result_matrix[partner1_name, child_name] <- "split"
+                          } else {
+                            result_matrix[child_name, partner2_name] <- "split"
+                            result_matrix[partner2_name, child_name] <- "split"
+                          }
+                        } else {
+                          # Alternately, use accuracy scores
+                          child_partner1_mean_accuracy <- dplyr::filter(comparison_records,
+                                                                        comparison %in% child_partner1_comparison_names)$mean_accuracy
+                          child_partner2_mean_accuracy <- dplyr::filter(comparison_records,
+                                                                        comparison %in% child_partner2_comparison_names)$mean_accuracy
+                          if (child_partner1_mean_accuracy > child_partner2_mean_accuracy) {
+                            result_matrix[child_name, partner1_name] <- "split"
+                            result_matrix[partner1_name, child_name] <- "split"
+                          } else {
+                            result_matrix[child_name, partner2_name] <- "split"
+                            result_matrix[partner2_name, child_name] <- "split"
+                          }
+                        }
+                      } # Else if both result in "merge", do nothing, allow bridge
                     }
                   }
                 }
-                merge_group_list[[child]] <- merge_names
               }
             }
-          }
-          # Convert merge groups to new cluster names
-          new_labels_list <- .getNewLabels(merge_groups = merge_group_list,
-                                           level = lvl,
-                                           compiled_labels = compiled_cluster_labels)
-          compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
-          merge_group_labels <- new_labels_list[["merge_group_labels"]]
-
-          # Update child_IDs
-          if (all_merge == TRUE) {
-            child_IDs[parent_inds] <- parent_IDs[parent_inds]
-          } else {
-            # Make key
-            merge_group_key <- data.frame(old = unique_child_IDs,
-                                          new = unique_child_IDs)
-            rownames(merge_group_key) <- merge_group_key$old
-            for (m_g in 1:length(merge_group_list)) {
-              if (!is.null(merge_group_list[[m_g]])) {
-                merge_group_key[merge_group_list[[m_g]],"new"] <- merge_group_labels[[m_g]]
-              }
-            }
-
-            new_cluster_labels <- child_IDs[parent_inds]
+            # Loop through child clusters again to find merge groups
+            merge_group_list <- vector(mode = "list", length = n_child_clusters)
+            # Change this if all children merge
+            all_merge <- FALSE
+            # For each child
             for (child in 1:n_child_clusters) {
-              new_cluster_labels[new_cluster_labels == unique_child_IDs[child]] <- merge_group_key[unique_child_IDs[child], "new"][1]
+              child_name <- unique_child_IDs[child]
+              # Stop if it becomes established that all children will merge
+              if (all_merge == FALSE) {
+                # count cells
+                n_merge <- sum(result_matrix[child_name,] == "merge", na.rm = TRUE)
+                n_splits <- sum(result_matrix[child_name,] == "split", na.rm = TRUE)
+                # if all merge
+                if (n_merge == (n_child_clusters-1)) {
+                  all_merge <- TRUE
+                } else if (n_splits == (n_child_clusters-1)) { # If all splits
+                  merge_group_list[[child]] <- child_name
+                } else {
+                  merge_names <- rownames(result_matrix)[result_matrix[child_name,] == "merge"]
+                  merge_names <- merge_names[!is.na(merge_names)]
+                  merge_names <- c(child_name, merge_names)
+                  # Check if this group overlaps with any that are already identified
+                  if (child > 1) {
+                    for (i in 1:(child-1)) {
+                      overlap <- length(intersect(merge_names, merge_group_list[[i]]))
+                      if (overlap > 0) {
+                        # include all members & delete old group
+                        merge_names <- unique(c(merge_group_list[[i]], merge_names))
+                        merge_group_list[i] <- list(NULL)
+                      }
+                    }
+                  }
+                  merge_group_list[[child]] <- merge_names
+                }
+              }
             }
-            child_IDs[parent_inds] <- new_cluster_labels
+            # Convert merge groups to new cluster names
+            new_labels_list <- .getNewLabels(merge_groups = merge_group_list,
+                                             level = lvl,
+                                             compiled_labels = compiled_cluster_labels)
+            compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
+            merge_group_labels <- new_labels_list[["merge_group_labels"]]
+
+            new_clusters <- c(new_clusters, unique(unlist(new_labels_list[["merge_group_labels"]]))[!(unique(unlist(new_labels_list[["merge_group_labels"]])) %in% unique(child_IDs))])
+
+            # Update child_IDs
+            if (all_merge == TRUE) {
+              child_IDs[parent_inds] <- parent_IDs[parent_inds]
+            } else {
+              # Make key
+              merge_group_key <- data.frame(old = unique_child_IDs,
+                                            new = unique_child_IDs)
+              rownames(merge_group_key) <- merge_group_key$old
+              for (m_g in 1:length(merge_group_list)) {
+                if (!is.null(merge_group_list[[m_g]])) {
+                  merge_group_key[merge_group_list[[m_g]],"new"] <- merge_group_labels[[m_g]]
+                }
+              }
+
+              new_cluster_labels <- child_IDs[parent_inds]
+              for (child in 1:n_child_clusters) {
+                new_cluster_labels[new_cluster_labels == unique_child_IDs[child]] <- merge_group_key[unique_child_IDs[child], "new"][1]
+              }
+              child_IDs[parent_inds] <- new_cluster_labels
+            }
           }
         }
       } else {
@@ -1413,6 +1500,7 @@ pruneTree <- function(object,
         }
       }
     }
+
     # Check multiple comparison adjustment
     # Starting after at least 10 total comparisons & at least 3 "split" calls
     # Or if we're at the top of the tree with at least 1 "split" call
@@ -1485,7 +1573,7 @@ pruneTree <- function(object,
           } else {
             # If these clusters do appear elsewhere in the corrections that are among the current cluster IDs,
             # merge the cluster pair with the closest distance
-            if (methods::is(distance_awareness, "numeric")) {
+            if (distance_awareness < Inf) {
               subtree_distances <- dplyr::filter(correction_check,
                                                  cluster1 %in% c(correction_check$cluster1[comp],
                                                                  correction_check$cluster2[comp]) |
@@ -1535,6 +1623,7 @@ pruneTree <- function(object,
                               mean_accuracy == min_accuracy)
             }
           }
+          # Convert merge groups to new cluster names
           new_labels_list <- .getNewLabels(merge_groups = list(c(merge_pair$cluster1[1],
                                                                  merge_pair$cluster2[1])),
                                            level = lvl,
@@ -1548,9 +1637,28 @@ pruneTree <- function(object,
                                               paste0(merge_pair$cluster1[1], " vs. ",
                                                      merge_pair$cluster2[1]))] <- "merge: adjustment"
           n_current_clusters <- n_current_clusters - 1
+
+          new_clusters <- c(new_clusters, merged_label)
         }
       }
     }
+
+    # If there are new clusters, edit list of permitted comparisons
+    if (length(new_clusters) > 0) {
+      permitted_comparisons <- .getPermittedComparisons(object = object,
+                                                       key = key,
+                                                       clusters = child_IDs,
+                                                       cell_IDs = cell_IDs,
+                                                       nn_matrices = nn_matrices,
+                                                       min_connections = min_connections,
+                                                       collect_all_metrics = collect_all_metrics,
+                                                       distance_awareness = distance_awareness,
+                                                       new_clusters = new_clusters,
+                                                       permitted_comparisons = permitted_comparisons,
+                                                       n_cores = n_cores)
+      new_clusters <- c()
+    }
+
     # Update parent IDs
     if (lvl > 1) {
       # Move up clustering tree
@@ -1597,7 +1705,7 @@ pruneTree <- function(object,
            dplyr::n_distinct(paste(stepwise_cluster_IDs[, ncol(stepwise_cluster_IDs)], stepwise_cluster_IDs[, ncol(stepwise_cluster_IDs)-1])))) {
         # Check if any clusters from bottom of tree are still present
         check_df <- data.frame(original = cluster_tree[, n_levels],
-                            current = stepwise_cluster_IDs[, ncol(stepwise_cluster_IDs)])
+                               current = stepwise_cluster_IDs[, ncol(stepwise_cluster_IDs)])
         check <- check_df %>%
           dplyr::group_by(current, original) %>%
           dplyr::filter(!(current %in% checked_for_underclustering)) %>%
@@ -1611,8 +1719,8 @@ pruneTree <- function(object,
         clusters_to_check <- clusters_to_check[!(clusters_to_check %in% checked_for_underclustering)]
         clusters_to_check <- c(clusters_to_check, unique(check$current))
         checked_for_underclustering <- unique(c(checked_for_underclustering,
-                                         clusters_to_check,
-                                         unique(dplyr::filter(check_df, current %in% check$current)$original)))
+                                                clusters_to_check,
+                                                unique(dplyr::filter(check_df, current %in% check$current)$original)))
 
         if (length(clusters_to_check) > 0) {
           # Replace parent IDs with current child IDs
@@ -1623,25 +1731,25 @@ pruneTree <- function(object,
           for (u_clust in 1:length(clusters_to_check)) {
             current_cell_inds <- which(child_IDs == clusters_to_check[u_clust])
             current_cell_IDs <- cell_IDs[current_cell_inds]
-            use_input_matrix <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
+            tree_name <- unlist(stringr::str_extract_all(clusters_to_check[u_clust], "P\\d*"))
             if ("subtree_reductions" %in% names(buildTree_parameters)) {
               subtree_reductions <- buildTree_parameters[["subtree_reductions"]]
               if (subtree_reductions == FALSE) {
-                use_input_matrix <- "P0"
+                tree_name <- "P0"
               }
             }
             # Build subtree
             subtree_list <- .getTree(snn_matrix = `if`(!is.null(snn_matrix),
                                                        snn_matrix[current_cell_IDs, current_cell_IDs],
-                                                       .retrieveData(object, key, "graph", paste0(use_input_matrix, "_graph_snn"))[current_cell_IDs, current_cell_IDs]),
-                                     nn_matrix = nn_matrices[[use_input_matrix]][current_cell_IDs, current_cell_IDs],
+                                                       .retrieveData(object, key, "graph", paste0(tree_name, "_graph_snn"))[current_cell_IDs, current_cell_IDs]),
+                                     nn_matrix = nn_matrices[[tree_name]][current_cell_IDs, current_cell_IDs],
                                      dist_matrix = `if`(distance_approx == FALSE,
                                                         `if`(dist_matrix_provided == TRUE, dist_matrix[current_cell_IDs, current_cell_IDs],
-                                                             .retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction_dist"))[current_cell_IDs, ]), NULL),
+                                                             .retrieveData(object, key, "reduction", paste0(tree_name, "_reduction_dist"))[current_cell_IDs, ]), NULL),
                                      reduction = `if`(distance_approx == TRUE,
                                                       `if`(reduction_provided == TRUE, reduction[current_cell_IDs, ],
-                                                           .retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction"))[current_cell_IDs, ]), NULL),
-                                     input_matrix = input_matrices[[use_input_matrix]][current_cell_IDs, ],
+                                                           .retrieveData(object, key, "reduction", paste0(tree_name, "_reduction"))[current_cell_IDs, ]), NULL),
+                                     input_matrix = input_matrices[[tree_name]][current_cell_IDs, ],
                                      distance_approx = distance_approx,
                                      tree_type = "subtree",
                                      cluster_params = cluster_params,
@@ -1681,13 +1789,14 @@ pruneTree <- function(object,
             if (dplyr::n_distinct(subcluster_labels) > 1) {
               underclustering_buffer <- TRUE
               unique_cluster_labels <- unique(c(cluster_tree[, n_levels], child_IDs))
-              unique_cluster_labels <- unique_cluster_labels[grepl(paste0(use_input_matrix, "_"), unique_cluster_labels)]
+              unique_cluster_labels <- unique_cluster_labels[grepl(paste0(tree_name, "_"), unique_cluster_labels)]
               max_P_label <- max(as.numeric(sub("P\\d*_L\\d*_", "", unique_cluster_labels)))
-              new_cluster_IDs <- paste0(use_input_matrix, "_", "L",
+              new_cluster_IDs <- paste0(tree_name, "_", "L",
                                         ifelse(lvl >= 0, lvl, paste(rep(0, abs(lvl) + 1), collapse = "")),
                                         "_", subcluster_labels + max_P_label)
               child_IDs[current_cell_inds] <- new_cluster_IDs
               results_of_underclustering_check <- c(results_of_underclustering_check, unique(new_cluster_IDs))
+              new_clusters <- c(new_clusters, unique(new_cluster_IDs))
             }
             # Progress
             if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
@@ -1695,6 +1804,20 @@ pruneTree <- function(object,
               pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
                                 " : Checked ", u_clust, " of ", length(clusters_to_check), " for underclustering."))
             }
+          }
+          # If there are new clusters, edit list of permitted comparisons
+          if (length(new_clusters) > 0) {
+            permitted_comparisons <- .getPermittedComparisons(object = object,
+                                                             key = key,
+                                                             clusters = child_IDs,
+                                                             cell_IDs = cell_IDs,
+                                                             nn_matrices = nn_matrices,
+                                                             min_connections = min_connections,
+                                                             collect_all_metrics = collect_all_metrics,
+                                                             distance_awareness = distance_awareness,
+                                                             new_clusters = new_clusters,
+                                                             permitted_comparisons = permitted_comparisons,
+                                                             n_cores = n_cores)
           }
         } else {
           complete <- TRUE
@@ -1742,8 +1865,8 @@ pruneTree <- function(object,
       cluster_j_name <- cluster_key[cluster_key$CHOIR_ID == j, "Record_cluster_label"]
 
       comparison_ij <- dplyr::filter(comparison_records,
-                                  comparison == paste0(cluster_i_name, " vs. ", cluster_j_name) |
-                                    comparison == paste0(cluster_j_name, " vs. ", cluster_i_name))
+                                     comparison == paste0(cluster_i_name, " vs. ", cluster_j_name) |
+                                       comparison == paste0(cluster_j_name, " vs. ", cluster_i_name))
       if (nrow(comparison_ij) == 1) {
         final_cluster_mean_accuracies[i, j] <- comparison_ij$mean_accuracy
         final_cluster_mean_accuracies[j, i] <- comparison_ij$mean_accuracy
@@ -1772,7 +1895,7 @@ pruneTree <- function(object,
       message(" - Repeatedly misassigned cells affected the result of ", sum(comparison_records$decision == "split: repeat error"),
               " comparisons. Set 'max_repeat_errors' parameter to 0 if you would like to disable this setting.")
     }
-    if (methods::is(distance_awareness, "numeric") & sum(comparison_records$decision == "split: distance") > 0) {
+    if (distance_awareness < Inf & sum(comparison_records$decision == "split: distance") > 0) {
       message(" - In ", sum(comparison_records$decision == "split: distance"),
               " comparisons, clusters were split due to cluster distance threshold.")
     }

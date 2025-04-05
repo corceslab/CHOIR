@@ -148,7 +148,7 @@ distinguishable neighbor. This threshold allows CHOIR to avoid running the
 full permutation test comparison for clusters that are highly likely to be
 distinct, saving computational time. To omit all distance calculations and
 perform permutation testing on all comparisons, set this parameter to
-\code{FALSE}. Setting this parameter to \code{FALSE} or increasing the input
+\code{Inf}. Setting this parameter to \code{Inf} or increasing the input
 value will increase the number of permutation test comparisons run and, thus,
 the computational time. In rare cases, very small distant clusters may be
 erroneously merged when distance thresholds are not used. The intent of this
