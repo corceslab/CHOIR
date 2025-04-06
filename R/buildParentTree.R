@@ -12,13 +12,6 @@
 #' \code{ArchRProject} objects.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to “CHOIR”.
-#' @param distance_approx A Boolean value indicating whether or not to use
-#' approximate distance calculations. Defaults to \code{TRUE}, which will use
-#' centroid-based distances. Setting distance approximation to \code{FALSE} will
-#' substantially increase the computational time and memory required,
-#' particularly for large datasets. Using approximated distances (\code{TRUE})
-#' rather than absolute distances (\code{FALSE}) is unlikely to have a
-#' meaningful effect on the distance thresholds imposed by CHOIR.
 #' @param downsampling_rate A numerical value indicating the proportion of cells
 #' to be sampled per cluster to train/test each random forest classifier. For
 #' efficiency, the default value, "auto", sets the downsampling rate according
@@ -171,7 +164,6 @@
 #'
 buildParentTree <- function(object,
                             key = "CHOIR",
-                            distance_approx = TRUE,
                             downsampling_rate = "auto",
                             normalization_method = "none",
                             reduction_method = NULL,
@@ -245,7 +237,6 @@ buildParentTree <- function(object,
   # Get cell IDs
   cell_IDs <- .getCellIDs(object, use_assay = use_assay)
 
-  .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object, n_modalities))
   .validInput(ArchR_depthcol, "ArchR_depthcol", list(object, n_modalities))
   .validInput(reduction, "reduction", list("buildTree", object))
   .validInput(var_features, "var_features", reduction)
@@ -441,7 +432,6 @@ buildParentTree <- function(object,
                        countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
-                       "\n - Distance approximation: ", distance_approx,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
                        "\n - Normalization method: ", normalization_method,
                        "\n - Dimensionality reduction method: ", `if`(is.null(reduction_method), "Default", reduction_method),
@@ -513,7 +503,7 @@ buildParentTree <- function(object,
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL
 
   # ---------------------------------------------------------------------------
-  # Step 2: Find nearest neighbors & calculate distance matrix for dimensionality reduction
+  # Step 2: Find nearest neighbors
   # ---------------------------------------------------------------------------
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
   # 1 vs. multiple dimensionality reductions
@@ -529,12 +519,6 @@ buildParentTree <- function(object,
     } else {
       P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]][, neighbor_dims]),
                                                                neighbor_params))
-    }
-
-    # Dimensionality reduction distance matrix
-    if (distance_approx == FALSE) {
-      P0_reduction_dist <- stats::dist(P0_dim_reduction[["reduction_coords"]])
-      object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
     }
   } else {
     # Number & names of cells
@@ -562,13 +546,6 @@ buildParentTree <- function(object,
                                                                             "knn.graph.name" = "nn",
                                                                             "snn.graph.name" = "snn"),
                                                                        neighbor_params))@graphs
-    # Dimensionality reduction distance matrix
-    if (distance_approx == FALSE) {
-      P0_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                  reduction_list = list(paste0("DR_", seq(1, length(use_assay_build)))),
-                                                  dim_list = dim_list)
-      object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
-    }
     # Clean up
     rm(tmp)
     rm(tmp_seurat)
@@ -607,9 +584,7 @@ buildParentTree <- function(object,
 
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/4) Building parent clustering tree..")
   P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
-                           dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
-                           reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
-                           distance_approx = distance_approx,
+                           reduction = P0_dim_reduction[["reduction_coords"]],
                            tree_type = "silhouette",
                            cluster_params = cluster_params,
                            starting_resolution = P0_starting_resolution[["starting_resolution"]],
@@ -631,9 +606,7 @@ buildParentTree <- function(object,
   # Optimize tree
   if (ncol(P0_tree) >= 2) {
     P0_tree <- .optimizeTree(cluster_tree = P0_tree,
-                             dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
-                             reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
-                             distance_approx = distance_approx)
+                             reduction = P0_dim_reduction[["reduction_coords"]])
     P0_tree$CellID <- rownames(P0_tree)
     P0_tree <- P0_tree[match(cell_IDs, P0_tree$CellID), ]
     P0_tree <- dplyr::select(P0_tree, -CellID)
@@ -649,9 +622,6 @@ buildParentTree <- function(object,
   # Clean up
   rm(P0_nearest_neighbors)
   rm(P0_starting_resolution)
-  if (distance_approx == FALSE) {
-    rm(P0_reduction_dist)
-  }
 
   if (verbose) message("                      Parent tree has ", ncol(P0_tree), " levels and ", dplyr::n_distinct(P0_tree[,ncol(P0_tree)]), " clusters.")
 
@@ -673,7 +643,6 @@ buildParentTree <- function(object,
 
   # Record parameters used and add to original object
   parameter_list <- list("downsampling_rate" = downsampling_rate,
-                         "distance_approx"  = distance_approx,
                          "normalization_method" = normalization_method,
                          "reduction_method" = reduction_method,
                          "reduction_params" = reduction_params,

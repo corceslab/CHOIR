@@ -7,7 +7,6 @@
 buildParentTree(
   object,
   key = "CHOIR",
-  distance_approx = TRUE,
   downsampling_rate = "auto",
   normalization_method = "none",
   reduction_method = NULL,
@@ -39,14 +38,6 @@ or \code{ArchRProject}. For multi-omic data, we recommend using
 
 \item{key}{The name under which CHOIR-related data for this run is stored in
 the object. Defaults to “CHOIR”.}
-
-\item{distance_approx}{A Boolean value indicating whether or not to use
-approximate distance calculations. Defaults to \code{TRUE}, which will use
-centroid-based distances. Setting distance approximation to \code{FALSE} will
-substantially increase the computational time and memory required,
-particularly for large datasets. Using approximated distances (\code{TRUE})
-rather than absolute distances (\code{FALSE}) is unlikely to have a
-meaningful effect on the distance thresholds imposed by CHOIR.}
 
 \item{downsampling_rate}{A numerical value indicating the proportion of cells
 to be sampled per cluster to train/test each random forest classifier. For

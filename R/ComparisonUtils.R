@@ -630,9 +630,7 @@
 # cluster2_name -- A string indicating the name of the second cluster
 # cluster2_cells -- A vector indicating the cells belonging to the second cluster
 # distance_awareness -- A multiplier used to set the distance threshold
-# distance_approx -- Whether to use approximate distance
 # use_input_matrix -- Indicates the matrix to use for the current tree/subtree
-# dist_matrix -- A cell to cell distance matrix
 # reduction -- A dimensionality reduction
 # distance_records -- A dataframe containing the distance records output from this run
 .checkDistance <- function(object,
@@ -642,14 +640,9 @@
                            cluster2_name,
                            cluster2_cells,
                            distance_awareness,
-                           distance_approx,
                            use_input_matrix,
-                           dist_matrix,
                            reduction,
                            distance_records) {
-  if (distance_approx == FALSE) {
-    .requirePackage("clv", source = "cran")
-  }
   # Default output
   distance_conflict <- FALSE
   P0_distance <- NA
@@ -657,45 +650,24 @@
   # Don't proceed if distance_awareness is FALSE
   if (methods::is(distance_awareness, "numeric")) {
     # Distance by centroid or average linkage
-    if (distance_approx == TRUE) {
-      # Calculate P0 distance
-      if (is.null(reduction)) {
-        current_reduction <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction"))[c(cluster1_cells, cluster2_cells), ]
-      } else {
-        current_reduction <- reduction[c(cluster1_cells, cluster2_cells), ]
-      }
-      P0_distance <- .getCentroidDistance(reduction = current_reduction,
-                                          clusters = c(rep(1, length(cluster1_cells)),
-                                                       rep(2, length(cluster2_cells))))[1,2]
-      # Calculate subtree distance if applicable
-      if (use_input_matrix != "P0" & is.null(reduction)) {
-        current_reduction <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction")))[c(cluster1_cells, cluster2_cells), ]
-        P_i_distance <- .getCentroidDistance(reduction = current_reduction,
-                                             clusters = c(rep(1, length(cluster1_cells)),
-                                                          rep(2, length(cluster2_cells))))[1,2]
-      }
-      # Clean up
-      rm(current_reduction)
+    # Calculate P0 distance
+    if (is.null(reduction)) {
+      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction"))[c(cluster1_cells, cluster2_cells), ]
     } else {
-      # Calculate P0 distance
-      if (is.null(dist_matrix)) {
-        current_dist_matrix <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction_dist"))[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-      } else {
-        current_dist_matrix <- dist_matrix[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-      }
-      P0_distance <- clv::cls.scatt.diss.mx(diss.mx = current_dist_matrix,
-                                            clust = as.integer(c(rep(1, length(cluster1_cells)),
-                                                                 rep(2, length(cluster2_cells)))))$intercls.average["c1", "c2"]
-      # Calculate subtree distance if applicable
-      if (use_input_matrix != "P0" & is.null(dist_matrix)) {
-        current_dist_matrix <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction_dist")))[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-        P_i_distance <- clv::cls.scatt.diss.mx(diss.mx = current_dist_matrix,
-                                               clust = as.integer(c(rep(1, length(cluster1_cells)),
-                                                                    rep(2, length(cluster2_cells)))))$intercls.average["c1", "c2"]
-      }
-      # Clean up
-      rm(current_dist_matrix)
+      current_reduction <- reduction[c(cluster1_cells, cluster2_cells), ]
     }
+    P0_distance <- .getCentroidDistance(reduction = current_reduction,
+                                        clusters = c(rep(1, length(cluster1_cells)),
+                                                     rep(2, length(cluster2_cells))))[1,2]
+    # Calculate subtree distance if applicable
+    if (use_input_matrix != "P0" & is.null(reduction)) {
+      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction")))[c(cluster1_cells, cluster2_cells), ]
+      P_i_distance <- .getCentroidDistance(reduction = current_reduction,
+                                           clusters = c(rep(1, length(cluster1_cells)),
+                                                        rep(2, length(cluster2_cells))))[1,2]
+    }
+    # Clean up
+    rm(current_reduction)
 
     # Compare to previous records
     if (!is.null(distance_records)) {
@@ -771,6 +743,7 @@
 
 # object -- An object of type Seurat, SingleCellExperiment, or ArchRProject
 # key -- A character string indicating the name under which data is stored for this run
+# type -- A character string "combineTrees" or "pruneTree" indicating function usage context
 # clusters -- Cluster labels
 # cell_IDs -- Cell IDs
 # nn_matrices -- A list of nearest neighbor adjacency matrices, named according to tree
@@ -779,10 +752,12 @@
 # distance_awareness -- A multiplier used to set the distance threshold
 # new_clusters -- A vector of cluster labels that are new and have not yet been assessed
 # permitted_comparisons -- An existing dataframe containing permitted comparisons
+# root_distances -- Cluster centroid distance matrix calculated from root dimensionality reduction
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 
 .getPermittedComparisons <- function(object,
                                     key,
+                                    type = "pruneTree",
                                     clusters,
                                     cell_IDs,
                                     nn_matrices,
@@ -791,6 +766,7 @@
                                     distance_awareness,
                                     new_clusters = NULL,
                                     permitted_comparisons = NULL,
+                                    root_distances = NULL,
                                     n_cores) {
   # Get unique cluster labels
   unique_clusters <- unique(clusters)
@@ -815,12 +791,12 @@
   }
 
   # Add tree info
-  if (length(nn_matrices) > 1) {
+  if (length(nn_matrices) > 1 | type == "combineTrees") {
     tree_name_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
       trees <- unlist(stringr::str_extract_all(c(new_permitted_comparisons$cluster1[i],
                                                  new_permitted_comparisons$cluster2[i]), "P\\d*"))
       if ((dplyr::n_distinct(trees) == 1) &
-          (trees[1] %in% names(nn_matrices))) {
+          ((trees[1] %in% names(nn_matrices)) | type == "combineTrees")) {
         return(trees[1])
       } else {
         return("P0")
@@ -829,6 +805,10 @@
     mc.cores = n_cores,
     mc.set.seed = TRUE)
     new_permitted_comparisons$tree_name <- unlist(tree_name_list)
+    # In the context of function combineTrees, filter out intra-parent comparisons
+    if (type == "combineTrees") {
+      new_permitted_comparisons <- dplyr::filter(new_permitted_comparisons, tree_name == "P0")
+    }
   } else {
     new_permitted_comparisons$tree_name <- "P0"
   }
@@ -854,15 +834,17 @@
 
   # Add distance data
   if (distance_awareness < Inf | collect_all_metrics == TRUE) {
-    # Root distance
-    P0_reduction <- .retrieveData(object,
-                                  key,
-                                  "reduction",
-                                  "P0_reduction")
-    root_centroid_distances <- .getCentroidDistance(P0_reduction,
-                                                    clusters)
+    if (is.null(root_distances)) {
+      # Root distance
+      P0_reduction <- .retrieveData(object,
+                                    key,
+                                    "reduction",
+                                    "P0_reduction")
+      root_distances <- .getCentroidDistance(P0_reduction,
+                                                      clusters)
+    }
     root_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
-      root_centroid_distances[new_permitted_comparisons$cluster1[i], new_permitted_comparisons$cluster2[i]]
+      root_distances[new_permitted_comparisons$cluster1[i], new_permitted_comparisons$cluster2[i]]
     },
     mc.cores = n_cores,
     mc.set.seed = TRUE)
@@ -872,21 +854,22 @@
     subtrees_remaining <- unique(new_permitted_comparisons$tree_name[new_permitted_comparisons$tree_name != "P0"])
     if (length(subtrees_remaining) >= 1) {
       names(clusters) <- cell_IDs
-      subtree_centroid_distances <- parallel::mclapply(subtrees_remaining, FUN = function(i) {
+      subtree_distances <- parallel::mclapply(subtrees_remaining, FUN = function(i) {
         current_reduction <- .retrieveData(object,
                                            key,
                                            "reduction",
                                            paste0(i, "_reduction"))
-        P_i_distance <- .getCentroidDistance(reduction = current_reduction,
-                                             clusters = clusters[rownames(current_reduction)])
+        current_distance <- .getCentroidDistance(reduction = current_reduction,
+                                                 clusters = clusters[rownames(current_reduction)])
+        return(current_distance)
       },
       mc.cores = n_cores,
       mc.set.seed = TRUE)
-      names(subtree_centroid_distances) <- subtrees_remaining
+      names(subtree_distances) <- subtrees_remaining
       subtree_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
         if (new_permitted_comparisons$tree_name[i] != "P0") {
-          subtree_centroid_distances[[new_permitted_comparisons$tree_name[i]]][new_permitted_comparisons$cluster1[i],
-                                                                           new_permitted_comparisons$cluster2[i]]
+          subtree_distances[[new_permitted_comparisons$tree_name[i]]][new_permitted_comparisons$cluster1[i],
+                                                                      new_permitted_comparisons$cluster2[i]]
         } else {
           NA
         }

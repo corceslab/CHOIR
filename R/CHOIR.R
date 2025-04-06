@@ -92,13 +92,6 @@
 #' underclustering due to a small number of intermediate cells. Setting this
 #' parameter to higher values may lead to instances of overclustering and is not
 #' recommended.
-#' @param distance_approx A Boolean value indicating whether or not to use
-#' approximate distance calculations. Defaults to \code{TRUE}, which will use
-#' centroid-based distances. Setting distance approximation to \code{FALSE} will
-#' substantially increase the computational time and memory required,
-#' particularly for large datasets. Using approximated distances (\code{TRUE})
-#' rather than absolute distances (\code{FALSE}) is unlikely to have a
-#' meaningful effect on the distance thresholds imposed by CHOIR.
 #' @param distance_awareness A numerical value representing the distance
 #' threshold above which a cluster will not merge with another cluster and
 #' significance testing will not be used. Specifically, this value is a
@@ -109,7 +102,7 @@
 #' full permutation test comparison for clusters that are highly likely to be
 #' distinct, saving computational time. To omit all distance calculations and
 #' perform permutation testing on all comparisons, set this parameter to
-#' \code{FALSE}. Setting this parameter to \code{FALSE} or increasing the input
+#' \code{Inf}. Setting this parameter to \code{Inf} or increasing the input
 #' value will increase the number of permutation test comparisons run and, thus,
 #' the computational time. In rare cases, very small distant clusters may be
 #' erroneously merged when distance thresholds are not used. The intent of this
@@ -331,7 +324,6 @@ CHOIR <- function(object,
                   min_accuracy = 0.5,
                   min_connections = 1,
                   max_repeat_errors = 20,
-                  distance_approx = TRUE,
                   distance_awareness = 2,
                   collect_all_metrics = FALSE,
                   sample_max = Inf,
@@ -396,7 +388,6 @@ CHOIR <- function(object,
                       min_reads = min_reads,
                       max_clusters = max_clusters,
                       min_cluster_depth = min_cluster_depth,
-                      distance_approx = distance_approx,
                       normalization_method = normalization_method,
                       subtree_reductions = subtree_reductions,
                       reduction_method = reduction_method,

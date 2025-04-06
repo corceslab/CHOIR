@@ -714,21 +714,6 @@
     }
   }
 
-  # dist_matrix
-  if (name == "dist_matrix") {
-    # If not NULL
-    if (!is.null(input)) {
-      # Should be of class "mMatrix" or "matrix
-      if (!methods::is(input, "mMatrix") & !methods::is(input, "matrix")) {
-        stop("Input value for '", name, "' is not of class 'mMatrix' or 'matrix', please supply valid input!")
-      }
-      # Row and column names must contain all cell IDs
-      if (!all(other %in% colnames(input)) | !all(other %in% rownames(input))) {
-        stop("Input value for '", name, "' must be a distance matrix in which the row and column names contain all of the cell IDs provided or present in the object.")
-      }
-    }
-  }
-
   # p_adjust
   if (name == "p_adjust") {
     # Should be a single value of class "character"
@@ -785,22 +770,6 @@
       if (!(identical(cell_ids, rownames(input)))) {
         stop("Input value for 'cluster_tree' must be a dataframe or matrix in which the row names and order are identical to the cell IDs in the provided object. Please supply valid input or set to NULL.")
       }
-    }
-  }
-
-  # distance_approx
-  if (name == "distance_approx") {
-    # Must be T/F
-    if (!methods::is(input, "logical") | length(input) != 1) {
-      stop("Input value for '", name, "' is not a single value of class 'logical', please supply valid input!")
-    }
-    # If TRUE and object is of type Seurat or SingleCellExperiment with more than 1 modality, stop
-    if (input == TRUE &
-        ("Seurat" %in% methods::is(other[[2]]) | "SingleCellExperiment" %in% methods::is(other[[2]])) &
-        other[[3]] > 1) {
-      stop("Distance approximation is incompatible with multi-modal data of class 'Seurat' or 'SingleCellExperiment'. Please provide an object of class 'ArchRProject', set '", name, "' to 'FALSE', or use a single modality.")
-    } else if (input == FALSE & other[[1]] >= 500) { # If FALSE and number of cells is higher than 500, issue warning
-      warning("Setting parameter '", name, "' to ", input, " may slow down computation.")
     }
   }
 
