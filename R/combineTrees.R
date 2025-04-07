@@ -710,6 +710,18 @@ combineTrees <- function(object,
                                                     distance_awareness = distance_awareness,
                                                     root_distances = root_distances,
                                                     n_cores = n_cores)
+  if (distance_awareness < Inf) {
+    # Filter permitted comparisons against distance records
+    permitted_comparisons <- permitted_comparisons %>%
+      dplyr::left_join(distance_records, by = c("cluster1" = "cluster_name")) %>%
+      dplyr::rename(min_distance1 = min_distance) %>%
+      dplyr::left_join(distance_records, by = c("cluster2" = "cluster_name")) %>%
+      dplyr::rename(min_distance2 = min_distance) %>%
+      dplyr::filter(is.na(min_distance1) |
+                      is.na(min_distance2) |
+                      (root_distance > distance_awareness * min_distance1 & root_distance > distance_awareness * min_distance2)) %>%
+      dplyr::select(cluster1, cluster2, tree_name, connectivity, root_distance, subtree_distance)
+  }
 
   # -------------------------------------------------------------------------
   # Prepare compiled tree for pruning
@@ -1055,9 +1067,6 @@ combineTrees <- function(object,
   feature_importance_records <- data.frame(matrix(ncol = (length(features)+2), nrow = 0))
   colnames(feature_importance_records) <- c('cluster1', 'cluster2', features)
 
-  # Record of stepwise cluster IDs
-  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs)
-
   # Set of all cluster labels in original tree
   compiled_cluster_labels <- unlist(apply(cluster_tree, 2, unique))
   names(compiled_cluster_labels) <- NULL
@@ -1098,6 +1107,11 @@ combineTrees <- function(object,
   complete <- FALSE
   # Progress markers
   progress_markers <- c(10,20,30,40,50,60,70,80,90)
+
+  # Record of stepwise cluster IDs
+  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs,
+                                     starting_clusters = child_IDs)
+  colnames(stepwise_cluster_IDs)[2] <- paste0("stepwise_cluster_ID_", alpha, "_L", n_levels)
 
   while (complete == FALSE) {
     # Get all cluster IDs at this level
