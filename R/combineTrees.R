@@ -714,12 +714,12 @@ combineTrees <- function(object,
     # Filter permitted comparisons against distance records
     permitted_comparisons <- permitted_comparisons %>%
       dplyr::left_join(distance_records, by = c("cluster1" = "cluster_name")) %>%
-      dplyr::rename(min_distance1 = min_distance) %>%
+      dplyr::rename(min_root_distance1 = min_root_distance) %>%
       dplyr::left_join(distance_records, by = c("cluster2" = "cluster_name")) %>%
-      dplyr::rename(min_distance2 = min_distance) %>%
-      dplyr::filter(is.na(min_distance1) |
-                      is.na(min_distance2) |
-                      (root_distance > distance_awareness * min_distance1 & root_distance > distance_awareness * min_distance2)) %>%
+      dplyr::rename(min_root_distance2 = min_root_distance) %>%
+      dplyr::filter(is.na(min_root_distance1) |
+                      is.na(min_root_distance2) |
+                      (root_distance > distance_awareness * min_root_distance1 & root_distance > distance_awareness * min_root_distance2)) %>%
       dplyr::select(cluster1, cluster2, tree_name, connectivity, root_distance, subtree_distance)
   }
 
