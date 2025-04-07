@@ -340,7 +340,6 @@ plotCHOIR <- function(object,
 
   # Add overlays
   if (accuracy_scores == TRUE) {
-    proceed <- TRUE
     # Retrieve accuracy score matrix
     accuracy_matrix <- .retrieveData(object = object,
                                      key = key,
@@ -352,57 +351,57 @@ plotCHOIR <- function(object,
                                        key = key,
                                        type = "records",
                                        name = paste0("CHOIR_clusters_", alpha, "_distances"))
-      try(nearest_cluster <- data.frame(neighbor = apply(distance_matrix, 1,
-                                                         FUN = function(x) {
-                                                           which(x == min(x, na.rm = TRUE))
-                                                         })))
-      if (!exists("nearest_cluster")) {
-        proceed <- FALSE
-      }
+      nearest_cluster <- data.frame(neighbor = apply(distance_matrix, 1,
+                                                     FUN = function(x) {
+                                                       which(x == min(x, na.rm = TRUE))
+                                                       }))
     } else {
       nearest_cluster <- data.frame(neighbor = NULL)
     }
 
-    if (proceed == TRUE) {
-      # Pair centroids with accuracy scores
-      overlay_data <- data.frame(cluster1 = NULL,
-                                 cluster2 = NULL,
-                                 centroid_x_1 = NULL,
-                                 centroid_y_1 = NULL,
-                                 centroid_x_2 = NULL,
-                                 centroid_y_2 = NULL,
-                                 mean_accuracy = NULL)
-      for (i in 1:(n_groups-1)) {
-        cluster_i <- group_names[i]
-        for (j in (i+1):n_groups) {
-          cluster_j <- group_names[j]
-          if (!is.na(accuracy_matrix[cluster_i, cluster_j])) {
-            if (plot_nearest == FALSE) {
-              plot_ij <- TRUE
-            } else if (plot_nearest == TRUE & nearest_cluster[cluster_i,] == cluster_j) {
-              plot_ij <- TRUE
-            } else {
-              plot_ij <- FALSE
-            }
-            if (plot_ij == TRUE) {
-              overlay_data <- rbind(overlay_data,
-                                    data.frame(cluster1 = cluster_i,
-                                               cluster2 = cluster_j,
-                                               centroid_x_1 = as.numeric(centroid_coords[centroid_coords$groups == cluster_i,
-                                                                                         "centroid_x"]),
-                                               centroid_y_1 = as.numeric(centroid_coords[centroid_coords$groups == cluster_i,
-                                                                                         "centroid_y"]),
-                                               centroid_x_2 = as.numeric(centroid_coords[centroid_coords$groups == cluster_j,
-                                                                                         "centroid_x"]),
-                                               centroid_y_2 = as.numeric(centroid_coords[centroid_coords$groups == cluster_j,
-                                                                                         "centroid_y"]),
-                                               mean_accuracy = accuracy_matrix[cluster_i, cluster_j]))
-            }
+    # Pair centroids with accuracy scores
+    overlay_data <- data.frame(cluster1 = NULL,
+                               cluster2 = NULL,
+                               centroid_x_1 = NULL,
+                               centroid_y_1 = NULL,
+                               centroid_x_2 = NULL,
+                               centroid_y_2 = NULL,
+                               mean_accuracy = NULL)
+    for (i in 1:(n_groups-1)) {
+      cluster_i <- group_names[i]
+      for (j in (i+1):n_groups) {
+        cluster_j <- group_names[j]
+        if (!is.na(accuracy_matrix[cluster_i, cluster_j])) {
+          if (plot_nearest == FALSE) {
+            plot_ij <- TRUE
+          } else if (plot_nearest == TRUE & nearest_cluster[cluster_i,] == cluster_j) {
+            plot_ij <- TRUE
+          } else {
+            plot_ij <- FALSE
+          }
+          if (plot_ij == TRUE) {
+            overlay_data <- rbind(overlay_data,
+                                  data.frame(cluster1 = cluster_i,
+                                             cluster2 = cluster_j,
+                                             centroid_x_1 = as.numeric(centroid_coords[centroid_coords$groups == cluster_i,
+                                                                                       "centroid_x"]),
+                                             centroid_y_1 = as.numeric(centroid_coords[centroid_coords$groups == cluster_i,
+                                                                                       "centroid_y"]),
+                                             centroid_x_2 = as.numeric(centroid_coords[centroid_coords$groups == cluster_j,
+                                                                                       "centroid_x"]),
+                                             centroid_y_2 = as.numeric(centroid_coords[centroid_coords$groups == cluster_j,
+                                                                                       "centroid_y"]),
+                                             mean_accuracy = accuracy_matrix[cluster_i, cluster_j]))
           }
         }
       }
-      .requirePackage("ggnewscale", source = "cran")
+    }
+    if (nrow(overlay_data) > 0) {
+      # Filter to existing accuracy scores
+      overlay_data <- overlay_data %>%
+        dplyr::filter(!is.na(mean_accuracy))
       # Add to plot
+      .requirePackage("ggnewscale", source = "cran")
       CHOIR_plot <- CHOIR_plot +
         ggnewscale::new_scale_colour() +
         ggplot2::geom_segment(data = overlay_data, ggplot2::aes(x = centroid_x_1,
@@ -416,6 +415,8 @@ plotCHOIR <- function(object,
                                                   "#1632FB","#021EA9","#000436"),
                                        breaks = seq(0,100,6)) +
         ggplot2::labs(color = "Mean prediction accuracy")
+    } else {
+      warning("No accuracy scores available to plot.")
     }
   }
 

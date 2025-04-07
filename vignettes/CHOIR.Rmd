@@ -158,9 +158,9 @@ plotCHOIR(object)
 This function will also overlay the prediction accuracy scores among neighboring pairs of clusters when `accuracy_scores` is set to `TRUE`.
 
 ```{r}
-#plotCHOIR(object,
-#          accuracy_scores = TRUE,
-#          plot_nearest = FALSE)
+plotCHOIR(object,
+          accuracy_scores = TRUE,
+          plot_nearest = FALSE)
 ```
 
 ------

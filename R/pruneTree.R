@@ -1811,22 +1811,23 @@ pruneTree <- function(object,
   rownames(final_clusters) <- final_clusters$CellID
   final_clusters <- final_clusters[cell_IDs, ]
 
+  # Get centroid distances of final clusters
+  final_cluster_distances <- .getCentroidDistance(reduction = `if`(reduction_provided == TRUE, reduction,
+                                                                   .retrieveData(object, key, "reduction", "P0_reduction")),
+                                                  clusters = child_IDs)
+
   # Pull out accuracy scores for comparisons between final clusters
   final_cluster_mean_accuracies <- matrix(NA, nrow = n_final_clusters, ncol = n_final_clusters)
-  final_cluster_distances <- matrix(NA, nrow = n_final_clusters, ncol = n_final_clusters)
   for (i in 1:(n_final_clusters-1)) {
     cluster_i_name <- cluster_key[cluster_key$CHOIR_ID == i, "Record_cluster_label"]
     for (j in (i+1):n_final_clusters) {
       cluster_j_name <- cluster_key[cluster_key$CHOIR_ID == j, "Record_cluster_label"]
-
       comparison_ij <- dplyr::filter(comparison_records,
                                      comparison == paste0(cluster_i_name, " vs. ", cluster_j_name) |
                                        comparison == paste0(cluster_j_name, " vs. ", cluster_i_name))
       if (nrow(comparison_ij) == 1) {
         final_cluster_mean_accuracies[i, j] <- comparison_ij$mean_accuracy
         final_cluster_mean_accuracies[j, i] <- comparison_ij$mean_accuracy
-        final_cluster_distances[i, j] <- comparison_ij$root_distance
-        final_cluster_distances[j, i] <- comparison_ij$root_distance
       }
     }
   }
