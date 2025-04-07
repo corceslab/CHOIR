@@ -698,6 +698,10 @@ getRecords <- function(object,
                           level,
                           compiled_labels) {
 
+  # Reformat level if necessary
+  if (level <= 0) {
+    level <- paste(rep(0, abs(level) + 1), collapse = "")
+  }
   # Create new list
   merge_group_labels <- vector(mode = "list", length(merge_groups))
 

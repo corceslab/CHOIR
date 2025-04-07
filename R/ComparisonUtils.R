@@ -855,7 +855,7 @@
     subtrees_remaining <- unique(new_permitted_comparisons$tree_name[new_permitted_comparisons$tree_name != "P0"])
     if (length(subtrees_remaining) >= 1) {
       names(clusters) <- cell_IDs
-      subtree_distances <- parallel::mclapply(subtrees_remaining, FUN = function(i) {
+      subtree_distances <- lapply(subtrees_remaining, FUN = function(i) {
         current_reduction <- .retrieveData(object,
                                            key,
                                            "reduction",
@@ -863,9 +863,7 @@
         current_distance <- .getCentroidDistance(reduction = current_reduction,
                                                  clusters = clusters[rownames(current_reduction)])
         return(current_distance)
-      },
-      mc.cores = n_cores,
-      mc.set.seed = TRUE)
+      })
       names(subtree_distances) <- subtrees_remaining
       subtree_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
         if (new_permitted_comparisons$tree_name[i] != "P0") {

@@ -872,19 +872,6 @@ pruneTree <- function(object,
                       # Add result to matrix
                       result_matrix[child1_name, child2_name] <- "split"
                       result_matrix[child2_name, child1_name] <- "split"
-                      # Add result to comparison records
-                      current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
-                      colnames(current_comparison) <- colnames(comparison_records)
-                      current_comparison <- data.frame(current_comparison)
-                      current_comparison$comparison <- paste0(child1_name, " vs. ", child2_name)
-                      current_comparison$cluster1_size <- length(child1_cells)
-                      current_comparison$cluster2_size <- length(child2_cells)
-                      current_comparison$root_distance <- NA
-                      current_comparison$subtree_distance <- NA
-                      current_comparison$connectivity <- NA
-                      current_comparison$decision <- "split: not among permitted comparisons"
-                      current_comparison$time <- round(difftime(Sys.time(), comparison_start_time, units = "secs"), 2)
-                      comparison_records <- rbind(comparison_records, current_comparison)
                     } else {
                       comparison_start_time <- Sys.time()
                       # Check whether clusters have been previously compared
@@ -1623,7 +1610,7 @@ pruneTree <- function(object,
       parent_IDs <- cluster_tree[, lvl-1]
     } else {
       # Continue until all clusters have been compared
-      parent_IDs <- rep(paste0("P0_L", paste(rep(0, (((-1)*lvl) + 1)), collapse = ""), "_1"), length(cell_IDs))
+      parent_IDs <- rep(paste0("P0_L", paste(rep(0, (((-1)*lvl) + 2)), collapse = ""), "_1"), length(cell_IDs))
     }
     # Record stepwise changes
     stepwise_child_IDs_df <- data.frame(stepwise_cluster_IDs = child_IDs)

@@ -1763,7 +1763,7 @@ combineTrees <- function(object,
       parent_IDs <- cluster_tree[, lvl-1]
     } else {
       # Continue until all clusters have been compared
-      parent_IDs <- rep(paste0("P0_L", paste(rep(0, (((-1)*lvl) + 1)), collapse = ""), "_1"), length(cell_IDs))
+      parent_IDs <- rep(paste0("P0_L", paste(rep(0, (((-1)*lvl) + 2)), collapse = ""), "_1"), length(cell_IDs))
     }
     # Record stepwise changes
     stepwise_child_IDs_df <- data.frame(stepwise_cluster_IDs = child_IDs)
