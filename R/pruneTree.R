@@ -786,7 +786,6 @@ pruneTree <- function(object,
                                                    collect_all_metrics = collect_all_metrics,
                                                    distance_awareness = distance_awareness,
                                                    n_cores = n_cores)
-  print(permitted_comparisons)
 
   # Iterate through levels of clustering tree
   while (complete == FALSE) {
@@ -816,7 +815,6 @@ pruneTree <- function(object,
         }
         if (dplyr::n_distinct(cluster_tree[parent_inds, lvl+1]) == 1 & # (Check that previous level was originally 1 cluster)
             check_identical == TRUE) {
-          print(paste0("Skipped parent ", parent_cluster))
           # Progress
           if (lvl >= 0) {
             tick_amount <- 0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
@@ -1788,8 +1786,6 @@ pruneTree <- function(object,
                                                         new_clusters = new_clusters,
                                                         permitted_comparisons = permitted_comparisons,
                                                         n_cores = n_cores)
-      print(new_clusters)
-      print(permitted_comparisons)
     }
     # Increment level
     lvl <- lvl - 1
@@ -1817,6 +1813,9 @@ pruneTree <- function(object,
   final_cluster_distances <- .getCentroidDistance(reduction = `if`(reduction_provided == TRUE, reduction,
                                                                    .retrieveData(object, key, "reduction", "P0_reduction")),
                                                   clusters = child_IDs)
+  final_cluster_distances <- final_cluster_distances[cluster_key$Record_cluster_label, cluster_key$Record_cluster_label]
+  rownames(final_cluster_distances) <- 1:n_final_clusters
+  colnames(final_cluster_distances) <- 1:n_final_clusters
 
   # Pull out accuracy scores for comparisons between final clusters
   final_cluster_mean_accuracies <- matrix(NA, nrow = n_final_clusters, ncol = n_final_clusters)

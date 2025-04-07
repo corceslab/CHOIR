@@ -351,6 +351,7 @@ plotCHOIR <- function(object,
                                        key = key,
                                        type = "records",
                                        name = paste0("CHOIR_clusters_", alpha, "_distances"))
+      diag(distance_matrix) <- NA
       nearest_cluster <- data.frame(neighbor = apply(distance_matrix, 1,
                                                      FUN = function(x) {
                                                        which(x == min(x, na.rm = TRUE))
