@@ -1796,28 +1796,33 @@ pruneTree <- function(object,
   rownames(final_clusters) <- final_clusters$CellID
   final_clusters <- final_clusters[cell_IDs, ]
 
-  # Get centroid distances of final clusters
-  final_cluster_distances <- .getCentroidDistance(reduction = `if`(reduction_provided == TRUE, reduction,
-                                                                   .retrieveData(object, key, "reduction", "P0_reduction")),
-                                                  clusters = child_IDs)
-  final_cluster_distances <- final_cluster_distances[cluster_key$Record_cluster_label, cluster_key$Record_cluster_label]
-  rownames(final_cluster_distances) <- 1:n_final_clusters
-  colnames(final_cluster_distances) <- 1:n_final_clusters
+  if (dplyr::n_distinct(child_IDs) > 1) {
+    # Get centroid distances of final clusters
+    final_cluster_distances <- .getCentroidDistance(reduction = `if`(reduction_provided == TRUE, reduction,
+                                                                     .retrieveData(object, key, "reduction", "P0_reduction")),
+                                                    clusters = child_IDs)
+    final_cluster_distances <- final_cluster_distances[cluster_key$Record_cluster_label, cluster_key$Record_cluster_label]
+    rownames(final_cluster_distances) <- 1:n_final_clusters
+    colnames(final_cluster_distances) <- 1:n_final_clusters
 
-  # Pull out accuracy scores for comparisons between final clusters
-  final_cluster_mean_accuracies <- matrix(NA, nrow = n_final_clusters, ncol = n_final_clusters)
-  for (i in 1:(n_final_clusters-1)) {
-    cluster_i_name <- cluster_key[cluster_key$CHOIR_ID == i, "Record_cluster_label"]
-    for (j in (i+1):n_final_clusters) {
-      cluster_j_name <- cluster_key[cluster_key$CHOIR_ID == j, "Record_cluster_label"]
-      comparison_ij <- dplyr::filter(comparison_records,
-                                     comparison == paste0(cluster_i_name, " vs. ", cluster_j_name) |
-                                       comparison == paste0(cluster_j_name, " vs. ", cluster_i_name))
-      if (nrow(comparison_ij) == 1) {
-        final_cluster_mean_accuracies[i, j] <- comparison_ij$mean_accuracy
-        final_cluster_mean_accuracies[j, i] <- comparison_ij$mean_accuracy
+    # Pull out accuracy scores for comparisons between final clusters
+    final_cluster_mean_accuracies <- matrix(NA, nrow = n_final_clusters, ncol = n_final_clusters)
+    for (i in 1:(n_final_clusters-1)) {
+      cluster_i_name <- cluster_key[cluster_key$CHOIR_ID == i, "Record_cluster_label"]
+      for (j in (i+1):n_final_clusters) {
+        cluster_j_name <- cluster_key[cluster_key$CHOIR_ID == j, "Record_cluster_label"]
+        comparison_ij <- dplyr::filter(comparison_records,
+                                       comparison == paste0(cluster_i_name, " vs. ", cluster_j_name) |
+                                         comparison == paste0(cluster_j_name, " vs. ", cluster_i_name))
+        if (nrow(comparison_ij) == 1) {
+          final_cluster_mean_accuracies[i, j] <- comparison_ij$mean_accuracy
+          final_cluster_mean_accuracies[j, i] <- comparison_ij$mean_accuracy
+        }
       }
     }
+    # Add to object
+    object <- .storeData(object, key, "records", final_cluster_mean_accuracies, paste0("CHOIR_clusters_", alpha, "_accuracies"))
+    object <- .storeData(object, key, "records", final_cluster_distances, paste0("CHOIR_clusters_", alpha, "_distances"))
   }
 
   # Add to object
@@ -1826,8 +1831,6 @@ pruneTree <- function(object,
                        paste0("CHOIR_clusters_", alpha))
   object <- .storeData(object, key, "clusters", final_clusters, paste0("CHOIR_clusters_", alpha))
   object <- .storeData(object, key, "clusters", stepwise_cluster_IDs, paste0("stepwise_clusters_", alpha))
-  object <- .storeData(object, key, "records", final_cluster_mean_accuracies, paste0("CHOIR_clusters_", alpha, "_accuracies"))
-  object <- .storeData(object, key, "records", final_cluster_distances, paste0("CHOIR_clusters_", alpha, "_distances"))
 
   # -------------------------------------------------------------------------
   # Report results & warnings
