@@ -729,9 +729,6 @@ pruneTree <- function(object,
     distance_records <- NULL
   }
 
-  # Record of stepwise cluster IDs
-  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs)
-
   # Record underclustering checks
   checked_for_underclustering <- c()
   results_of_underclustering_check <- c()
@@ -774,6 +771,11 @@ pruneTree <- function(object,
   # Progress markers
   progress_markers <- c(10,20,30,40,50,60,70,80,90)
 
+  # Record of stepwise cluster IDs
+  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs,
+                                     starting_clusters = child_IDs)
+  colnames(stepwise_cluster_IDs)[2] <- paste0("stepwise_cluster_ID_", alpha, "_L", n_levels)
+
   # Create list of permitted comparisons
   permitted_comparisons <- .getPermittedComparisons(object = object,
                                                    key = key,
@@ -784,6 +786,7 @@ pruneTree <- function(object,
                                                    collect_all_metrics = collect_all_metrics,
                                                    distance_awareness = distance_awareness,
                                                    n_cores = n_cores)
+  print(permitted_comparisons)
 
   # Iterate through levels of clustering tree
   while (complete == FALSE) {
@@ -813,6 +816,7 @@ pruneTree <- function(object,
         }
         if (dplyr::n_distinct(cluster_tree[parent_inds, lvl+1]) == 1 & # (Check that previous level was originally 1 cluster)
             check_identical == TRUE) {
+          print(paste0("Skipped parent ", parent_cluster))
           # Progress
           if (lvl >= 0) {
             tick_amount <- 0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
@@ -870,6 +874,19 @@ pruneTree <- function(object,
                       # Add result to matrix
                       result_matrix[child1_name, child2_name] <- "split"
                       result_matrix[child2_name, child1_name] <- "split"
+                      # Add result to comparison records
+                      current_comparison <- matrix(rep(NA, ncol(comparison_records)), nrow = 1, ncol = ncol(comparison_records))
+                      colnames(current_comparison) <- colnames(comparison_records)
+                      current_comparison <- data.frame(current_comparison)
+                      current_comparison$comparison <- paste0(child1_name, " vs. ", child2_name)
+                      current_comparison$cluster1_size <- length(child1_cells)
+                      current_comparison$cluster2_size <- length(child2_cells)
+                      current_comparison$root_distance <- NA
+                      current_comparison$subtree_distance <- NA
+                      current_comparison$connectivity <- NA
+                      current_comparison$decision <- "split: not among permitted comparisons"
+                      current_comparison$time <- round(difftime(Sys.time(), comparison_start_time, units = "secs"), 2)
+                      comparison_records <- rbind(comparison_records, current_comparison)
                     } else {
                       comparison_start_time <- Sys.time()
                       # Check whether clusters have been previously compared
@@ -897,18 +914,18 @@ pruneTree <- function(object,
                         distance_conflict <- FALSE
                         if (distance_awareness < Inf & !is.null(distance_records)) {
                           if (child1_name %in% distance_records$cluster_name & child2_name %in% distance_records$cluster_name) {
-                            if (tree_name == "P0") {
-                              previous_P0_distance <- max(dplyr::filter(distance_records,
-                                                                        cluster_name == child1_name |
-                                                                          cluster_name == child2_name)$min_root_distance, na.rm = TRUE)
-                              if (P0_distance > (previous_P0_distance*distance_awareness)) {
-                                distance_conflict <- TRUE
-                              }
-                            } else if (tree_name != "P0" & !is.na(P_i_distance)) {
+                            if (tree_name != "P0" & !is.na(P_i_distance)) {
                               previous_P_i_distance <- max(dplyr::filter(distance_records,
                                                                          cluster_name == child1_name |
                                                                            cluster_name == child2_name)$min_subtree_distance, na.rm = TRUE)
                               if (P_i_distance > (previous_P_i_distance*distance_awareness)) {
+                                distance_conflict <- TRUE
+                              }
+                            } else {
+                              previous_P0_distance <- max(dplyr::filter(distance_records,
+                                                                        cluster_name == child1_name |
+                                                                          cluster_name == child2_name)$min_root_distance, na.rm = TRUE)
+                              if (P0_distance > (previous_P0_distance*distance_awareness)) {
                                 distance_conflict <- TRUE
                               }
                             }
@@ -1603,22 +1620,6 @@ pruneTree <- function(object,
       }
     }
 
-    # If there are new clusters, edit list of permitted comparisons
-    if (length(new_clusters) > 0) {
-      permitted_comparisons <- .getPermittedComparisons(object = object,
-                                                       key = key,
-                                                       clusters = child_IDs,
-                                                       cell_IDs = cell_IDs,
-                                                       nn_matrices = nn_matrices,
-                                                       min_connections = min_connections,
-                                                       collect_all_metrics = collect_all_metrics,
-                                                       distance_awareness = distance_awareness,
-                                                       new_clusters = new_clusters,
-                                                       permitted_comparisons = permitted_comparisons,
-                                                       n_cores = n_cores)
-      new_clusters <- c()
-    }
-
     # Update parent IDs
     if (lvl > 1) {
       # Move up clustering tree
@@ -1760,20 +1761,6 @@ pruneTree <- function(object,
                                 " : Checked ", u_clust, " of ", length(clusters_to_check), " for underclustering."))
             }
           }
-          # If there are new clusters, edit list of permitted comparisons
-          if (length(new_clusters) > 0) {
-            permitted_comparisons <- .getPermittedComparisons(object = object,
-                                                             key = key,
-                                                             clusters = child_IDs,
-                                                             cell_IDs = cell_IDs,
-                                                             nn_matrices = nn_matrices,
-                                                             min_connections = min_connections,
-                                                             collect_all_metrics = collect_all_metrics,
-                                                             distance_awareness = distance_awareness,
-                                                             new_clusters = new_clusters,
-                                                             permitted_comparisons = permitted_comparisons,
-                                                             n_cores = n_cores)
-          }
         } else {
           complete <- TRUE
           pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"), " : Completed: all clusters compared."))
@@ -1788,6 +1775,22 @@ pruneTree <- function(object,
                           dplyr::n_distinct(stepwise_cluster_IDs[, ncol(stepwise_cluster_IDs)]), " clusters remaining."))
         underclustering_buffer <- FALSE
       }
+    }
+    # If there are new clusters, edit list of permitted comparisons
+    if (length(new_clusters) > 0) {
+      permitted_comparisons <- .getPermittedComparisons(object = object,
+                                                        key = key,
+                                                        clusters = child_IDs,
+                                                        cell_IDs = cell_IDs,
+                                                        nn_matrices = nn_matrices,
+                                                        min_connections = min_connections,
+                                                        collect_all_metrics = collect_all_metrics,
+                                                        distance_awareness = distance_awareness,
+                                                        new_clusters = new_clusters,
+                                                        permitted_comparisons = permitted_comparisons,
+                                                        n_cores = n_cores)
+      print(new_clusters)
+      print(permitted_comparisons)
     }
     # Increment level
     lvl <- lvl - 1

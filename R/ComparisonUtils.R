@@ -841,13 +841,14 @@
                                     "reduction",
                                     "P0_reduction")
       root_distances <- .getCentroidDistance(P0_reduction,
-                                                      clusters)
+                                             clusters)
     }
-    root_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
-      root_distances[new_permitted_comparisons$cluster1[i], new_permitted_comparisons$cluster2[i]]
-    },
-    mc.cores = n_cores,
-    mc.set.seed = TRUE)
+    root_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons),
+                                             FUN = function(i) {
+                                               root_distances[new_permitted_comparisons$cluster1[i], new_permitted_comparisons$cluster2[i]]
+                                             },
+                                             mc.cores = n_cores,
+                                             mc.set.seed = TRUE)
     new_permitted_comparisons$root_distance <- unlist(root_distance_list)
 
     # Subtree distance
