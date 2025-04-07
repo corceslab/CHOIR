@@ -1271,8 +1271,8 @@ combineTrees <- function(object,
                             rownames(distance_records) <- distance_records$cluster_name
                             distance_records <- .addDistance(cluster1_name = child1_name,
                                                              cluster2_name = child2_name,
-                                                             P0_distance = distance_check[["P0_distance"]],
-                                                             P_i_distance = distance_check[["P_i_distance"]],
+                                                             P0_distance = P0_distance,
+                                                             P_i_distance = NA,
                                                              max_p = comparison_output[["max_p"]],
                                                              distance_records = distance_records)
                           }
