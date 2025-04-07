@@ -1761,7 +1761,7 @@ pruneTree <- function(object,
       }
     }
     # If there are new clusters, edit list of permitted comparisons
-    if (length(new_clusters) > 0) {
+    if (length(new_clusters) > 0 & dplyr::n_distinct(child_IDs) > 1) {
       permitted_comparisons <- .getPermittedComparisons(object = object,
                                                         key = key,
                                                         clusters = child_IDs,
