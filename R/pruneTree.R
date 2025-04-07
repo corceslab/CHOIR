@@ -1078,6 +1078,7 @@ pruneTree <- function(object,
           if (sum(result_matrix == "merge", na.rm = TRUE) == n_child_clusters*(n_child_clusters - 1)) {
             # Update child IDs
             child_IDs[parent_inds] <- parent_IDs[parent_inds]
+            new_clusters <- c(new_clusters, unique(parent_IDs[parent_inds]))
           } else {
             # For each child
             for (child in 1:n_child_clusters) {
@@ -1404,11 +1405,10 @@ pruneTree <- function(object,
             compiled_cluster_labels <- new_labels_list[["compiled_cluster_labels"]]
             merge_group_labels <- new_labels_list[["merge_group_labels"]]
 
-            new_clusters <- c(new_clusters, unique(unlist(new_labels_list[["merge_group_labels"]]))[!(unique(unlist(new_labels_list[["merge_group_labels"]])) %in% unique(child_IDs))])
-
             # Update child_IDs
             if (all_merge == TRUE) {
               child_IDs[parent_inds] <- parent_IDs[parent_inds]
+              new_clusters <- c(new_clusters, unique(parent_IDs[parent_inds]))
             } else {
               # Make key
               merge_group_key <- data.frame(old = unique_child_IDs,
@@ -1419,11 +1419,11 @@ pruneTree <- function(object,
                   merge_group_key[merge_group_list[[m_g]],"new"] <- merge_group_labels[[m_g]]
                 }
               }
-
               new_cluster_labels <- child_IDs[parent_inds]
               for (child in 1:n_child_clusters) {
                 new_cluster_labels[new_cluster_labels == unique_child_IDs[child]] <- merge_group_key[unique_child_IDs[child], "new"][1]
               }
+              new_clusters <- c(new_clusters, unique(new_cluster_labels)[!(unique(new_cluster_labels) %in% unique(child_IDs[parent_inds]))])
               child_IDs[parent_inds] <- new_cluster_labels
             }
           }
@@ -1614,7 +1614,6 @@ pruneTree <- function(object,
                                               paste0(merge_pair$cluster1[1], " vs. ",
                                                      merge_pair$cluster2[1]))] <- "merge: adjustment"
           n_current_clusters <- n_current_clusters - 1
-
           new_clusters <- c(new_clusters, merged_label)
         }
       }
