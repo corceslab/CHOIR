@@ -902,14 +902,14 @@ pruneTree <- function(object,
                             if (tree_name != "P0" & !is.na(P_i_distance)) {
                               previous_P_i_distance <- max(dplyr::filter(distance_records,
                                                                          cluster_name == child1_name |
-                                                                           cluster_name == child2_name)$min_subtree_distance, na.rm = TRUE)
+                                                                           cluster_name == child2_name)$min_subtree_distance)
                               if (P_i_distance > (previous_P_i_distance*distance_awareness)) {
                                 distance_conflict <- TRUE
                               }
                             } else {
                               previous_P0_distance <- max(dplyr::filter(distance_records,
                                                                         cluster_name == child1_name |
-                                                                          cluster_name == child2_name)$min_root_distance, na.rm = TRUE)
+                                                                          cluster_name == child2_name)$min_root_distance)
                               if (P0_distance > (previous_P0_distance*distance_awareness)) {
                                 distance_conflict <- TRUE
                               }

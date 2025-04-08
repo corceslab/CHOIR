@@ -734,7 +734,8 @@ combineTrees <- function(object,
       dplyr::rename(min_root_distance2 = min_root_distance) %>%
       dplyr::filter(is.na(min_root_distance1) |
                       is.na(min_root_distance2) |
-                      (root_distance > distance_awareness * min_root_distance1 & root_distance > distance_awareness * min_root_distance2)) %>%
+                      root_distance <= distance_awareness * min_root_distance1 |
+                      root_distance <= distance_awareness * min_root_distance2) %>%
       dplyr::select(cluster1, cluster2, tree_name, connectivity, root_distance, subtree_distance)
   }
 
@@ -1233,7 +1234,7 @@ combineTrees <- function(object,
                           if (child1_name %in% distance_records$cluster_name & child2_name %in% distance_records$cluster_name) {
                             previous_P0_distance <- max(dplyr::filter(distance_records,
                                                                       cluster_name == child1_name |
-                                                                        cluster_name == child2_name)$min_root_distance, na.rm = TRUE)
+                                                                        cluster_name == child2_name)$min_root_distance)
                             if (P0_distance > (previous_P0_distance*distance_awareness)) {
                               distance_conflict <- TRUE
                             }
