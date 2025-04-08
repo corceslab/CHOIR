@@ -17,7 +17,6 @@ buildTree(
   min_accuracy = 0.5,
   min_connections = 1,
   max_repeat_errors = 20,
-  distance_approx = TRUE,
   sample_max = Inf,
   downsampling_rate = "auto",
   min_reads = NULL,
@@ -135,14 +134,6 @@ setting this parameter to lower values (especially 0) may result in
 underclustering due to a small number of intermediate cells. Setting this
 parameter to higher values may lead to instances of overclustering and is not
 recommended.}
-
-\item{distance_approx}{A Boolean value indicating whether or not to use
-approximate distance calculations. Defaults to \code{TRUE}, which will use
-centroid-based distances. Setting distance approximation to \code{FALSE} will
-substantially increase the computational time and memory required,
-particularly for large datasets. Using approximated distances (\code{TRUE})
-rather than absolute distances (\code{FALSE}) is unlikely to have a
-meaningful effect on the distance thresholds imposed by CHOIR.}
 
 \item{sample_max}{A numerical value indicating the maximum number of cells to
 be sampled per cluster to train/test each random forest classifier. Defaults

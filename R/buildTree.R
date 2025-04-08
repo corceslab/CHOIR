@@ -84,13 +84,6 @@
 #' underclustering due to a small number of intermediate cells. Setting this
 #' parameter to higher values may lead to instances of overclustering and is not
 #' recommended.
-#' @param distance_approx A Boolean value indicating whether or not to use
-#' approximate distance calculations. Defaults to \code{TRUE}, which will use
-#' centroid-based distances. Setting distance approximation to \code{FALSE} will
-#' substantially increase the computational time and memory required,
-#' particularly for large datasets. Using approximated distances (\code{TRUE})
-#' rather than absolute distances (\code{FALSE}) is unlikely to have a
-#' meaningful effect on the distance thresholds imposed by CHOIR.
 #' @param sample_max A numerical value indicating the maximum number of cells to
 #' be sampled per cluster to train/test each random forest classifier. Defaults
 #' to \code{Inf} (infinity), which does not cap the number of cells used, so all
@@ -298,7 +291,6 @@ buildTree <- function(object,
                       min_accuracy = 0.5,
                       min_connections = 1,
                       max_repeat_errors = 20,
-                      distance_approx = TRUE,
                       sample_max = Inf,
                       downsampling_rate = "auto",
                       min_reads = NULL,
@@ -401,7 +393,6 @@ buildTree <- function(object,
   # Get cell IDs
   cell_IDs <- .getCellIDs(object, use_assay = use_assay)
 
-  .validInput(distance_approx, "distance_approx", list(length(cell_IDs), object, n_modalities))
   .validInput(ArchR_depthcol, "ArchR_depthcol", list(object, n_modalities))
   .validInput(reduction, "reduction", list("buildTree", object))
   .validInput(var_features, "var_features", reduction)
@@ -605,7 +596,6 @@ buildTree <- function(object,
                        "\n - Minimum accuracy: ", min_accuracy,
                        "\n - Minimum connections: ", min_connections,
                        "\n - Maximum repeated errors: ", max_repeat_errors,
-                       "\n - Distance approximation: ", distance_approx,
                        "\n - Maximum cells sampled: ", sample_max,
                        "\n - Downsampling rate: ", round(downsampling_rate, 4),
                        "\n - Minimum reads: ", `if`(is.null(min_reads),
@@ -691,67 +681,21 @@ buildTree <- function(object,
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL
 
   # ---------------------------------------------------------------------------
-  # Step 2: Find nearest neighbors & calculate distance matrix for dimensionality reduction
+  # Step 2: Find nearest neighbors
   # ---------------------------------------------------------------------------
   if (verbose & max_clusters == "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/7) Generating initial nearest neighbors graph..")
   if (verbose & max_clusters != "auto") message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/5) Generating initial nearest neighbors graph..")
 
-  # 1 vs. multiple dimensionality reductions
-  if (n_modalities < 2 | methods::is(object, "ArchRProject")) {
-    # Number & names of cells
-    n_cells <- nrow(P0_dim_reduction[["reduction_coords"]])
-    cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]])
-
-    # Find neighbors
-    if (is.null(neighbor_dims)) {
-      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]]),
-                                                               neighbor_params))
-    } else {
-      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]][, neighbor_dims]),
-                                                               neighbor_params))
-    }
-
-    # Dimensionality reduction distance matrix
-    if (distance_approx == FALSE) {
-      P0_reduction_dist <- stats::dist(P0_dim_reduction[["reduction_coords"]])
-      object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
-    }
+  # Number & names of cells
+  n_cells <- nrow(P0_dim_reduction[["reduction_coords"]])
+  cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]])
+  # Find neighbors
+  if (is.null(neighbor_dims)) {
+    P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]]),
+                                                             neighbor_params))
   } else {
-    # Number & names of cells
-    n_cells <- nrow(P0_dim_reduction[["reduction_coords"]][[1]])
-    cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
-    # Prep for finding neighbors
-    tmp <- matrix(stats::rnorm(nrow(P0_dim_reduction[["reduction_coords"]][[1]]) * 3, 10), ncol = nrow(P0_dim_reduction[["reduction_coords"]][[1]]), nrow = 3)
-    colnames(tmp) <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
-    rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
-    tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
-    dim_list = vector("list", length = n_modalities)
-    for (i in 1:n_modalities) {
-      tmp_seurat[[paste0("DR_", i)]] <- Seurat::CreateDimReducObject(embeddings = P0_dim_reduction[["reduction_coords"]][[i]],
-                                                                     key = paste0("DR_", i, "_"), assay = 'tmp')
-      if (is.null(neighbor_dims)) {
-        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
-      } else {
-        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]][, neighbor_dims])
-      }
-    }
-    # Find neighbors
-    P0_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
-                                                                            "reduction.list" = list(paste0("DR_", seq(1, n_modalities))),
-                                                                            "dim.list" = dim_list,
-                                                                            "knn.graph.name" = "nn",
-                                                                            "snn.graph.name" = "snn"),
-                                                                       neighbor_params))@graphs
-    # Dimensionality reduction distance matrix
-    if (distance_approx == FALSE) {
-      P0_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                  reduction_list = list(paste0("DR_", seq(1, n_modalities))),
-                                                  dim_list = dim_list)
-      object <- .storeData(object, key, "reduction", P0_reduction_dist, "P0_reduction_dist")
-    }
-    # Clean up
-    rm(tmp)
-    rm(tmp_seurat)
+    P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]][, neighbor_dims]),
+                                                             neighbor_params))
   }
   # Store output in object
   object <- .storeData(object, key, "graph", P0_nearest_neighbors[["nn"]], "P0_graph_nn")
@@ -790,9 +734,7 @@ buildTree <- function(object,
   if (max_clusters == "auto") {
     if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 5/7) Building root clustering tree..")
     P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
-                             dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
-                             reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
-                             distance_approx = distance_approx,
+                             reduction = P0_dim_reduction[["reduction_coords"]],
                              tree_type = "silhouette",
                              cluster_params = cluster_params,
                              starting_resolution = P0_starting_resolution[["starting_resolution"]],
@@ -814,9 +756,7 @@ buildTree <- function(object,
     # Optimize tree
     if (ncol(P0_tree) >= 2) {
       P0_tree <- .optimizeTree(cluster_tree = P0_tree,
-                               dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
-                               reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
-                               distance_approx = distance_approx)
+                               reduction = P0_dim_reduction[["reduction_coords"]])
       P0_tree$CellID <- rownames(P0_tree)
       P0_tree <- P0_tree[match(cell_IDs, P0_tree$CellID), ]
       P0_tree <- dplyr::select(P0_tree, -CellID)
@@ -853,9 +793,7 @@ buildTree <- function(object,
     # Optimize tree
     if (ncol(full_tree) >= 2) {
       full_tree <- .optimizeTree(cluster_tree = full_tree,
-                                 dist_matrix = `if`(distance_approx == FALSE, P0_reduction_dist, NULL),
-                                 reduction = `if`(distance_approx == TRUE, P0_dim_reduction[["reduction_coords"]], NULL),
-                                 distance_approx = distance_approx)
+                                 reduction = P0_dim_reduction[["reduction_coords"]])
       full_tree$CellID <- rownames(full_tree)
       full_tree <- full_tree[match(cell_IDs, full_tree$CellID), ]
       full_tree <- dplyr::select(full_tree, -CellID)
@@ -871,9 +809,6 @@ buildTree <- function(object,
   # Clean up
   rm(P0_nearest_neighbors)
   rm(P0_starting_resolution)
-  if (distance_approx == FALSE) {
-    rm(P0_reduction_dist)
-  }
 
   # ---------------------------------------------------------------------------
   # Step 5: Subcluster tree
@@ -1027,7 +962,7 @@ buildTree <- function(object,
         percent_done <- percent_done + tick_amount
 
         # ---------------------------------------------------------------------
-        # Step 5B: Recalculate nearest neighbors & distance matrix for dimensionality reduction
+        # Step 5B: Recalculate nearest neighbors
         # ---------------------------------------------------------------------
 
         # 1 vs. multiple dimensionality reductions
@@ -1039,12 +974,6 @@ buildTree <- function(object,
           } else {
             P_i_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P_i_dim_reduction[["reduction_coords"]][, neighbor_dims]),
                                                                       neighbor_params))
-          }
-
-          # Dimensionality reduction distance matrix
-          if (distance_approx == FALSE) {
-            P_i_reduction_dist <- stats::dist(P_i_dim_reduction[["reduction_coords"]])
-            object <- .storeData(object, key, "reduction", P_i_reduction_dist, paste0("P", i, "_reduction_dist"))
           }
         } else {
           # Prep for finding neighbors
@@ -1069,13 +998,6 @@ buildTree <- function(object,
                                                                                    "knn.graph.name" = "nn",
                                                                                    "snn.graph.name" = "snn"),
                                                                               neighbor_params))@graphs
-          # Dimensionality reduction distance matrix
-          if (distance_approx == FALSE) {
-            P_i_reduction_dist <- .getMultiModalDistance(tmp_seurat,
-                                                         reduction_list = list(paste0("DR_", seq(1, n_modalities))),
-                                                         dim_list = dim_list)
-            object <- .storeData(object, key, "reduction", P_i_reduction_dist, paste0("P", i, "_reduction_dist"))
-          }
           # Clean up
           rm(tmp)
           rm(tmp_seurat)
@@ -1108,9 +1030,7 @@ buildTree <- function(object,
                                                             verbose = FALSE)
           # Maximize silhouette score
           P_i_tree_list <- .getTree(snn_matrix = P_i_nearest_neighbors[["snn"]],
-                                    dist_matrix = `if`(distance_approx == FALSE, P_i_reduction_dist, NULL),
-                                    reduction = `if`(distance_approx == TRUE, P_i_dim_reduction[["reduction_coords"]], NULL),
-                                    distance_approx = distance_approx,
+                                    reduction = P_i_dim_reduction[["reduction_coords"]],
                                     tree_type = "silhouette",
                                     cluster_params = cluster_params,
                                     starting_resolution = P_i_starting_resolution[["starting_resolution"]],
@@ -1131,9 +1051,7 @@ buildTree <- function(object,
           # Optimize tree
           if (ncol(P_i_tree) >= 2) {
             P_i_tree <- .optimizeTree(cluster_tree = P_i_tree,
-                                      dist_matrix = `if`(distance_approx == FALSE, P_i_reduction_dist, NULL),
-                                      reduction = `if`(distance_approx == TRUE, P_i_dim_reduction[["reduction_coords"]], NULL),
-                                      distance_approx = distance_approx)
+                                      reduction = P_i_dim_reduction[["reduction_coords"]])
           }
 
           # Reassign column names
@@ -1176,10 +1094,8 @@ buildTree <- function(object,
             # Build subtree
             P_j_tree_list <- .getTree(snn_matrix = current_snn,
                                       nn_matrix = current_nn,
-                                      dist_matrix = `if`(distance_approx == FALSE, P_i_reduction_dist[cell_IDs_j, cell_IDs_j], NULL),
-                                      reduction = `if`(distance_approx == TRUE, P_i_dim_reduction[["reduction_coords"]][cell_IDs_j,], NULL),
+                                      reduction = P_i_dim_reduction[["reduction_coords"]][cell_IDs_j,],
                                       input_matrix = current_input_matrix,
-                                      distance_approx = distance_approx,
                                       tree_type = "subtree",
                                       cluster_params = cluster_params,
                                       min_cluster_depth = min_cluster_depth,
@@ -1209,9 +1125,7 @@ buildTree <- function(object,
             # Optimize tree
             if (ncol(P_j_tree) >= 2) {
               P_j_tree <- .optimizeTree(cluster_tree = P_j_tree,
-                                        dist_matrix = `if`(distance_approx == FALSE, P_i_reduction_dist[cell_IDs_j, cell_IDs_j], NULL),
-                                        reduction = `if`(distance_approx == TRUE, P_i_dim_reduction[["reduction_coords"]][cell_IDs_j, ], NULL),
-                                        distance_approx = distance_approx)
+                                        reduction = P_i_dim_reduction[["reduction_coords"]][cell_IDs_j, ])
             }
 
             # Reassign column names
@@ -1356,7 +1270,6 @@ buildTree <- function(object,
                          "min_accuracy" = min_accuracy,
                          "min_connections" = min_connections,
                          "max_repeat_errors" = max_repeat_errors,
-                         "distance_approx"  = distance_approx,
                          "sample_max" = sample_max,
                          "downsampling_rate" = downsampling_rate,
                          "min_reads" = min_reads,

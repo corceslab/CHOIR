@@ -98,7 +98,6 @@ classifiers trained on randomly permuted cluster labels.</p>
 <span>  min_accuracy <span class="op">=</span> <span class="fl">0.5</span>,</span>
 <span>  min_connections <span class="op">=</span> <span class="fl">1</span>,</span>
 <span>  max_repeat_errors <span class="op">=</span> <span class="fl">20</span>,</span>
-<span>  distance_approx <span class="op">=</span> <span class="cn">TRUE</span>,</span>
 <span>  distance_awareness <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  collect_all_metrics <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sample_max <span class="op">=</span> <span class="cn">Inf</span>,</span>
@@ -114,6 +113,7 @@ classifiers trained on randomly permuted cluster labels.</p>
 <span>  batch_correction_method <span class="op">=</span> <span class="st">"none"</span>,</span>
 <span>  batch_correction_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  batch_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_n_batch <span class="op">=</span> <span class="cn">Inf</span>,</span>
 <span>  neighbor_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span><span class="op">)</span>,</span>
 <span>  cluster_params <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/list.html" class="external-link">list</a></span><span class="op">(</span>algorithm <span class="op">=</span> <span class="fl">1</span>, group.singletons <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span>,</span>
 <span>  use_assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -244,16 +244,6 @@ parameter to higher values may lead to instances of overclustering and is not
 recommended.</p></dd>
 
 
-<dt>distance_approx</dt>
-<dd><p>A Boolean value indicating whether or not to use
-approximate distance calculations. Defaults to <code>TRUE</code>, which will use
-centroid-based distances. Setting distance approximation to <code>FALSE</code> will
-substantially increase the computational time and memory required,
-particularly for large datasets. Using approximated distances (<code>TRUE</code>)
-rather than absolute distances (<code>FALSE</code>) is unlikely to have a
-meaningful effect on the distance thresholds imposed by CHOIR.</p></dd>
-
-
 <dt>distance_awareness</dt>
 <dd><p>A numerical value representing the distance
 threshold above which a cluster will not merge with another cluster and
@@ -265,7 +255,7 @@ distinguishable neighbor. This threshold allows CHOIR to avoid running the
 full permutation test comparison for clusters that are highly likely to be
 distinct, saving computational time. To omit all distance calculations and
 perform permutation testing on all comparisons, set this parameter to
-<code>FALSE</code>. Setting this parameter to <code>FALSE</code> or increasing the input
+<code>Inf</code>. Setting this parameter to <code>Inf</code> or increasing the input
 value will increase the number of permutation test comparisons run and, thus,
 the computational time. In rare cases, very small distant clusters may be
 erroneously merged when distance thresholds are not used. The intent of this
@@ -411,19 +401,34 @@ specifies the name of the column in the input object metadata containing the
 batch labels. Defaults to <code>NULL</code>.</p></dd>
 
 
+<dt>max_n_batch</dt>
+<dd><p>A numeric value used if applying batch correction,
+indicating the maximum number batches to use in each permutation test.
+Batches are selected in order from largest to smallest. Defaults to
+<code>Inf</code>, which will use all batches that pass cell number thresholds. In
+datasets that contain many batches (&gt;10), where there is no logical way to
+group batches prior to applying CHOIR, setting <code>max_n_batch</code> to a
+smaller value (we suggest between 1 and 5) may help avoid excessive
+downsampling when running the permutation tests, and thereby help avoid
+underclustering.</p></dd>
+
+
 <dt>neighbor_params</dt>
 <dd><p>A list of additional parameters to be passed to
 <code>Seurat</code> function <code>FindNeighbors</code> (or, in the case of multi-modal
 data for <code>Seurat</code> or <code>SingleCellExperiment</code> objects, <code>Seurat</code>
-function <code>FindMultiModalNeighbors</code>).</p></dd>
+function <code>FindMultiModalNeighbors</code>). If provided, parameter 'dims' can
+be used to determine which dimensions of the reduction are used as input.</p></dd>
 
 
 <dt>cluster_params</dt>
 <dd><p>A list of additional parameters to be passed to
 <code>Seurat</code> function <code>FindClusters</code> for clustering at each level of
 the tree. By default, when the <code><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">Seurat::FindClusters</a></code> parameter
-<code>group.singletons</code> is set to <code>TRUE</code>, CHOIR relabels clusters such
-that each singleton constitutes its own cluster.</p></dd>
+<code>group.singletons</code> is set to <code>TRUE</code>, singletons are grouped into
+the nearest cluster. Alternately, if <code>group.singletons</code> is set to
+<code>FALSE</code>, CHOIR will relabel clusters such that each singleton
+constitutes its own cluster.</p></dd>
 
 
 <dt>use_assay</dt>

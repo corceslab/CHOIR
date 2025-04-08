@@ -4,16 +4,13 @@
 \alias{inferTree}
 \title{Infer clustering tree from pre-generated clusters}
 \usage{
-inferTree(cluster_labels, dist_matrix = NULL, reduction = NULL, verbose = TRUE)
+inferTree(cluster_labels, reduction = NULL, verbose = TRUE)
 }
 \arguments{
 \item{cluster_labels}{A named vector of cluster IDs. Names must correspond
 to cell IDs.}
 
-\item{dist_matrix}{An optional distance matrix of cell to cell distances
-(based on dimensionality reduction cell embeddings).}
-
-\item{reduction}{An optional matrix of dimensionality reduction cell
+\item{reduction}{A matrix of dimensionality reduction cell
 embeddings to be used for distance calculations.}
 
 \item{verbose}{A Boolean value indicating whether to use verbose output
@@ -25,7 +22,5 @@ A clustering tree as a dataframe.
 }
 \description{
 Generate clustering tree from provided, pre-generated clusters. Provide a set
-of cluster labels and either a dimensionality reduction or distance matrix.
-If a dimensionality reduction is provided, centroid distances will be
-calculated and used.
+of cluster labels and a dimensionality reduction.
 }

@@ -32,6 +32,7 @@
 # feature_importance_records -- A dataframe containing the feature importance output of the previous runs of this function
 # P0_distance -- Distance between two clusters using root tree dimensionality reduction
 # P_i_distance -- Distance between two clusters using subtree dimensionality reduction, if applicable
+# adjacent -- Number of nearest neighbors between the two clusters
 # comparison_start_time -- Time that comparison was begun
 # n_cores -- A numeric value indicating the number of cores to use for parallelization
 # random_seed -- A numeric value indicating the random seed used
@@ -60,11 +61,12 @@
                                 min_reads,
                                 max_n_batch,
                                 input_matrix,
-                                nn_matrix,
+                                nn_matrix = NULL,
                                 comparison_records = NULL,
                                 feature_importance_records = NULL,
                                 P0_distance = NA,
                                 P_i_distance = NA,
+                                adjacent = NA,
                                 comparison_start_time = NULL,
                                 n_cores,
                                 random_seed) {
@@ -73,9 +75,11 @@
   max_p <- 1
 
   # Check number of adjacent cells
-  if ((min_connections > 0 | collect_all_metrics == TRUE) & !is.null(nn_matrix)) {
-    adjacent <- sum(as.matrix(nn_matrix[cluster1_cells, cluster2_cells])) +
-      sum(as.matrix(nn_matrix[cluster2_cells, cluster1_cells]))
+  if ((min_connections > 0 | collect_all_metrics == TRUE) & (!is.null(nn_matrix) | !is.na(adjacent))) {
+    if (is.na(adjacent)) {
+      adjacent <- sum(as.matrix(nn_matrix[cluster1_cells, cluster2_cells])) +
+        sum(as.matrix(nn_matrix[cluster2_cells, cluster1_cells]))
+    }
     # If clusters don't have enough adjacent cells,
     # don't compare & don't allow to merge
     if (adjacent < min_connections) {
@@ -626,9 +630,7 @@
 # cluster2_name -- A string indicating the name of the second cluster
 # cluster2_cells -- A vector indicating the cells belonging to the second cluster
 # distance_awareness -- A multiplier used to set the distance threshold
-# distance_approx -- Whether to use approximate distance
 # use_input_matrix -- Indicates the matrix to use for the current tree/subtree
-# dist_matrix -- A cell to cell distance matrix
 # reduction -- A dimensionality reduction
 # distance_records -- A dataframe containing the distance records output from this run
 .checkDistance <- function(object,
@@ -638,14 +640,9 @@
                            cluster2_name,
                            cluster2_cells,
                            distance_awareness,
-                           distance_approx,
                            use_input_matrix,
-                           dist_matrix,
                            reduction,
                            distance_records) {
-  if (distance_approx == FALSE) {
-    .requirePackage("clv", source = "cran")
-  }
   # Default output
   distance_conflict <- FALSE
   P0_distance <- NA
@@ -653,45 +650,24 @@
   # Don't proceed if distance_awareness is FALSE
   if (methods::is(distance_awareness, "numeric")) {
     # Distance by centroid or average linkage
-    if (distance_approx == TRUE) {
-      # Calculate P0 distance
-      if (is.null(reduction)) {
-        current_reduction <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction"))[c(cluster1_cells, cluster2_cells), ]
-      } else {
-        current_reduction <- reduction[c(cluster1_cells, cluster2_cells), ]
-      }
-      P0_distance <- .getCentroidDistance(reduction = current_reduction,
-                                          clusters = c(rep(1, length(cluster1_cells)),
-                                                       rep(2, length(cluster2_cells))))[1,2]
-      # Calculate subtree distance if applicable
-      if (use_input_matrix != "P0" & is.null(reduction)) {
-        current_reduction <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction")))[c(cluster1_cells, cluster2_cells), ]
-        P_i_distance <- .getCentroidDistance(reduction = current_reduction,
-                                             clusters = c(rep(1, length(cluster1_cells)),
-                                                          rep(2, length(cluster2_cells))))[1,2]
-      }
-      # Clean up
-      rm(current_reduction)
+    # Calculate P0 distance
+    if (is.null(reduction)) {
+      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction"))[c(cluster1_cells, cluster2_cells), ]
     } else {
-      # Calculate P0 distance
-      if (is.null(dist_matrix)) {
-        current_dist_matrix <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction_dist"))[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-      } else {
-        current_dist_matrix <- dist_matrix[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-      }
-      P0_distance <- clv::cls.scatt.diss.mx(diss.mx = current_dist_matrix,
-                                            clust = as.integer(c(rep(1, length(cluster1_cells)),
-                                                                 rep(2, length(cluster2_cells)))))$intercls.average["c1", "c2"]
-      # Calculate subtree distance if applicable
-      if (use_input_matrix != "P0" & is.null(dist_matrix)) {
-        current_dist_matrix <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction_dist")))[c(cluster1_cells, cluster2_cells), c(cluster1_cells, cluster2_cells)]
-        P_i_distance <- clv::cls.scatt.diss.mx(diss.mx = current_dist_matrix,
-                                               clust = as.integer(c(rep(1, length(cluster1_cells)),
-                                                                    rep(2, length(cluster2_cells)))))$intercls.average["c1", "c2"]
-      }
-      # Clean up
-      rm(current_dist_matrix)
+      current_reduction <- reduction[c(cluster1_cells, cluster2_cells), ]
     }
+    P0_distance <- .getCentroidDistance(reduction = current_reduction,
+                                        clusters = c(rep(1, length(cluster1_cells)),
+                                                     rep(2, length(cluster2_cells))))[1,2]
+    # Calculate subtree distance if applicable
+    if (use_input_matrix != "P0" & is.null(reduction)) {
+      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction")))[c(cluster1_cells, cluster2_cells), ]
+      P_i_distance <- .getCentroidDistance(reduction = current_reduction,
+                                           clusters = c(rep(1, length(cluster1_cells)),
+                                                        rep(2, length(cluster2_cells))))[1,2]
+    }
+    # Clean up
+    rm(current_reduction)
 
     # Compare to previous records
     if (!is.null(distance_records)) {
@@ -758,4 +734,165 @@
   }
   rownames(distance_records) <- distance_records$cluster_name
   return(distance_records)
+}
+
+# Get list of permitted comparisons ---------------------------
+
+# Use cluster labels, distance, and adjacency to create a list of permitted
+# comparisons
+
+# object -- An object of type Seurat, SingleCellExperiment, or ArchRProject
+# key -- A character string indicating the name under which data is stored for this run
+# type -- A character string "combineTrees" or "pruneTree" indicating function usage context
+# clusters -- Cluster labels
+# cell_IDs -- Cell IDs
+# nn_matrices -- A list of nearest neighbor adjacency matrices, named according to tree
+# min_connections -- A numeric value indicating the minimum number of nearest neighbors between two clusters for them to be considered "adjacent"
+# collect_all_metrics -- A Boolean value indicating whether to collect and save additional metrics from the random forest classifiers
+# distance_awareness -- A multiplier used to set the distance threshold
+# new_clusters -- A vector of cluster labels that are new and have not yet been assessed
+# permitted_comparisons -- An existing dataframe containing permitted comparisons
+# root_distances -- Cluster centroid distance matrix calculated from root dimensionality reduction
+# n_cores -- A numeric value indicating the number of cores to use for parallelization
+
+.getPermittedComparisons <- function(object,
+                                    key,
+                                    type = "pruneTree",
+                                    clusters,
+                                    cell_IDs,
+                                    nn_matrices,
+                                    min_connections,
+                                    collect_all_metrics,
+                                    distance_awareness,
+                                    new_clusters = NULL,
+                                    permitted_comparisons = NULL,
+                                    root_distances = NULL,
+                                    n_cores) {
+  # Get unique cluster labels
+  unique_clusters <- unique(clusters)
+  comparison_set <- utils::combn(unique_clusters, 2)
+  # Set up dataframe
+  if (is.null(permitted_comparisons)) {
+    # Create a list of permitted comparisons
+    new_permitted_comparisons <- data.frame(cluster1 = comparison_set[1,],
+                                            cluster2 = comparison_set[2,])
+  } else {
+    # Update existing list of permitted comparisons
+    # Subset to clusters that are still present
+    permitted_comparisons <- permitted_comparisons %>%
+      dplyr::filter(cluster1 %in% unique_clusters,
+                    cluster2 %in% unique_clusters)
+    # Subset combinations to those containing a new cluster
+    keep <- apply(comparison_set, 2, FUN = function(i) {
+      any(i %in% new_clusters)
+    })
+    new_permitted_comparisons <- data.frame(cluster1 = comparison_set[1,keep],
+                                            cluster2 = comparison_set[2,keep])
+  }
+
+  # Add tree info
+  if (length(nn_matrices) > 1 | type == "combineTrees") {
+    tree_name_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
+      trees <- unlist(stringr::str_extract_all(c(new_permitted_comparisons$cluster1[i],
+                                                 new_permitted_comparisons$cluster2[i]), "P\\d*"))
+      if ((dplyr::n_distinct(trees) == 1) &
+          ((trees[1] %in% names(nn_matrices)) | type == "combineTrees")) {
+        return(trees[1])
+      } else {
+        return("P0")
+      }
+    },
+    mc.cores = n_cores,
+    mc.set.seed = TRUE)
+    new_permitted_comparisons$tree_name <- unlist(tree_name_list)
+    # In the context of function combineTrees, filter out intra-parent comparisons
+    if (type == "combineTrees") {
+      new_permitted_comparisons <- dplyr::filter(new_permitted_comparisons, tree_name == "P0")
+    }
+  } else {
+    new_permitted_comparisons$tree_name <- "P0"
+  }
+
+  # Add adjacency data
+  if (min_connections > 0 | collect_all_metrics == TRUE) {
+    adjacent_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
+      cluster1_cells <- cell_IDs[clusters == new_permitted_comparisons$cluster1[i]]
+      cluster2_cells <- cell_IDs[clusters == new_permitted_comparisons$cluster2[i]]
+      adjacent <- sum(nn_matrices[[new_permitted_comparisons$tree_name[i]]][cluster1_cells, cluster2_cells]) +
+        sum(nn_matrices[[new_permitted_comparisons$tree_name[i]]][cluster2_cells, cluster1_cells])
+      return(adjacent)
+    },
+    mc.cores = n_cores,
+    mc.set.seed = TRUE)
+    new_permitted_comparisons$connectivity <- unlist(adjacent_list)
+    if (min_connections > 0) {
+      new_permitted_comparisons <- dplyr::filter(new_permitted_comparisons, connectivity >= min_connections)
+    }
+  } else {
+    new_permitted_comparisons$connectivity <- NA
+  }
+
+  # Add distance data
+  if (distance_awareness < Inf | collect_all_metrics == TRUE) {
+    if (is.null(root_distances)) {
+      # Root distance
+      P0_reduction <- .retrieveData(object,
+                                    key,
+                                    "reduction",
+                                    "P0_reduction")
+      root_distances <- .getCentroidDistance(P0_reduction,
+                                             clusters)
+    }
+    root_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons),
+                                             FUN = function(i) {
+                                               root_distances[new_permitted_comparisons$cluster1[i], new_permitted_comparisons$cluster2[i]]
+                                             },
+                                             mc.cores = n_cores,
+                                             mc.set.seed = TRUE)
+    new_permitted_comparisons$root_distance <- unlist(root_distance_list)
+
+    # Subtree distance
+    subtrees_remaining <- unique(new_permitted_comparisons$tree_name[new_permitted_comparisons$tree_name != "P0"])
+    if (length(subtrees_remaining) >= 1) {
+      names(clusters) <- cell_IDs
+      subtree_distances <- lapply(subtrees_remaining, FUN = function(i) {
+        current_reduction <- .retrieveData(object,
+                                           key,
+                                           "reduction",
+                                           paste0(i, "_reduction"))
+        current_distance <- .getCentroidDistance(reduction = current_reduction,
+                                                 clusters = clusters[rownames(current_reduction)])
+        return(current_distance)
+      })
+      names(subtree_distances) <- subtrees_remaining
+      subtree_distance_list <- parallel::mclapply(1:nrow(new_permitted_comparisons), FUN = function(i) {
+        if (new_permitted_comparisons$tree_name[i] != "P0") {
+          subtree_distances[[new_permitted_comparisons$tree_name[i]]][new_permitted_comparisons$cluster1[i],
+                                                                      new_permitted_comparisons$cluster2[i]]
+        } else {
+          NA
+        }
+      },
+      mc.cores = n_cores,
+      mc.set.seed = TRUE)
+      new_permitted_comparisons$subtree_distance <- unlist(subtree_distance_list)
+    } else {
+      new_permitted_comparisons$subtree_distance <- NA
+    }
+  } else {
+    new_permitted_comparisons$root_distance <- NA
+    new_permitted_comparisons$subtree_distance <- NA
+  }
+
+  # Combine if necessary
+  if (!is.null(permitted_comparisons)) {
+    # Add on new permitted comparisons
+    permitted_comparisons <- rbind(permitted_comparisons, new_permitted_comparisons)
+    # Filter all
+  } else {
+    permitted_comparisons <- new_permitted_comparisons
+  }
+
+  # Output
+  return(permitted_comparisons)
 }

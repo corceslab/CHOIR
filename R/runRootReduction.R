@@ -1,8 +1,7 @@
-#' Build parent clustering tree
+#' Generate root dimensionality reduction
 #'
-#' This function constructs a hierarchical clustering tree starting from a single
-#' cluster encompassing all cells. A parent tree is constructed, from which
-#' subtrees can be generated with subsequent steps outside of this function.
+#' This function generates the preliminary dimensionality reduction that can
+#' subsequently be used by CHOIR to construct a hierarchical clustering tree.
 #'
 #' For multi-modal data, optionally supply parameter inputs as vectors/lists
 #' that sequentially specify the value for each modality.
@@ -12,16 +11,6 @@
 #' \code{ArchRProject} objects.
 #' @param key The name under which CHOIR-related data for this run is stored in
 #' the object. Defaults to “CHOIR”.
-#' @param downsampling_rate A numerical value indicating the proportion of cells
-#' to be sampled per cluster to train/test each random forest classifier. For
-#' efficiency, the default value, "auto", sets the downsampling rate according
-#' to the dataset size. Decreasing this parameter may decrease the computational
-#' time required, but may also make the final cluster calls more conservative.
-#' If input is provided to both \code{downsampling_rate} and
-#' \code{sample_max parameters}, the minimum resulting cell number is calculated
-#' and used for each comparison. Note that the \code{downsampling_rate} is set
-#' in the \code{buildParentTree} function so that it can be retrieved in later
-#' steps when running CHOIR on atlas-scale data.
 #' @param normalization_method A character string or vector indicating which
 #' normalization method to use. In general, input data should be supplied to
 #' CHOIR after normalization, except when the user wishes to use
@@ -70,18 +59,6 @@
 #' @param batch_labels A character string that, if applying batch correction,
 #' specifies the name of the column in the input object metadata containing the
 #' batch labels. Defaults to \code{NULL}.
-#' @param neighbor_params A list of additional parameters to be passed to
-#' \code{Seurat} function \code{FindNeighbors} (or, in the case of multi-modal
-#' data for \code{Seurat} or \code{SingleCellExperiment} objects, \code{Seurat}
-#' function \code{FindMultiModalNeighbors}). If provided, parameter 'dims' can
-#' be used to determine which dimensions of the reduction are used as input.
-#' @param cluster_params A list of additional parameters to be passed to
-#' \code{Seurat} function \code{FindClusters} for clustering at each level of
-#' the tree. By default, when the \code{Seurat::FindClusters} parameter
-#' \code{group.singletons} is set to \code{TRUE}, singletons are grouped into
-#' the nearest cluster. Alternately, if \code{group.singletons} is set to
-#' \code{FALSE}, CHOIR will relabel clusters such that each singleton
-#' constitutes its own cluster.
 #' @param use_assay For \code{Seurat} or \code{SingleCellExperiment} objects, a
 #' character string or vector indicating the assay(s) to use in the provided
 #' object. The default value, \code{NULL}, will choose the current active assay
@@ -138,10 +115,7 @@
 #' \code{ArchR_matrix} in the same order. Defaults to \code{FALSE}.
 #' @param n_cores A numerical value indicating the number of cores to use for
 #' parallelization. By default, CHOIR will use the number of available cores
-#' minus 2. CHOIR is parallelized at the computation of permutation test
-#' iterations. Therefore, any number of cores up to the number of iterations
-#' will theoretically decrease the computational time required. In practice,
-#' 8–16 cores are recommended for datasets up to 500,000 cells.
+#' minus 2. This function uses parallelization only for \code{ArchR} objects.
 #' @param random_seed A numerical value indicating the random seed to be used.
 #' Defaults to 1. CHOIR uses randomization throughout the generation and pruning
 #' of the clustering tree. Therefore, changing the random seed may yield slight
@@ -152,49 +126,47 @@
 #'
 #' @return Returns the object with the following added data stored under the
 #' provided key: \describe{
-#'   \item{reduction}{Cell embeddings for calculated dimensionality reduction}
-#'   \item{var_features}{Variable features for calculated dimensionality reduction}
-#'   \item{cell_IDs}{Cell IDs belonging to parent tree}
-#'   \item{graph}{Nearest neighbor and shared nearest neighbor adjacency matrices}
-#'   \item{clusters}{Parent hierarchical cluster tree}
 #'   \item{parameters}{Record of parameter values used}
+#'   \item{reduction}{Cell embeddings for the calculated dimensionality
+#'   reduction}
+#'   \item{var_features}{Variable features the calculated dimensionality
+#'   reduction}
 #'   }
 #'
 #' @export
 #'
-buildParentTree <- function(object,
-                            key = "CHOIR",
-                            downsampling_rate = "auto",
-                            normalization_method = "none",
-                            reduction_method = NULL,
-                            reduction_params = list(),
-                            n_var_features = NULL,
-                            batch_correction_method = "none",
-                            batch_correction_params = list(),
-                            batch_labels = NULL,
-                            neighbor_params = list(),
-                            cluster_params = list(algorithm = 1,
-                                                  group.singletons = TRUE),
-                            use_assay = NULL,
-                            use_slot = NULL,
-                            ArchR_matrix = NULL,
-                            ArchR_depthcol = NULL,
-                            countsplit = FALSE,
-                            countsplit_suffix = NULL,
-                            reduction = NULL,
-                            var_features = NULL,
-                            atac = FALSE,
-                            n_cores = NULL,
-                            random_seed = 1,
-                            verbose = TRUE) {
+runRootReduction <- function(object,
+                      key = "CHOIR",
+                      normalization_method = "none",
+                      reduction_method = NULL,
+                      reduction_params = list(),
+                      n_var_features = NULL,
+                      batch_correction_method = "none",
+                      batch_correction_params = list(),
+                      batch_labels = NULL,
+                      use_assay = NULL,
+                      use_slot = NULL,
+                      ArchR_matrix = NULL,
+                      ArchR_depthcol = NULL,
+                      countsplit = FALSE,
+                      countsplit_suffix = NULL,
+                      reduction = NULL,
+                      var_features = NULL,
+                      atac = FALSE,
+                      n_cores = NULL,
+                      random_seed = 1,
+                      verbose = TRUE) {
 
   # ---------------------------------------------------------------------------
   # Check input validity
   # ---------------------------------------------------------------------------
 
+  # Progress
+  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"),
+                       " : (Step 1/2) Checking inputs and preparing object..")
+
   .validInput(object, "object", "buildTree")
   .validInput(key, "key", list("buildTree", object))
-  .validInput(downsampling_rate, "downsampling_rate")
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
   .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
@@ -217,7 +189,8 @@ buildParentTree <- function(object,
         } else if ("Assay" %in% methods::is(object[[Seurat::DefaultAssay(object)]])) {
           seurat_version <- "v4"
         } else {
-          stop("Assay '", Seurat::DefaultAssay(object), "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+          stop("Assay '", Seurat::DefaultAssay(object),
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
         }
       } else {
         if ("Assay5" %in% methods::is(object[[use_assay[1]]])) {
@@ -225,12 +198,13 @@ buildParentTree <- function(object,
         } else if ("Assay" %in% methods::is(object[[use_assay[1]]])) {
           seurat_version <- "v4"
         } else {
-          stop("Assay '", use_assay[1], "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
+          stop("Assay '", use_assay[1],
+               "' provided for parameter 'use_assay' is not of class 'Assay' or 'Assay5', please supply valid input!")
         }
       }
     } else if (methods::is(object, "SingleCellExperiment")) {
       object_type <- "SingleCellExperiment"
-      .requirePackage("SingleCellExperiment")
+      .requirePackage("SingleCellExperiment", source = "bioc")
     }
   }
 
@@ -248,47 +222,13 @@ buildParentTree <- function(object,
   .validInput(batch_correction_method, "batch_correction_method", n_modalities)
   .validInput(batch_correction_params, "batch_correction_params", list(object, ArchR_matrix, use_assay, batch_correction_method))
   .validInput(batch_labels, "batch_labels", object)
-  .validInput(neighbor_params, "neighbor_params", list(object, n_modalities))
-  .validInput(cluster_params, "cluster_params")
   .validInput(n_cores, "n_cores")
   .validInput(random_seed, "random_seed")
   .validInput(verbose, "verbose")
 
-  # Add additional parameters if not provided
-  if (!any(names(neighbor_params) == "verbose")) {
-    neighbor_params$verbose <- FALSE
-  }
-  neighbor_params_text <- `if`((length(neighbor_params) == 0), "No",
-                               paste0("\n     - ", paste0(paste0(names(neighbor_params), ": ",
-                                                                 neighbor_params),
-                                                          collapse = "\n     - ")))
-  if (!any(names(cluster_params) == "verbose")) {
-    cluster_params$verbose <- FALSE
-  }
-  if (!any(names(cluster_params) == "algorithm")) {
-    cluster_params$algorithm <- 1
-  }
-  if (!any(names(cluster_params) == "group.singletons")) {
-    cluster_params$group.singletons <- TRUE
-  }
-  # Separate certain parameters
-  if (any(names(neighbor_params) == "dims")) {
-    neighbor_dims <- neighbor_params$dims
-    neighbor_params <- neighbor_params[names(neighbor_params) != "dims"]
-  } else {
-    neighbor_dims <- NULL
-  }
-
   # Set defaults
   if (is.null(n_cores)) {
     n_cores <- parallel::detectCores() - 2
-  }
-  # Set downsampling rate
-  if (downsampling_rate == "auto") {
-    downsampling_rate <- min(1, (1/2)^(log10(length(cell_IDs)/5000)))
-    if (batch_correction_method == "none") {
-      downsampling_rate <- downsampling_rate*0.5
-    }
   }
   # Random seed reproducibility
   if (n_cores > 1) {
@@ -298,11 +238,7 @@ buildParentTree <- function(object,
   # Check that required packages are loaded
   # Seurat needs to be loaded to use Seurat:::FindModalityWeights() and Seurat:::MultiModalNN()
   if (n_modalities >= 2 & !methods::is(object, "ArchRProject")) {
-    if (seurat_version == "v4") {
-      .requirePackage("Seurat", source = "cran")
-    } else if (seurat_version == "v5") {
-      stop("Please load Seurat v5 package prior to running CHOIR.")
-    }
+    .requirePackage("Seurat", source = "cran")
   }
 
   # If batch_correction_method is Harmony, make sure batch IDs is a character vector
@@ -414,10 +350,9 @@ buildParentTree <- function(object,
   }
 
   # ---------------------------------------------------------------------------
-  # Step 1: Initial dimensionality reduction
+  # Report object & parameter details
   # ---------------------------------------------------------------------------
 
-  # Report object & parameter details
   if (verbose) message("\nInput data:",
                        "\n - Object type: ", ifelse(object_type == "Seurat", paste0(object_type, " (", seurat_version, ")"), object_type),
                        `if`(!is.null(reduction) | !is.null(var_features), "\n - Provided inputs: ", ""),
@@ -432,7 +367,6 @@ buildParentTree <- function(object,
                        countsplit_text)
   if (verbose) message("\nProceeding with the following parameters:",
                        "\n - Intermediate data stored under key: ", key,
-                       "\n - Downsampling rate: ", round(downsampling_rate, 4),
                        "\n - Normalization method: ", normalization_method,
                        "\n - Dimensionality reduction method: ", `if`(is.null(reduction_method), "Default", reduction_method),
                        "\n - Dimensionality reduction parameters provided: ", `if`(length(reduction_params) == 0, "No",
@@ -447,18 +381,17 @@ buildParentTree <- function(object,
                                                                                                              batch_correction_params),
                                                                                                       collapse = "\n     - "))),
                        `if`(batch_correction_method != 'none', paste0("\n - Metadata column containing batch information: ", batch_labels), ""),
-                       "\n - Nearest neighbor parameters provided: ", neighbor_params_text,
-                       "\n - Clustering parameters provided: ", `if`(length(cluster_params) == 0, "No",
-                                                                     paste0("\n     - ", paste0(paste0(names(cluster_params), ": ",
-                                                                                                       cluster_params),
-                                                                                                collapse = "\n     - "))),
                        "\n - # of cores: ", n_cores,
                        "\n - Random seed: ", random_seed,
                        "\n")
 
+  # ---------------------------------------------------------------------------
+  # Step 2: Initial dimensionality reduction
+  # ---------------------------------------------------------------------------
+
   # Run dimensionality reduction if not supplied by user
   if (is.null(reduction)) {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Running initial dimensionality reduction..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/2) Running initial dimensionality reduction..")
     P0_dim_reduction <- .runDimReduction(object = object,
                                          normalization_method = normalization_method,
                                          reduction_method = reduction_method,
@@ -477,7 +410,7 @@ buildParentTree <- function(object,
                                          random_seed = random_seed,
                                          verbose = verbose)
   } else {
-    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 1/4) Setting initial dimensionality reduction..")
+    if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/2) Setting initial dimensionality reduction..")
     P0_dim_reduction <- list("reduction_coords" = reduction,
                              "var_features" = var_features)
   }
@@ -497,162 +430,24 @@ buildParentTree <- function(object,
                          input_data = P0_dim_reduction[["reduction_coords"]],
                          name = "CHOIR_P0_reduction",
                          reduction_method = reduction_method,
-                         use_assay = use_assay_build)
+                         use_assay = use_assay_build,
+                         atac = atac)
   }
   # Clean up
   P0_dim_reduction[["P0_cell_IDs"]] <- NULL
 
   # ---------------------------------------------------------------------------
-  # Step 2: Find nearest neighbors
-  # ---------------------------------------------------------------------------
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 2/4) Generating initial nearest neighbors graph..")
-  # 1 vs. multiple dimensionality reductions
-  if (n_modalities < 2 | methods::is(object, "ArchRProject")) {
-    # Number & names of cells
-    n_cells <- nrow(P0_dim_reduction[["reduction_coords"]])
-    cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]])
-
-    # Find neighbors
-    if (is.null(neighbor_dims)) {
-      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]]),
-                                                               neighbor_params))
-    } else {
-      P0_nearest_neighbors <- do.call(Seurat::FindNeighbors, c(list("object" = P0_dim_reduction[["reduction_coords"]][, neighbor_dims]),
-                                                               neighbor_params))
-    }
-  } else {
-    # Number & names of cells
-    n_cells <- nrow(P0_dim_reduction[["reduction_coords"]][[1]])
-    cell_IDs <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
-    # Prep for finding neighbors
-    tmp <- matrix(stats::rnorm(nrow(P0_dim_reduction[["reduction_coords"]][[1]]) * 3, 10), ncol = nrow(P0_dim_reduction[["reduction_coords"]][[1]]), nrow = 3)
-    colnames(tmp) <- rownames(P0_dim_reduction[["reduction_coords"]][[1]])
-    rownames(tmp) <- paste0("t",seq_len(nrow(tmp)))
-    tmp_seurat <- Seurat::CreateSeuratObject(tmp, min.cells = 0, min.features = 0, assay = 'tmp')
-    dim_list = vector("list", length = length(use_assay_build))
-    for (i in 1:length(use_assay_build)) {
-      tmp_seurat[[paste0("DR_", i)]] <- Seurat::CreateDimReducObject(embeddings = P0_dim_reduction[["reduction_coords"]][[i]],
-                                                                     key = paste0("DR_", i, "_"), assay = 'tmp')
-      if (is.null(neighbor_dims)) {
-        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]])
-      } else {
-        dim_list[[i]] <- 1:ncol(P0_dim_reduction[["reduction_coords"]][[i]][, neighbor_dims])
-      }
-    }
-    # Find neighbors
-    P0_nearest_neighbors <- do.call(Seurat::FindMultiModalNeighbors, c(list("object" = tmp_seurat,
-                                                                            "reduction.list" = list(paste0("DR_", seq(1, length(use_assay_build)))),
-                                                                            "dim.list" = dim_list,
-                                                                            "knn.graph.name" = "nn",
-                                                                            "snn.graph.name" = "snn"),
-                                                                       neighbor_params))@graphs
-    # Clean up
-    rm(tmp)
-    rm(tmp_seurat)
-  }
-  # Store output in object
-  object <- .storeData(object, key, "graph", P0_nearest_neighbors[["nn"]], "P0_graph_nn")
-  object <- .storeData(object, key, "graph", P0_nearest_neighbors[["snn"]], "P0_graph_snn")
-
-  # ---------------------------------------------------------------------------
-  # Step 3: Identify starting clustering resolution
-  # ---------------------------------------------------------------------------
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/4) Identify starting clustering resolution..")
-  P0_starting_resolution <- .getStartingResolution(snn_matrix = P0_nearest_neighbors[["snn"]],
-                                                   cluster_params = cluster_params,
-                                                   random_seed = random_seed,
-                                                   verbose = verbose)
-
-  # ---------------------------------------------------------------------------
-  # Step 4: Build parent tree
-  # ---------------------------------------------------------------------------
-
-  # Create dataframe to store tree generation records
-  tree_records <- data.frame(tree_type = NULL,
-                             tree_name = NULL,
-                             num_cells = NULL,
-                             resolution = NULL,
-                             num_clusters = NULL,
-                             silhouette = NULL,
-                             neighbors_distance = NULL,
-                             neighbors_mean_accuracy = NULL,
-                             neighbors_var_accuracy = NULL,
-                             neighbors_percentile_accuracy = NULL,
-                             neighbors_percentile_variance = NULL,
-                             neighbors_decision = NULL,
-                             stop_branching_reason = NULL)
-
-  if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/4) Building parent clustering tree..")
-  P0_tree_list <- .getTree(snn_matrix = P0_nearest_neighbors[["snn"]],
-                           reduction = P0_dim_reduction[["reduction_coords"]],
-                           tree_type = "silhouette",
-                           cluster_params = cluster_params,
-                           starting_resolution = P0_starting_resolution[["starting_resolution"]],
-                           res0_clusters = P0_starting_resolution[["res0_clusters"]],
-                           decimal_places = P0_starting_resolution[["decimal_places"]],
-                           tree_records = tree_records,
-                           n_cores = n_cores,
-                           random_seed = random_seed,
-                           verbose = verbose)
-  P0_tree <- P0_tree_list[["cluster_tree"]]
-  if (verbose) message("\n                      ", P0_tree_list[["stop_reason"]])
-
-  # Store records
-  tree_records <- P0_tree_list[["tree_records"]]
-
-  # Clean up
-  rm(P0_tree_list)
-
-  # Optimize tree
-  if (ncol(P0_tree) >= 2) {
-    P0_tree <- .optimizeTree(cluster_tree = P0_tree,
-                             reduction = P0_dim_reduction[["reduction_coords"]])
-    P0_tree$CellID <- rownames(P0_tree)
-    P0_tree <- P0_tree[match(cell_IDs, P0_tree$CellID), ]
-    P0_tree <- dplyr::select(P0_tree, -CellID)
-  }
-
-  # Reassign column names
-  colnames(P0_tree) <- paste0("L", seq(1, ncol(P0_tree)))
-  # Rename cluster IDs with parent cluster & level indicators
-  for (col in 1:ncol(P0_tree)) {
-    P0_tree[,col] <- paste0("P0_", colnames(P0_tree)[col], "_", P0_tree[,col])
-  }
-
-  # Clean up
-  rm(P0_nearest_neighbors)
-  rm(P0_starting_resolution)
-
-  if (verbose) message("                      Parent tree has ", ncol(P0_tree), " levels and ", dplyr::n_distinct(P0_tree[,ncol(P0_tree)]), " clusters.")
-
-  # ---------------------------------------------------------------------------
   # Store data in object
   # ---------------------------------------------------------------------------
 
-  # Add parent tree to original object
-  object <- .storeData(object, key, "clusters", P0_tree, "P0_tree")
-
-  # Add parent clusters to cell metadata
-  parent_clusters <- sub("P\\d*_L\\d*_", "P", P0_tree[,ncol(P0_tree)])
-  object <- .storeData(object, key, "final_clusters",
-                       data.frame(CHOIR_IDs = parent_clusters),
-                       "CHOIR_parent_clusters")
-
-  # Add tree records to object
-  object <- .storeData(object, key, "records", tree_records, "buildTree_records")
-
   # Record parameters used and add to original object
-  parameter_list <- list("downsampling_rate" = downsampling_rate,
-                         "normalization_method" = normalization_method,
+  parameter_list <- list("normalization_method" = normalization_method,
                          "reduction_method" = reduction_method,
                          "reduction_params" = reduction_params,
                          "n_var_features" = n_var_features,
                          "batch_correction_method" = batch_correction_method,
                          "batch_correction_params" = batch_correction_params,
                          "batch_labels" = batch_labels,
-                         "neighbor_params" = neighbor_params,
-                         "neighbor_dims" = neighbor_dims,
-                         "cluster_params" = cluster_params,
                          "use_assay" = use_assay,
                          "use_slot" = use_slot,
                          "ArchR_matrix" = ArchR_matrix,
@@ -667,10 +462,11 @@ buildParentTree <- function(object,
                          "ArchR_matrix_prune" = ArchR_matrix_prune,
                          "countsplit_text" = countsplit_text,
                          "reduction_provided" = !is.null(reduction),
+                         "var_features_provided" = !is.null(var_features),
                          "atac" = atac,
                          "random_seed" = random_seed)
 
-  object <- .storeData(object, key, "parameters", parameter_list, "buildParentTree_parameters")
+  object <- .storeData(object, key, "parameters", parameter_list, "runRootReduction_parameters")
 
   # Return object with new additions
   return(object)

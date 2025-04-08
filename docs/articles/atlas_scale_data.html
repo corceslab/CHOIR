@@ -152,7 +152,7 @@ level at which the silhouette score is maximized.</p>
 <p>Subset each parent cluster and save it as a separate object.</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="co"># For example</span></span>
-<span><span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">obj</span>, subset <span class="op">=</span> <span class="va">CHOIR_parent_clusters</span> <span class="op">==</span> <span class="st">"P1"</span><span class="op">)</span></span></code></pre></div>
+<span><span class="va">subtree_s</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/subset.html" class="external-link">subset</a></span><span class="op">(</span><span class="va">object</span>, subset <span class="op">=</span> <span class="va">CHOIR_parent_clusters</span> <span class="op">==</span> <span class="st">"P1"</span><span class="op">)</span></span></code></pre></div>
 <p>If any of these resulting “parent clusters” are above 450,000 cells,
 a minimal number of further subdivisions are run on that parent cluster
 until the resulting subclusters are all under 450,000 cells.</p>

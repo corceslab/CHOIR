@@ -126,8 +126,9 @@
       reduction_coords_list[[i]] <- reduction_output_i[["reduction_coords"]]
       reduction_full_list[[i]] <- reduction_output_i[["full_reduction"]]
     }
-    # For ArchR objects, combine reductions
+    # Combine reductions
     if (methods::is(object, "ArchRProject")) {
+      # ArchR projects -- using ArchR function addCombinedDims
       for (i in 1:length(reduction_full_list)) {
         object@reducedDims[[paste0("DR_", i)]] <- reduction_full_list[[i]]
       }
@@ -141,8 +142,18 @@
                                "var_features" = var_features_list,
                                "full_reduction" = full_reduction)
     } else {
+      # Combine reductions -- adaptation of ArchR function addCombinedDims
+      # Adapted from ArchR code, Jeffrey Granja & Ryan Corces
+      dimWeights <- rep(1, length(reduction_coords_list))
+      combinedDims <- lapply(seq_along(reduction_coords_list), function(x){
+        rD <- reduction_coords_list[[x]]
+        cV <- apply(as.matrix(rD), 2, stats::var)
+        normV <- 1 / sqrt(sum(cV))
+        rD * normV * dimWeights[x]
+      }) %>% Reduce("cbind", .)
+      colnames(combinedDims) <- paste0('DR_',1:length(colnames(combinedDims)))
       # Create output list
-      reduction_output <- list("reduction_coords" = reduction_coords_list,
+      reduction_output <- list("reduction_coords" = combinedDims,
                                "var_features" = var_features_list,
                                "full_reduction" = full_reduction)
     }
@@ -492,47 +503,6 @@
   return(reduction_output)
 }
 
-# Get multi-modal distance ---------------------------
-#
-# Generate a distance matrix from multi-modal data
-#
-# object -- Either a Seurat or SingleCellExperiment object with multiple modalities
-# reduction_list -- List of dimensionality reductions for each modality
-# dim_list -- List indicating which dimensions to use for each reduction
-.getMultiModalDistance <- function(object,
-                                   reduction_list,
-                                   dim_list) {
-  # Number of cells
-  n_cells <- ncol(object)
-  # Modality weights
-  modality_weights <- Seurat:::FindModalityWeights(
-    object = object,
-    reduction.list = reduction_list,
-    dims.list = dim_list)
-  # NN object
-  weighted_nn <- Seurat:::MultiModalNN(
-    object = object,
-    modality.weight = modality_weights,
-    k.nn = n_cells - 1,
-    knn.range = n_cells - 1)
-  # Distance matrix
-  dist_mat <- weighted_nn@nn.dist
-  dist_mat <- cbind(dist_mat, matrix(data = NA, nrow = n_cells, ncol = 1))
-  # Index matrix
-  idx_mat <- weighted_nn@nn.idx
-  idx_mat <- cbind(idx_mat, matrix(data = seq(1, n_cells, 1), nrow = n_cells, ncol = 1))
-  # Reorder
-  dist_list <- lapply(seq(1:n_cells),
-                      FUN = function(x) {
-                        dist_mat[x,] <- dist_mat[x, order(idx_mat[x,])]
-                      })
-  distance_matrix <- do.call(rbind, dist_list)
-  rownames(distance_matrix) <- weighted_nn@cell.names
-  colnames(distance_matrix) <- weighted_nn@cell.names
-  # Return distance matrix
-  return(distance_matrix)
-}
-
 # Get starting resolution ---------------------------
 #
 # Find the minimum resolution with more clusters than resolution = 0
@@ -761,16 +731,9 @@
 # Optimize the hierarchical structure of a clustering tree
 #
 # cluster_tree -- Dataframe containing the cluster IDs of each cell across the levels of a hierarchical clustering tree
-# dist_matrix -- A cell to cell distance matrix
 # reduction -- A dimensionality reduction matrix
-# distance_approx -- Whether to use distance approximations
 .optimizeTree <- function(cluster_tree,
-                          dist_matrix = NULL,
-                          reduction = NULL,
-                          distance_approx = TRUE) {
-  if (distance_approx == FALSE) {
-    .requirePackage("clv", source = "cran")
-  }
+                          reduction = NULL) {
   n_levels <- ncol(cluster_tree)
   new_tree <- data.frame("CellID" = rownames(cluster_tree),
                          "new" = cluster_tree[,1])
@@ -793,20 +756,11 @@
         # Create key for child clusters
         child_clusters <- data.frame(original = unique(cluster_tree[parent_inds, lvl]),
                                      key = paste0("c", unique(as.integer(as.numeric(as.factor(cluster_tree[parent_inds, lvl]))))))
-        if (distance_approx == TRUE) {
-          # Subset dimensionality reduction
-          reduction_parent <- reduction[parent_inds, ]
-          # Calculate centroid distances
-          intercluster_distances <- stats::as.dist(.getCentroidDistance(reduction = reduction,
-                                                                        clusters = paste0("c", as.integer(as.numeric(as.factor(cluster_tree[parent_inds, lvl]))))))
-        } else {
-          # Subset distance matrix
-          dist_matrix_parent <- as.matrix(dist_matrix)[parent_inds, parent_inds]
-          # Calculate distances between child clusters
-          distances <- clv::cls.scatt.diss.mx(diss.mx = dist_matrix_parent,
-                                              clust = as.integer(as.numeric(as.factor(cluster_tree[parent_inds, lvl]))))
-          intercluster_distances <- stats::as.dist(distances$intercls.average)
-        }
+        # Subset dimensionality reduction
+        reduction_parent <- reduction[parent_inds, ]
+        # Calculate centroid distances
+        intercluster_distances <- stats::as.dist(.getCentroidDistance(reduction = reduction,
+                                                                      clusters = paste0("c", as.integer(as.numeric(as.factor(cluster_tree[parent_inds, lvl]))))))
         # Create hierarchy
         hierarchy = stats::hclust(intercluster_distances)
 
@@ -973,10 +927,8 @@
 #
 # snn_matrix -- A shared nearest neighbor adjacency matrix
 # nn_matrix -- A nearest neighbor adjacency matrix
-# dist_matrix -- A cell to cell distance matrix
 # reduction -- A dimensionality reduction matrix
 # input_matrix -- Matrix containing the feature x cell data on which to train the random forest classifiers
-# distance_approx -- Whether to use distance approximations
 # tree_type -- A string indicating which type of tree to construct: 'silhouette', 'subtree', or 'full'
 # max_clusters -- The extent to which the hierarchical clustering tree will be expanded: numerical or 'auto'
 # cluster_params -- A list of additional parameters to be passed to Seurat::FindClusters()
@@ -1005,10 +957,8 @@
 # verbose -- A Boolean value indicating whether to use verbose output during the execution of this function
 .getTree <- function(snn_matrix,
                      nn_matrix = NULL,
-                     dist_matrix = NULL,
                      reduction = NULL,
                      input_matrix = NULL,
-                     distance_approx = TRUE,
                      tree_type = "silhouette",
                      max_clusters = NULL,
                      cluster_params,
@@ -1037,9 +987,7 @@
                      verbose = FALSE) {
   if (tree_type == "silhouette") {
     tree_output <- .getTree.silhouette(snn_matrix = snn_matrix,
-                                 dist_matrix = dist_matrix,
                                  reduction = reduction,
-                                 distance_approx = distance_approx,
                                  cluster_params = cluster_params,
                                  starting_resolution = starting_resolution,
                                  res0_clusters = res0_clusters,
@@ -1063,10 +1011,8 @@
   } else if (tree_type == "subtree") {
     tree_output <- .getTree.subtree(snn_matrix = snn_matrix,
                                     nn_matrix = nn_matrix,
-                                    dist_matrix = dist_matrix,
                                     reduction = reduction,
                                     input_matrix = input_matrix,
-                                    distance_approx = distance_approx,
                                     cluster_params = cluster_params,
                                     min_cluster_depth = min_cluster_depth,
                                     alpha = alpha,
@@ -1094,9 +1040,7 @@
 }
 
 .getTree.silhouette <- function(snn_matrix,
-                          dist_matrix,
                           reduction,
-                          distance_approx,
                           cluster_params,
                           starting_resolution,
                           res0_clusters,
@@ -1114,11 +1058,6 @@
     cluster_params$method <- "igraph"
   }
 
-  # Check whether package cluster is imported if distance_approx == FALSE
-  if (distance_approx == FALSE) {
-    .requirePackage("cluster", source = "cran")
-  }
-
   # Initialize dataframe for multi-level clustering results across range of resolutions
   multi_level_clusters <- res0_clusters
   colnames(multi_level_clusters) <- "L0"
@@ -1131,11 +1070,7 @@
 
   # Starting silhouette score
   if (n_clust > 1) {
-    if (distance_approx == TRUE) {
-      new_silhouette <- mean(bluster::approxSilhouette(as.matrix(reduction), res0_clusters[,1])$width)
-    } else {
-      new_silhouette <- mean(unlist(cluster::silhouette(as.numeric(as.factor(res0_clusters[,1]))-1, dist_matrix)[,3]))
-    }
+    new_silhouette <- mean(bluster::approxSilhouette(as.matrix(reduction), res0_clusters[,1])$width)
     max_silhouette <- new_silhouette
   } else {
     new_silhouette <- -1
@@ -1272,11 +1207,7 @@
         n_clust <- new_n_clust
 
         # Calculate overall silhouette
-        if (distance_approx == TRUE) {
-          new_silhouette <- mean(bluster::approxSilhouette(as.matrix(reduction), new_clusters[,1])$width)
-        } else {
-          new_silhouette <- mean(unlist(cluster::silhouette(as.numeric(as.factor(new_clusters[,1]))-1, dist_matrix)[,3]))
-        }
+        new_silhouette <- mean(bluster::approxSilhouette(as.matrix(reduction), new_clusters[,1])$width)
 
         # Add to records
         tree_records <- rbind(tree_records, data.frame(tree_type = "silhouette",
@@ -1325,7 +1256,6 @@
 
   # Clean up
   rm(snn_matrix)
-  rm(dist_matrix)
   rm(reduction)
 
   # Progress
@@ -1614,10 +1544,8 @@
 
 .getTree.subtree <- function(snn_matrix,
                              nn_matrix,
-                             dist_matrix,
                              reduction,
                              input_matrix,
-                             distance_approx,
                              cluster_params,
                              min_cluster_depth,
                              alpha,
@@ -1646,10 +1574,6 @@
   # If using Leiden & data set is large, use "igraph"
   if (cluster_params$algorithm == 4 & !any(names(cluster_params) == "method") & n_cells > 30000) {
     cluster_params$method <- "igraph"
-  }
-
-  if (distance_approx == FALSE) {
-    .requirePackage("clv", source = "cran")
   }
 
   # Data frame to gather comparison records
@@ -1813,16 +1737,9 @@
           if (length(non_singleton_clusters) > 1) {
             # For each cluster, find the nearest cluster
             # Then find the maximum (i.e., the cluster with the most distant next door neighbors)
-            if (distance_approx == TRUE) {
-              # Use centroid linkage distance
-              intercluster_distances <- .getCentroidDistance(reduction = reduction,
-                                                             clusters = as.integer(as.numeric(as.factor(multi_level_clusters[current_cells, ncol(multi_level_clusters)]))))
-            } else {
-              # Use average linkage distance
-              distances <- clv::cls.scatt.diss.mx(diss.mx = as.matrix(dist_matrix[current_cells, current_cells]),
-                                                  clust = as.integer(as.numeric(as.factor(multi_level_clusters[current_cells, ncol(multi_level_clusters)]))))
-              intercluster_distances <- distances$intercls.average[paste0("c", non_singleton_clusters), paste0("c", non_singleton_clusters)]
-            }
+            # Use centroid distance
+            intercluster_distances <- .getCentroidDistance(reduction = reduction,
+                                                           clusters = as.integer(as.numeric(as.factor(multi_level_clusters[current_cells, ncol(multi_level_clusters)]))))
             # Resolve clusters with < 4 cells
             resolve_clusters <- names(table(multi_level_clusters[current_cells, ncol(multi_level_clusters)]))[table(multi_level_clusters[current_cells, ncol(multi_level_clusters)]) < 4]
             if (length(resolve_clusters) > 0) {
@@ -1962,16 +1879,9 @@
           if (length(non_singleton_clusters) > 1) {
             # For each cluster, find the nearest cluster
             # Then find the maximum (i.e., the cluster with the most distant next door neighbors)
-            if (distance_approx == TRUE) {
-              # Use centroid linkage distance
-              intercluster_distances <- .getCentroidDistance(reduction = reduction,
-                                                             clusters = as.integer(as.numeric(as.factor(new_clusters[,1]))))
-            } else {
-              # Use average linkage distance
-              distances <- clv::cls.scatt.diss.mx(diss.mx = as.matrix(dist_matrix[current_cells, current_cells]),
-                                                  clust = as.integer(as.numeric(as.factor(new_clusters[,1]))))
-              intercluster_distances <- distances$intercls.average[paste0("c", non_singleton_clusters), paste0("c", non_singleton_clusters)]
-            }
+            # Use centroid distance
+            intercluster_distances <- .getCentroidDistance(reduction = reduction,
+                                                           clusters = as.integer(as.numeric(as.factor(new_clusters[,1]))))
             furthest_neighbors <-
               dplyr::slice_max(do.call(rbind, lapply(
                 seq(1:nrow(intercluster_distances)),
@@ -2173,7 +2083,6 @@
   # Clean up
   rm(snn_matrix)
   rm(nn_matrix)
-  rm(dist_matrix)
   rm(reduction)
   rm(input_matrix)
 
@@ -2219,15 +2128,11 @@
 #' Infer clustering tree from pre-generated clusters
 #'
 #' Generate clustering tree from provided, pre-generated clusters. Provide a set
-#' of cluster labels and either a dimensionality reduction or distance matrix.
-#' If a dimensionality reduction is provided, centroid distances will be
-#' calculated and used.
+#' of cluster labels and a dimensionality reduction.
 #'
 #' @param cluster_labels  A named vector of cluster IDs. Names must correspond
 #' to cell IDs.
-#' @param dist_matrix An optional distance matrix of cell to cell distances
-#' (based on dimensionality reduction cell embeddings).
-#' @param reduction An optional matrix of dimensionality reduction cell
+#' @param reduction A matrix of dimensionality reduction cell
 #' embeddings to be used for distance calculations.
 #' @param verbose A Boolean value indicating whether to use verbose output
 #' during the execution of this function. Can be set to \code{FALSE} for a
@@ -2237,26 +2142,16 @@
 #' @export
 #'
 inferTree <- function(cluster_labels,
-                      dist_matrix = NULL,
                       reduction = NULL,
                       verbose = TRUE) {
   .validInput(cluster_labels, name = "cluster_labels")
-  .validInput(dist_matrix, name = "dist_matrix", names(cluster_labels))
   .validInput(reduction, name = "reduction", list("inferTree", names(cluster_labels)))
   .validInput(verbose, name = "verbose")
 
-  if (is.null(reduction) & is.null(dist_matrix)) {
-    stop("Please provide input to either 'reduction' or 'dist_matrix'.")
-  } else if (!is.null(reduction) & !is.null(dist_matrix)) {
-    warning("Input provided to both 'reduction' and 'dist_matrix'. Only input to 'dist_matrix' was used.")
-    distance_description <- "from provided 'dist_matrix'"
-    distance_approx <- FALSE
-  } else if (is.null(reduction) & !is.null(dist_matrix)) {
-    distance_description <- "from provided 'dist_matrix'"
-    distance_approx <- FALSE
-  } else if (!is.null(reduction) & is.null(dist_matrix)) {
+  if (is.null(reduction)) {
+    stop("Please provide input to 'reduction'.")
+  } else {
     distance_description <- "calculated from provided 'reduction'"
-    distance_approx <- TRUE
   }
   n_clusters <- dplyr::n_distinct(cluster_labels)
 
@@ -2266,9 +2161,7 @@ inferTree <- function(cluster_labels,
                              L2 = as.numeric(as.factor(cluster_labels)))
   # Create hierarchy
   cluster_tree <- .optimizeTree(cluster_tree = initial_tree,
-                                reduction = reduction,
-                                dist_matrix = dist_matrix,
-                                distance_approx = distance_approx)
+                                reduction = reduction)
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Inferred clustering tree has ", ncol(cluster_tree), " levels.")
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : Labeling clusters according to CHOIR conventions..")
   cluster_tree <- .checkClusterLabels(cluster_tree)
