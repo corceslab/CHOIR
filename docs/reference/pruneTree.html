@@ -89,7 +89,6 @@ framework of random forest classifiers and permutation tests.</p>
 <span>  min_accuracy <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  min_connections <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  max_repeat_errors <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  distance_approx <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  distance_awareness <span class="op">=</span> <span class="fl">2</span>,</span>
 <span>  collect_all_metrics <span class="op">=</span> <span class="cn">FALSE</span>,</span>
 <span>  sample_max <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -98,6 +97,7 @@ framework of random forest classifiers and permutation tests.</p>
 <span>  normalization_method <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  batch_correction_method <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  batch_labels <span class="op">=</span> <span class="cn">NULL</span>,</span>
+<span>  max_n_batch <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  cluster_params <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  use_assay <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  countsplit <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -106,7 +106,6 @@ framework of random forest classifiers and permutation tests.</p>
 <span>  input_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  nn_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  snn_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
-<span>  dist_matrix <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  reduction <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  n_cores <span class="op">=</span> <span class="cn">NULL</span>,</span>
 <span>  random_seed <span class="op">=</span> <span class="cn">NULL</span>,</span>
@@ -227,16 +226,6 @@ parameter to higher values may lead to instances of overclustering and is not
 recommended.</p></dd>
 
 
-<dt>distance_approx</dt>
-<dd><p>A Boolean value indicating whether or not to use
-approximate distance calculations. Defaults to <code>TRUE</code>, which will use
-centroid-based distances. Setting distance approximation to <code>FALSE</code> will
-substantially increase the computational time and memory required,
-particularly for large datasets. Using approximated distances (<code>TRUE</code>)
-rather than absolute distances (<code>FALSE</code>) is unlikely to have a
-meaningful effect on the distance thresholds imposed by CHOIR.</p></dd>
-
-
 <dt>distance_awareness</dt>
 <dd><p>A numerical value representing the distance
 threshold above which a cluster will not merge with another cluster and
@@ -248,7 +237,7 @@ distinguishable neighbor. This threshold allows CHOIR to avoid running the
 full permutation test comparison for clusters that are highly likely to be
 distinct, saving computational time. To omit all distance calculations and
 perform permutation testing on all comparisons, set this parameter to
-<code>FALSE</code>. Setting this parameter to <code>FALSE</code> or increasing the input
+<code>Inf</code>. Setting this parameter to <code>Inf</code> or increasing the input
 value will increase the number of permutation test comparisons run and, thus,
 the computational time. In rare cases, very small distant clusters may be
 erroneously merged when distance thresholds are not used. The intent of this
@@ -323,12 +312,26 @@ specifies the name of the column in the input object metadata containing the
 batch labels. Defaults to <code>NULL</code>.</p></dd>
 
 
+<dt>max_n_batch</dt>
+<dd><p>A numeric value used if applying batch correction,
+indicating the maximum number batches to use in each permutation test.
+Batches are selected in order from largest to smallest. Defaults to
+<code>Inf</code>, which will use all batches that pass cell number thresholds. In
+datasets that contain many batches (&gt;10), where there is no logical way to
+group batches prior to applying CHOIR, setting <code>max_n_batch</code> to a
+smaller value (we suggest between 1 and 5) may help avoid excessive
+downsampling when running the permutation tests, and thereby help avoid
+underclustering.</p></dd>
+
+
 <dt>cluster_params</dt>
 <dd><p>A list of additional parameters to be passed to
 <code>Seurat</code> function <code>FindClusters</code> for clustering at each level of
 the tree. By default, when the <code><a href="https://satijalab.org/seurat/reference/FindClusters.html" class="external-link">Seurat::FindClusters</a></code> parameter
-<code>group.singletons</code> is set to <code>TRUE</code>, CHOIR relabels clusters such
-that each singleton constitutes its own cluster.</p></dd>
+<code>group.singletons</code> is set to <code>TRUE</code>, singletons are grouped into
+the nearest cluster. Alternately, if <code>group.singletons</code> is set to
+<code>FALSE</code>, CHOIR will relabel clusters such that each singleton
+constitutes its own cluster.</p></dd>
 
 
 <dt>use_assay</dt>
@@ -384,13 +387,6 @@ function <code>buildTree</code>.</p></dd>
 adjacency of the cells, provided by the user. By default, this parameter is
 set to <code>NULL</code>, and CHOIR will look for the adjacency matri(ces)
 generated by function <code>buildTree</code>.</p></dd>
-
-
-<dt>dist_matrix</dt>
-<dd><p>An optional distance matrix of cell to cell distances
-(based on dimensionality reduction cell embeddings), provided by the user. By
-default, this parameter is set to <code>NULL</code>, and CHOIR will look for the
-distance matri(ces) generated by function <code>buildTree</code>.</p></dd>
 
 
 <dt>reduction</dt>

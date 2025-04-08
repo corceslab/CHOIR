@@ -1128,8 +1128,6 @@ combineTrees <- function(object,
     unique_parent_IDs <- unique(parent_IDs)
     new_clusters <- c()
 
-    print(paste0("Level ", lvl, ": ", length(unique_parent_IDs), " parent clusters"))
-
     # For each parent cluster
     for (parent in 1:length(unique_parent_IDs)) {
       # Current parent cluster
@@ -1140,7 +1138,6 @@ combineTrees <- function(object,
       # If there is only one child, move on (this cluster branch does not split at this level of the tree)
       # If there are two or more child clusters, start to make comparisons
       n_child_clusters <- length(unique_child_IDs)
-      print(paste0("Parent ", parent, ": ", n_child_clusters, " child clusters"))
       if (n_child_clusters > 1) {
         # Alternately, if this parent and its child clusters have not changed at all since the last level, skip
         if (lvl == n_levels-2) {
@@ -1384,8 +1381,6 @@ combineTrees <- function(object,
               }
             }
           }
-
-          print("Identifying merges")
 
           # Identify which clusters will merge & update child IDs
           # If all clusters will merge
