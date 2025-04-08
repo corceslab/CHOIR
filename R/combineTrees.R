@@ -623,7 +623,7 @@ combineTrees <- function(object,
         all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
                                                              subtree_cluster = subtree_cluster_labels,
                                                              merged_subtree_cluster = merged_subtree_cluster_labels,
-                                                             Parent_cluster = s))
+                                                             parent_cluster = s))
       }
     }
   } else {
@@ -637,7 +637,7 @@ combineTrees <- function(object,
     all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
                                                          subtree_cluster = subtree_cluster_labels,
                                                          merged_subtree_cluster = merged_subtree_cluster_labels,
-                                                         Parent_cluster = s))
+                                                         parent_cluster = s))
     # If more than 1 cluster
     if (dplyr::n_distinct(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]][,paste0("CHOIR_clusters_", alpha)]) > 1) {
       # Filter records
