@@ -458,6 +458,12 @@ combineTrees <- function(object,
     stop("No nearest neighbor adjacency matrix provided.")
   }
 
+  # Retrieve parent tree
+  cluster_tree <- .retrieveData(object,
+                                key,
+                                "clusters",
+                                "P0_tree")
+  n_levels_parent_tree <- ncol(cluster_tree)
 
   # ---------------------------------------------------------------------------
   # Merge clusters at new adjusted alpha and compile results
@@ -490,8 +496,7 @@ combineTrees <- function(object,
     colnames(comparison_records) <- selected_metrics
 
     # Collect all subtree cluster labels
-    all_cluster_ids <- data.frame(Cell_ID = NULL, Subtree_cluster = NULL, Parent_cluster = NULL)
-
+    all_cluster_ids <- data.frame(Cell_ID = NULL, subtree_cluster = NULL, merged_subtree_cluster = NULL, parent_cluster = NULL)
 
     for (s in 1:n_subtrees) {
       subtree_s <- subtree_list[[s]]
@@ -512,6 +517,7 @@ combineTrees <- function(object,
 
         compiled_cluster_labels <- unique(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label)
         child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
+        subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 2, "_", as.numeric(as.factor(child_IDs)))
 
         if (nrow(correction_check) > 0) {
           # Check whether comparisons should remain unmerged, from bottom up
@@ -596,13 +602,14 @@ combineTrees <- function(object,
                         cluster2 %in% child_IDs)
 
         # Provide new cluster labels
-        new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
+        merged_subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 1, "_", as.numeric(as.factor(child_IDs)))
         all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
-                                                             Subtree_cluster = new_cluster_labels,
-                                                             Parent_cluster = s))
+                                                             subtree_cluster = subtree_cluster_labels,
+                                                             merged_subtree_cluster = merged_subtree_cluster_labels,
+                                                             parent_cluster = s))
         for (r in 1:nrow(condensed_records)) {
-          cluster1_new_label <- new_cluster_labels[child_IDs == condensed_records$cluster1[r]][1]
-          cluster2_new_label <- new_cluster_labels[child_IDs == condensed_records$cluster2[r]][1]
+          cluster1_new_label <- merged_subtree_cluster_labels[child_IDs == condensed_records$cluster1[r]][1]
+          cluster2_new_label <- merged_subtree_cluster_labels[child_IDs == condensed_records$cluster2[r]][1]
           condensed_records$cluster1[r] <- cluster1_new_label
           condensed_records$cluster2[r] <- cluster2_new_label
           condensed_records$comparison[r] <- paste0(condensed_records$cluster1[r], " vs. ", condensed_records$cluster2[r])
@@ -611,9 +618,11 @@ combineTrees <- function(object,
       } else {
         # Provide new cluster labels
         child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
-        new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
+        subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 2, "_", as.numeric(as.factor(child_IDs)))
+        merged_subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 1, "_", as.numeric(as.factor(child_IDs)))
         all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
-                                                             Subtree_cluster = new_cluster_labels,
+                                                             subtree_cluster = subtree_cluster_labels,
+                                                             merged_subtree_cluster = merged_subtree_cluster_labels,
                                                              Parent_cluster = s))
       }
     }
@@ -623,9 +632,11 @@ combineTrees <- function(object,
 
     # Provide new cluster labels
     child_IDs <- subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$Record_cluster_label
-    new_cluster_labels <- paste0("P", s, "_", "L0_", as.numeric(as.factor(child_IDs)))
+    subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 2, "_", as.numeric(as.factor(child_IDs)))
+    merged_subtree_cluster_labels <- paste0("P", s, "_", "L", n_levels_parent_tree + 1, "_", as.numeric(as.factor(child_IDs)))
     all_cluster_ids <- rbind(all_cluster_ids, data.frame(CellID = subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]]$CellID,
-                                                         Subtree_cluster = new_cluster_labels,
+                                                         subtree_cluster = subtree_cluster_labels,
+                                                         merged_subtree_cluster = merged_subtree_cluster_labels,
                                                          Parent_cluster = s))
     # If more than 1 cluster
     if (dplyr::n_distinct(subtree_s$clusters[paste0("CHOIR_clusters_", alpha)][[1]][,paste0("CHOIR_clusters_", alpha)]) > 1) {
@@ -636,8 +647,8 @@ combineTrees <- function(object,
         dplyr::filter(cluster1 %in% child_IDs,
                       cluster2 %in% child_IDs)
       for (r in 1:nrow(condensed_records)) {
-        cluster1_new_label <- new_cluster_labels[child_IDs == condensed_records$cluster1[r]][1]
-        cluster2_new_label <- new_cluster_labels[child_IDs == condensed_records$cluster2[r]][1]
+        cluster1_new_label <- merged_subtree_cluster_labels[child_IDs == condensed_records$cluster1[r]][1]
+        cluster2_new_label <- merged_subtree_cluster_labels[child_IDs == condensed_records$cluster2[r]][1]
         condensed_records$cluster1[r] <- cluster1_new_label
         condensed_records$cluster2[r] <- cluster2_new_label
         condensed_records$comparison[r] <- paste0(condensed_records$cluster1[r], " vs. ", condensed_records$cluster2[r])
@@ -649,15 +660,19 @@ combineTrees <- function(object,
   # Create new clustering tree
   # Track progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 3/5) Create compiled clustering tree and identify remaining comparisons..")
-  # Retrieve parent tree
-  cluster_tree <- .retrieveData(object,
-                                key,
-                                "clusters",
-                                "P0_tree")
-  # Add new level with current set of clusters and number this new level
-  all_cluster_ids <- all_cluster_ids[rownames(cluster_tree),]
-  cluster_tree$L_new <- all_cluster_ids$Subtree_cluster
+
+  # Add new level to parent tree with current set of clusters and number this new level
+  rownames(all_cluster_ids) <- all_cluster_ids$CellID
+  all_cluster_ids <- all_cluster_ids[cell_IDs,]
+  cluster_tree$L_new <- all_cluster_ids$merged_subtree_cluster
   colnames(cluster_tree)[ncol(cluster_tree)] <- paste0("L", ncol(cluster_tree))
+
+  # Record of stepwise cluster IDs
+  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs,
+                                     subtree_clusters = all_cluster_ids$subtree_cluster,
+                                     merged_subtree_clusters = all_cluster_ids$merged_subtree_cluster)
+  colnames(stepwise_cluster_IDs)[2] <- paste0("stepwise_cluster_ID_", alpha, "_L", (n_levels_parent_tree + 2))
+  colnames(stepwise_cluster_IDs)[3] <- paste0("stepwise_cluster_ID_", alpha, "_L", (n_levels_parent_tree + 1))
 
   # Identify remaining comparisons
 
@@ -729,7 +744,6 @@ combineTrees <- function(object,
 
   # Track progress
   if (verbose) message(format(Sys.time(), "%Y-%m-%d %X"), " : (Step 4/5) Prepare compiled tree for pruning..")
-
 
   # ---------------------------------------------------------------------------
   # Set values for countsplitting
@@ -1108,15 +1122,12 @@ combineTrees <- function(object,
   # Progress markers
   progress_markers <- c(10,20,30,40,50,60,70,80,90)
 
-  # Record of stepwise cluster IDs
-  stepwise_cluster_IDs <- data.frame(CellID = cell_IDs,
-                                     starting_clusters = child_IDs)
-  colnames(stepwise_cluster_IDs)[2] <- paste0("stepwise_cluster_ID_", alpha, "_L", n_levels)
-
   while (complete == FALSE) {
     # Get all cluster IDs at this level
     unique_parent_IDs <- unique(parent_IDs)
     new_clusters <- c()
+
+    print(paste0("Level ", lvl, ": ", length(unique_parent_IDs), " parent clusters"))
 
     # For each parent cluster
     for (parent in 1:length(unique_parent_IDs)) {
@@ -1128,6 +1139,7 @@ combineTrees <- function(object,
       # If there is only one child, move on (this cluster branch does not split at this level of the tree)
       # If there are two or more child clusters, start to make comparisons
       n_child_clusters <- length(unique_child_IDs)
+      print(paste0("Parent ", parent, ": ", n_child_clusters, " child clusters"))
       if (n_child_clusters > 1) {
         # Alternately, if this parent and its child clusters have not changed at all since the last level, skip
         if (lvl == n_levels-2) {
@@ -1371,6 +1383,8 @@ combineTrees <- function(object,
               }
             }
           }
+
+          print("Identifying merges")
 
           # Identify which clusters will merge & update child IDs
           # If all clusters will merge
