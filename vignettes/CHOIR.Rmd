@@ -252,17 +252,15 @@ To `pruneTree()`, provide:
 
 ## Using CHOIR with ATAC-seq data
 
-If your input data is ATAC-seq data, make sure to set input parameter `atac = TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data. If your data exclusively contains ATAC-seq data (no other modalities), it is recommended to set parameter `use_variance = FALSE`. 
+If your input data is ATAC-seq data, make sure to set input parameter `atac = TRUE`, in order to use the correct defaults. For example, CHOIR uses 25000 variable features by default for ATAC-seq data, in comparison to 2000 by default for other data.
 
 CHOIR is compatible with both ArchR and Signac approaches to ATAC-seq analysis, but has been most thoroughly tested with ArchR objects.
 
 Below is an example command to run CHOIR with ATAC-seq data:
 ```{r, eval = FALSE}
 ArchR_object <- CHOIR(ArchR_object,
-                      atac = TRUE,
-                      use_variance = FALSE)
+                      atac = TRUE)
 ```
-
 
 ## Using CHOIR with multi-modal data
 

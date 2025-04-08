@@ -35,6 +35,11 @@ Then, install CHOIR:
 remotes::install_github("corceslab/CHOIR", ref="main", repos = BiocManager::repositories(), upgrade = "never")
 ```
 
+Alternatively, install the `dev` branch for the latest updates and features (e.g., additional compatibility, improved efficiency, etc.):
+```
+remotes::install_github("corceslab/CHOIR", ref="dev", repos = BiocManager::repositories(), upgrade = "never")
+```
+
 Notes:
 
 * Installation should complete in under 2 minutes.
