@@ -1189,6 +1189,27 @@ combineTrees <- function(object,
                 result_matrix[child1_name, ] <- "merge"
                 result_matrix[, child1_name] <- "merge"
                 result_matrix[child1_name, child1_name] <- NA
+                if (lvl >= 0) {
+                  tick_amount <- 0.9*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                  pb$tick(tick_amount)
+                  if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
+                                 (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5))) {
+                    hour_start_time <- Sys.time()
+                    pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                      " : ", round((percent_done + tick_amount)), "% (", n_levels - lvl, "/", n_levels ," levels) in ",
+                                      round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                      " min. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                  }
+                  percent_done <- percent_done + tick_amount
+                } else {
+                  if (verbose & (difftime(Sys.time(), hour_start_time, units = "hours") >= 0.5)) {
+                    hour_start_time <- Sys.time()
+                    pb$message(paste0(format(Sys.time(), "%Y-%m-%d %X"),
+                                      " : Running additional comparisons, ",
+                                      round(difftime(Sys.time(), start_time, units = "min"), 2),
+                                      " min elapsed. ", dplyr::n_distinct(child_IDs), " clusters remaining."))
+                  }
+                }
               } else {
                 # Compare the child cluster pairwise to each subsequent sibling cluster
                 for (child2 in (child1+1):n_child_clusters) {
@@ -1232,8 +1253,10 @@ combineTrees <- function(object,
                             previous_P0_distance <- max(dplyr::filter(distance_records,
                                                                       cluster_name == child1_name |
                                                                         cluster_name == child2_name)$min_root_distance)
-                            if (P0_distance > (previous_P0_distance*distance_awareness)) {
-                              distance_conflict <- TRUE
+                            if (!is.na(previous_P0_distance) & !is.na(P0_distance)) {
+                              if (P0_distance > (previous_P0_distance*distance_awareness)) {
+                                distance_conflict <- TRUE
+                              }
                             }
                           }
                         }
@@ -1359,7 +1382,7 @@ combineTrees <- function(object,
               result_matrix[child1_name, child1_name] <- NA
               # Progress
               if (lvl >= 0) {
-                tick_amount <- 0.1*(1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
+                tick_amount <- (1/(n_child_clusters-1))*0.9*(1/length(unique_parent_IDs))*(0.9*level_weights[paste0("L", lvl)])
                 pb$tick(tick_amount)
                 if (verbose & ((((percent_done + tick_amount) %/% 10) - (percent_done %/% 10) > 0) |
                                (difftime(Sys.time(), hour_start_time, units = "hours") >= 1))) {

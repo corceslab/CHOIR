@@ -672,19 +672,25 @@
     # Compare to previous records
     if (!is.null(distance_records)) {
       if (cluster1_name %in% distance_records$cluster_name & cluster2_name %in% distance_records$cluster_name) {
-        if (use_input_matrix == "P0") {
-          previous_P0_distance <- max(dplyr::filter(distance_records,
-                                                    cluster_name == cluster1_name |
-                                                      cluster_name == cluster2_name)$min_root_distance, na.rm = TRUE)
-          if (P0_distance > (previous_P0_distance*distance_awareness)) {
-            distance_conflict <- TRUE
-          }
-        } else if (use_input_matrix != "P0" & !is.na(P_i_distance)) {
-          previous_P_i_distance <- max(dplyr::filter(distance_records,
-                                                     cluster_name == cluster1_name |
-                                                       cluster_name == cluster2_name)$min_subtree_distance, na.rm = TRUE)
-          if (P_i_distance > (previous_P_i_distance*distance_awareness)) {
-            distance_conflict <- TRUE
+        if (child1_name %in% distance_records$cluster_name & child2_name %in% distance_records$cluster_name) {
+          if (use_input_matrix != "P0") {
+            previous_P_i_distance <- max(dplyr::filter(distance_records,
+                                                       cluster_name == child1_name |
+                                                         cluster_name == child2_name)$min_subtree_distance)
+            if (!is.na(previous_P_i_distance) & !is.na(P_i_distance)) {
+              if (P_i_distance > (previous_P_i_distance*distance_awareness)) {
+                distance_conflict <- TRUE
+              }
+            }
+          } else {
+            previous_P0_distance <- max(dplyr::filter(distance_records,
+                                                      cluster_name == child1_name |
+                                                        cluster_name == child2_name)$min_root_distance)
+            if (!is.na(previous_P0_distance) & !is.na(P0_distance)) {
+              if (P0_distance > (previous_P0_distance*distance_awareness)) {
+                distance_conflict <- TRUE
+              }
+            }
           }
         }
       }
