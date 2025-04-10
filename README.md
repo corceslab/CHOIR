@@ -10,9 +10,11 @@
 
 ## Citation
 
-CHOIR is on bioRxiv! You can find it [here](https://www.biorxiv.org/content/10.1101/2024.01.18.576317v1).
+CHOIR is published in Nature Genetics! You can find the publication [here](https://www.nature.com/articles/s41588-025-02148-8).
 
-Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *bioRxiv* (2024)
+Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. *Nature Genetics* (2025)
+
+Looking for scripts related to the publication? Check out the [GitHub page for the publication](https://github.com/corceslab/2025_Sant_CHOIR).
 
 ## Installation
 
