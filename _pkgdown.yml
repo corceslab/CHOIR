@@ -32,3 +32,8 @@ navbar:
 toc:
   depth: 4
 
+resource_files:
+  - images/ExtendedDataFig2a.png
+  - images/ExtendedDataFig2b.png
+  - images/ExtendedDataFig2c_h.png
+

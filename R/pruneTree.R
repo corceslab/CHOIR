@@ -351,9 +351,9 @@ pruneTree <- function(object,
   .validInput(min_reads, "min_reads")
   .validInput(max_n_batch, "max_n_batch")
   .validInput(cluster_params, "cluster_params")
-  .validInput(use_assay, "use_assay", object)
   .validInput(countsplit, "countsplit")
   .validInput(countsplit_suffix, "countsplit_suffix", countsplit)
+  .validInput(use_assay, "use_assay", list(object, countsplit, countsplit_suffix))
   .validInput(random_seed, "random_seed")
 
   # Add additional parameters if not provided

@@ -94,8 +94,9 @@
 <div class="section level2">
 <h2 id="citation">Citation<a class="anchor" aria-label="anchor" href="#citation"></a>
 </h2>
-<p>CHOIR is on bioRxiv! You can find it <a href="https://www.biorxiv.org/content/10.1101/2024.01.18.576317v1" class="external-link">here</a>.</p>
-<p>Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. <em>bioRxiv</em> (2024)</p>
+<p>CHOIR is published in Nature Genetics! You can find the publication <a href="https://www.nature.com/articles/s41588-025-02148-8" class="external-link">here</a>.</p>
+<p>Sant et al., CHOIR improves significance-based detection of cell types and states from single-cell data. <em>Nature Genetics</em> (2025)</p>
+<p>Looking for scripts related to the publication? Check out the <a href="https://github.com/corceslab/2025_Sant_CHOIR" class="external-link">GitHub page for the publication</a>.</p>
 </div>
 <div class="section level2">
 <h2 id="installation">Installation<a class="anchor" aria-label="anchor" href="#installation"></a>
@@ -108,6 +109,8 @@
 <pre><code><span><span class="kw">if</span> <span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/ns-load.html" class="external-link">requireNamespace</a></span><span class="op">(</span><span class="st">"BiocManager"</span>, quietly <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">)</span> <span class="fu"><a href="https://rdrr.io/r/utils/install.packages.html" class="external-link">install.packages</a></span><span class="op">(</span><span class="st">"BiocManager"</span><span class="op">)</span></span></code></pre>
 <p>Then, install CHOIR:</p>
 <pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"corceslab/CHOIR"</span>, ref<span class="op">=</span><span class="st">"main"</span>, repos <span class="op">=</span> <span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/repositories.html" class="external-link">repositories</a></span><span class="op">(</span><span class="op">)</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre>
+<p>Alternatively, install the <code>dev</code> branch for the latest updates and features (e.g., additional compatibility, improved efficiency, etc.):</p>
+<pre><code><span><span class="fu">remotes</span><span class="fu">::</span><span class="fu"><a href="https://remotes.r-lib.org/reference/install_github.html" class="external-link">install_github</a></span><span class="op">(</span><span class="st">"corceslab/CHOIR"</span>, ref<span class="op">=</span><span class="st">"dev"</span>, repos <span class="op">=</span> <span class="fu">BiocManager</span><span class="fu">::</span><span class="fu"><a href="https://bioconductor.github.io/BiocManager/reference/repositories.html" class="external-link">repositories</a></span><span class="op">(</span><span class="op">)</span>, upgrade <span class="op">=</span> <span class="st">"never"</span><span class="op">)</span></span></code></pre>
 <p>Notes:</p>
 <ul>
 <li>Installation should complete in under 2 minutes.</li>
