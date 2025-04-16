@@ -77,8 +77,8 @@
   # Check number of adjacent cells
   if ((min_connections > 0 | collect_all_metrics == TRUE) & (!is.null(nn_matrix) | !is.na(adjacent))) {
     if (is.na(adjacent)) {
-      adjacent <- sum(as.matrix(nn_matrix[cluster1_cells, cluster2_cells])) +
-        sum(as.matrix(nn_matrix[cluster2_cells, cluster1_cells]))
+      adjacent <- sum(nn_matrix[cluster1_cells, cluster2_cells]) +
+        sum(nn_matrix[cluster2_cells, cluster1_cells])
     }
     # If clusters don't have enough adjacent cells,
     # don't compare & don't allow to merge
@@ -652,7 +652,7 @@
     # Distance by centroid or average linkage
     # Calculate P0 distance
     if (is.null(reduction)) {
-      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", "P0_reduction"))[c(cluster1_cells, cluster2_cells), ]
+      current_reduction <- .retrieveData(object, key, "reduction", "P0_reduction")[c(cluster1_cells, cluster2_cells), ]
     } else {
       current_reduction <- reduction[c(cluster1_cells, cluster2_cells), ]
     }
@@ -661,7 +661,7 @@
                                                      rep(2, length(cluster2_cells))))[1,2]
     # Calculate subtree distance if applicable
     if (use_input_matrix != "P0" & is.null(reduction)) {
-      current_reduction <- as.matrix(.retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction")))[c(cluster1_cells, cluster2_cells), ]
+      current_reduction <- .retrieveData(object, key, "reduction", paste0(use_input_matrix, "_reduction"))[c(cluster1_cells, cluster2_cells), ]
       P_i_distance <- .getCentroidDistance(reduction = current_reduction,
                                            clusters = c(rep(1, length(cluster1_cells)),
                                                         rep(2, length(cluster2_cells))))[1,2]
