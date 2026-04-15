@@ -840,7 +840,8 @@
 
   # Add distance data
   if (distance_awareness < Inf | collect_all_metrics == TRUE) {
-    if (is.null(root_distances)) {
+    if (is.null(root_distances) ||
+        !all(unique(clusters) %in% rownames(root_distances))) {
       # Root distance
       P0_reduction <- .retrieveData(object,
                                     key,
